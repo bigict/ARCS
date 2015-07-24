@@ -7,6 +7,12 @@
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("contiging.kmer_tbl"));
 
+KmerTable::KmerTable(size_t K) : _K(K) {
+}
+
+KmerTable::~KmerTable() {
+}
+
 bool KmerTable::read(std::istream& stream) {
     if (!stream) {
         LOG4CXX_WARN(logger, boost::format("invalid input stream"));

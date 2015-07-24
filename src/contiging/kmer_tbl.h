@@ -8,12 +8,13 @@
 
 class KmerTable {
 public:
-    KmerTable();
+    KmerTable(size_t K);
     virtual ~KmerTable();
 
     bool read(std::istream& stream);
 private:
     std::tr1::unordered_map<std::string, size_t> _hash_tbl;    
+    size_t _K;
 };
 
 #endif // kmer_tbl_h_
