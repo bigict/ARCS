@@ -5,13 +5,15 @@
 
 #include <boost/multiprecision/cpp_int.hpp>
 
+typedef boost::multiprecision::cpp_int bigint;
+
 class Nucleotide {
 public:
     enum {
         Adenine  = 0x00, 
         Cytosine = 0x01, 
-        Guanine  = 0x10, 
-        Thymine  = 0x11
+        Guanine  = 0x02, 
+        Thymine  = 0x03
     };
     
     static int char2code(char chr) {
@@ -61,7 +63,9 @@ public:
     bool operator != (const Kmer& o) const;
 
 private:
-    boost::multiprecision::cpp_int _data;
+    friend std::ostream& operator << (std::ostream& os, const Kmer& kmer);
+
+    bigint _data;
     size_t _length;
 };
 

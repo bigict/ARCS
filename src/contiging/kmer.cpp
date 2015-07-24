@@ -17,8 +17,9 @@ Kmer::~Kmer() {
 const std::string Kmer::sequence() const {
     std::string seq;
 
+    bigint musk(0x03); 
     for (size_t i = 0; i < _length; ++i) {
-        int code = (_data >> ((_length - i - 1) * 2)) && 0x03;
+        int code = boost::lexical_cast< int >((_data >> ((_length - i - 1) * 2)) & musk);
         seq += Nucleotide::code2char(code);
     }
 
@@ -54,4 +55,9 @@ Kmer& Kmer::operator = (const Kmer& o) {
 
 bool Kmer::operator == (const Kmer& o) const {
     return _data == o._data && _length == o._length;
+}
+
+std::ostream& operator << (std::ostream& os, const Kmer& kmer) {
+    os << kmer.sequence();
+    return os;
 }

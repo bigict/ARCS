@@ -16,6 +16,7 @@ public:
     int quality() const;
 private:
     friend class DNASeqReader;
+    friend std::ostream& operator << (std::ostream& os, const DNASeq& seq);
 
     std::string _quality;
 };

@@ -11,6 +11,14 @@ int DNASeq::quality() const {
     return 0;
 }
 
+std::ostream& operator << (std::ostream& os, const DNASeq& seq) {
+    os << '@' << seq.name << std::endl;
+    os << seq.seq << std::endl;
+    os << '+' << std::endl;
+    os << seq._quality << std::endl;
+    return os;
+}
+
 bool DNASeqReader::read(DNASeq& sequence) {
     enum {
         kName, 
@@ -36,7 +44,7 @@ bool DNASeqReader::read(DNASeq& sequence) {
                 sequence.seq = buf;
                 state = kName2;
             } else if (state == kName2) {
-                if (boost::algorithm::starts_with(buf, "+") && boost::algorithm::ends_with(buf, sequence.name)) {
+                if (boost::algorithm::starts_with(buf, "+") && (buf.length() == 1 || boost::algorithm::ends_with(buf, sequence.name))) {
                     state = kQuality;
                 } else {
                     LOG4CXX_WARN(logger, boost::format("fastq=>names aren't equal: %s") % buf);
@@ -45,6 +53,7 @@ bool DNASeqReader::read(DNASeq& sequence) {
             } else if (state == kQuality) {
                 if (buf.length() == sequence.seq.length()) {
                     sequence._quality = buf;
+                    return true;
                 } else {
                     LOG4CXX_WARN(logger, boost::format("fastq=>length of sequence and quality are not equal: %s") % buf);
                     return false;

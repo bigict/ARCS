@@ -4,9 +4,11 @@
 #include <string>
 #include <tr1/unordered_map>
 
+class KmerTable;
+
 class DeBruijnGraph {
 public:
-    DeBruijnGraph();
+    DeBruijnGraph(const KmerTable& tbl);
     virtual ~DeBruijnGraph();
 
 private:
