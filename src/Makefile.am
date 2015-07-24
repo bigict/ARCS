@@ -1,0 +1,1 @@
+SUBDIRS=contiging scaffolding remove_repeats scoring gap_filling
