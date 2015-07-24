@@ -4,7 +4,9 @@
 #include <string>
 #include <iostream>
 
-
+//
+// DNASeq represents a DNA sequence.
+//
 class DNASeq {
 public:
     DNASeq() {}
@@ -21,6 +23,28 @@ private:
     std::string _quality;
 };
 
+//
+// FASTQ Format Specification
+// Syntax
+//    <fastq>	:=	<block>+
+//    <block>	:=	@<seqname>\n<seq>\n+[<seqname>]\n<qual>\n
+//    <seqname>	:=	[A-Za-z0-9_.:-]+
+//    <seq>	:=	[A-Za-z\n\.~]+
+//    <qual>	:=	[!-~\n]+
+// Requirements
+//    1. The <seqname> following '+' is optional, but if it appears right after '+', it should be 
+//    identical to the <seqname> following '@'.
+//    2. The length of <seq> is identical the length of <qual>. Each character in <qual> represents 
+//    the phred quality of the corresponding nucleotide in <seq>.
+//    3. If the Phred quality is $Q, which is a non-negative integer, the corresponding quality 
+//    character can be calculated with the following Perl code:
+//        $q = chr(($Q<=93? $Q : 93) + 33);
+//    where chr() is the Perl function to convert an integer to a character based on the ASCII  
+//    table.
+//    4. Conversely, given a character $q, the corresponding Phred quality can be calculated with:
+//        $Q = ord($q) - 33;
+//    where ord() gives the ASCII code of a character.
+// 
 class DNASeqReader {
 public:
     DNASeqReader(std::istream& stream) : _stream(stream) {}

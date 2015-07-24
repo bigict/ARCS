@@ -1,5 +1,5 @@
 bin_PROGRAMS=contiging
-contiging_SOURCES= debruijn_graph.cpp \
+contiging_SOURCES=debruijn_graph.cpp \
             debruijn_graph.h \
             kmer.cpp \
             kmer.h \
