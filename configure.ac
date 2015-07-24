@@ -40,6 +40,5 @@ AC_CONFIG_FILES([Makefile
                  src/remove_repeats/Makefile
                  src/scaffolding/Makefile
                  src/scoring/Makefile])
-AC_CONFIG_SUBDIRS([src/contiging/32-mer/Kmer_Hash_md5
-                   src/contiging/32-mer/Kmer_Hash_old])
+AC_CONFIG_SUBDIRS()
 AC_OUTPUT
