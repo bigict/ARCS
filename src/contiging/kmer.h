@@ -7,6 +7,9 @@
 
 typedef boost::multiprecision::cpp_int bigint;
 
+//
+// Utilities for encodeing Nucleotide
+//
 class Nucleotide {
 public:
     enum {
@@ -38,6 +41,11 @@ public:
     }
 };
 
+//
+// A node in DeBruij graph. Here we encode the nucleotide to reduce
+// memeory. You can restore sequence by calling the sequence member 
+// function without losing any information.
+//
 class Kmer {
 public:
     Kmer();
@@ -57,9 +65,15 @@ public:
 
     Kmer& operator = (const std::string& sequence);
     Kmer& operator = (const Kmer& o);
-    bool operator == (const Kmer& o) const;
+    Kmer operator + (const char c);
+    Kmer operator + (const std::string& sequence);
+    Kmer operator + (const Kmer& o);
+    Kmer& operator += (const char c);
+    Kmer& operator += (const std::string& sequence);
+    Kmer& operator += (const Kmer& o);
     bool operator < (const Kmer& o) const;
     bool operator > (const Kmer& o) const;
+    bool operator == (const Kmer& o) const;
     bool operator != (const Kmer& o) const;
 
 private:
