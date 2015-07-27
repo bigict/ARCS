@@ -54,7 +54,7 @@ public:
     Kmer(const Kmer& o);
     virtual ~Kmer();
 
-    Kmer subKmer(size_t i, size_t j) const;
+    Kmer subKmer(size_t i, size_t j=-1) const;
 
     const std::string sequence() const;
     void sequence(const std::string& seq) {

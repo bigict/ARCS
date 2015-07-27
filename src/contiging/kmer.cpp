@@ -30,6 +30,7 @@ Kmer Kmer::subKmer(size_t i, size_t j) const {
         int code = boost::lexical_cast< int >((_data >> ((_length - i - 1) * 2)) & musk);
         kmer._data = (kmer._data << 2) + code;
         kmer._length += 1;
+        ++i;
     }
     return kmer;
 }
