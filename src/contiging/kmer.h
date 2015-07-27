@@ -16,7 +16,8 @@ public:
         Adenine  = 0x00, 
         Cytosine = 0x01, 
         Guanine  = 0x02, 
-        Thymine  = 0x03
+        Thymine  = 0x03,
+        NUM      = 0x04
     };
     
     static int char2code(char chr) {

@@ -142,6 +142,7 @@ std::ostream& operator << (std::ostream& os, const Kmer& kmer) {
     os << kmer.sequence();
     return os;
 }
+
 size_t Kmer::hash() const {
-	return _data.convert_to<size_t>();
+    return _data.convert_to<size_t>();
 }
