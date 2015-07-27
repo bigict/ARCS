@@ -1,4 +1,5 @@
 #include "kmer_tbl.h"
+#include "debruijn_graph.h"
 #include "kseq.h"
 
 #include <boost/format.hpp>
@@ -30,4 +31,7 @@ bool KmerTable::read(std::istream& stream) {
     LOG4CXX_DEBUG(logger, boost::format("construct kmer table end"));
 
     return true;
+}
+
+void KmerTable::buildDeBruijn(DeBruijnGraph* graph) const {
 }

@@ -12,7 +12,7 @@ typedef boost::multiprecision::cpp_int bigint;
 //
 class Nucleotide {
 public:
-    enum {
+    enum Code {
         Adenine  = 0x00, 
         Cytosine = 0x01, 
         Guanine  = 0x02, 
@@ -56,6 +56,7 @@ public:
 
     Kmer subKmer(size_t i, size_t j=-1) const;
 
+    Nucleotide::Code nucleotide(size_t i) const;
     const std::string sequence() const;
     void sequence(const std::string& seq) {
         sequence(seq, 0, std::string::npos);
@@ -76,11 +77,18 @@ public:
     bool operator == (const Kmer& o) const;
     bool operator != (const Kmer& o) const;
 
+    size_t hash() const;
 private:
     friend std::ostream& operator << (std::ostream& os, const Kmer& kmer);
 
     bigint _data;
     size_t _length;
+};
+
+struct KmerHasher {
+        std::size_t operator()(const Kmer& o) const {
+            return o.hash();
+        }
 };
 
 #endif // kmer_h_

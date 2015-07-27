@@ -35,6 +35,15 @@ Kmer Kmer::subKmer(size_t i, size_t j) const {
     return kmer;
 }
 
+Nucleotide::Code Kmer::nucleotide(size_t i) const {
+    BOOST_ASSERT(i >=0 && i < _length);
+    if (i >= 0 && i < _length) {
+        bigint musk(0x03); 
+        return (Nucleotide::Code)boost::lexical_cast< int >((_data >> ((_length - i - 1) * 2)) & musk);
+    }
+    return Nucleotide::Adenine;
+}
+
 const std::string Kmer::sequence() const {
     std::string seq;
 
@@ -132,4 +141,7 @@ bool Kmer::operator == (const Kmer& o) const {
 std::ostream& operator << (std::ostream& os, const Kmer& kmer) {
     os << kmer.sequence();
     return os;
+}
+size_t Kmer::hash() const {
+	return _data.convert_to<size_t>();
 }
