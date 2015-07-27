@@ -50,7 +50,7 @@ class Kmer {
 public:
     Kmer();
     Kmer(const std::string& sequence);
-    Kmer(const std::string& sequence, size_t i, size_t j);
+    Kmer(const std::string& sequence, size_t i, size_t j=std::string::npos);
     Kmer(const Kmer& o);
     virtual ~Kmer();
 
@@ -60,7 +60,7 @@ public:
     void sequence(const std::string& seq) {
         sequence(seq, 0, std::string::npos);
     }
-    void sequence(const std::string& seq, size_t i, size_t j);
+    void sequence(const std::string& seq, size_t i, size_t j=std::string::npos);
     size_t length() const { return _length; }
 
     Kmer& operator = (const std::string& sequence);
