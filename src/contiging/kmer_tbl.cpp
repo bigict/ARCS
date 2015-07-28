@@ -8,7 +8,7 @@
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("contiging.kmer_tbl"));
 
-KmerTable::KmerTable(size_t K, bool do_filter) : _hash_tbl(1<<20), _K(K), _do_filter(do_filter) {
+KmerTable::KmerTable(size_t K, bool do_filter) : _K(K), _do_filter(do_filter) {
     BOOST_ASSERT(_K > 0);
 }
 
@@ -27,9 +27,14 @@ bool KmerTable::read(std::istream& stream) {
 
     DNASeq read;
     while (reader.read(read)) {
-        for (size_t i = 0,j = _K; j < read.seq.length(); ++i,++j) {
-            Kmer kmer(read.seq, i, j);
+        if (read.seq.length() > _K) {
+            Kmer kmer(read.seq, 0, _K);
             _hash_tbl[kmer]++;
+            for (size_t j = _K; j < read.seq.length(); ++j) {
+                kmer.pop();
+                kmer.push((Nucleotide::Code)Nucleotide::char2code(read.seq[j]));
+                _hash_tbl[kmer]++;
+            }
         }
     }
 

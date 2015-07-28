@@ -24,7 +24,7 @@ void DeBruijnGraph::addKmer(const Kmer& kmer, size_t weight) {
     Kmer key = kmer.subKmer(0, k - 1);
     Nucleotide::Code nucleotide = kmer.nucleotide(k - 1);
 
-    LOG4CXX_DEBUG(logger, boost::format("addKmer: %s with key=[%s], edge=[%c]") % kmer % key % Nucleotide::code2char(nucleotide));
+    LOG4CXX_TRACE(logger, boost::format("addKmer: %s with key=[%s], edge=[%c]") % kmer % key % Nucleotide::code2char(nucleotide));
 
     NodeList::iterator it = _nodelist.find(key);
     if (it != _nodelist.end()) {
@@ -39,7 +39,7 @@ void DeBruijnGraph::removeKmer(const Kmer& kmer) {
     Kmer key = kmer.subKmer(0, k - 1);
     Nucleotide::Code nucleotide = kmer.nucleotide(k - 1);
 
-    LOG4CXX_DEBUG(logger, boost::format("removeKmer: %s with key=[%s], edge=[%c]") % kmer % key % Nucleotide::code2char(nucleotide));
+    LOG4CXX_TRACE(logger, boost::format("removeKmer: %s with key=[%s], edge=[%c]") % kmer % key % Nucleotide::code2char(nucleotide));
     
     NodeList::iterator it = _nodelist.find(key);
     if (it != _nodelist.end()) {
@@ -54,6 +54,8 @@ void DeBruijnGraph::removeKmer(const Kmer& kmer) {
 
 void DeBruijnGraph::compact() {
     typedef std::tr1::unordered_map< Kmer, size_t, KmerHasher > CountingList;
+
+    LOG4CXX_DEBUG(logger, boost::format("compact with %d nodes, begin") % _nodelist.size());
 
     CountingList merge_nodelist;
     {
@@ -85,4 +87,5 @@ void DeBruijnGraph::compact() {
     for (CountingList::iterator it = merge_nodelist.begin(); it != merge_nodelist.end(); ++it) {
     }
 */
+    LOG4CXX_DEBUG(logger, boost::format("compact with %d nodes, end") % _nodelist.size());
 }

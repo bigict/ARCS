@@ -31,20 +31,41 @@ private:
 };
 
 int main(int argc, char* argv[]) {
-    // command line options
-    
-    // config log4cxx.
-    log4cxx::BasicConfigurator::configure();
-
-    // load options.
     Properties options;
-    try {
-        boost::property_tree::read_ini("test.cfg", options);
-    } catch (const boost::property_tree::ini_parser_error& e) {
-        LOG4CXX_ERROR(logger, boost::format("load test.cfg failed(%s).") % e.what());
-        return 1;
-    }
+    {
+        // command line options
+        Properties cmd;
+        std::string opt_string("s:d:K:E:p:h::");
+        int opt = -1;
+        while ((opt = getopt(argc, argv, opt_string.c_str())) != -1) {
+            std::string key(1, (char)opt);
+            if (key == "h") {
+                cmd.put(key, NULL);
+            } else {
+                cmd.put(key, optarg);
+            }
+        }
 
+        // config log4cxx.
+        log4cxx::BasicConfigurator::configure();
+
+        
+        // load ini options
+        if (cmd.find("s") != cmd.not_found()) {
+            try {
+                boost::property_tree::read_ini(cmd.get< std::string >("s"), options);
+            } catch (const boost::property_tree::ini_parser_error& e) {
+                LOG4CXX_ERROR(logger, boost::format("load test.cfg failed(%s).") % e.what());
+                return 1;
+            }
+        }
+
+        // merge options
+        for (Properties::const_iterator it = cmd.begin(); it != cmd.end(); it++){
+            options.put(it->first,it->second.data());
+        }
+    }
+     
     // build contigs.
     Contiging c;
     return c.run(options);

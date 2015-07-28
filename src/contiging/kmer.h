@@ -6,7 +6,9 @@
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/multiprecision/gmp.hpp>
 
-typedef boost::multiprecision::gmp_int bigint;
+//typedef boost::multiprecision::mpz_int bigint;
+//typedef boost::multiprecision::int128_t bigint;
+typedef uint64_t bigint;
 
 //
 // Utilities for encodeing Nucleotide
@@ -66,6 +68,9 @@ public:
     void sequence(const std::string& seq, size_t i, size_t j=std::string::npos);
     size_t length() const { return _length; }
 
+    Nucleotide::Code pop();
+    void push(Nucleotide::Code nucleotide);
+
     Kmer& operator = (const std::string& sequence);
     Kmer& operator = (const Kmer& o);
     Kmer operator + (const char c);
@@ -79,7 +84,10 @@ public:
     bool operator == (const Kmer& o) const;
     bool operator != (const Kmer& o) const;
 
-    size_t hash() const;
+    size_t hash() const {
+        return (size_t)_data;
+        //return _data.convert_to<size_t>();
+    }
 private:
     friend std::ostream& operator << (std::ostream& os, const Kmer& kmer);
 
@@ -88,7 +96,7 @@ private:
 };
 
 struct KmerHasher {
-        std::size_t operator()(const Kmer& o) const {
+        size_t operator()(const Kmer& o) const {
             return o.hash();
         }
 };

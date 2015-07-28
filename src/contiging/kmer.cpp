@@ -65,9 +65,24 @@ void Kmer::sequence(const std::string& seq, size_t i, size_t j) {
     while (i < j) {
         int code = Nucleotide::char2code(seq[i]);
         _data  = (_data << 2) + code;
-        _length += 1;
+        ++_length;
         ++i;
     }
+}
+
+Nucleotide::Code Kmer::pop() {
+    if (_length > 0) {
+        bigint musk(0x03); 
+        int code = boost::lexical_cast< int >((_data >> ((_length - 1) * 2)) & musk);
+        --_length;
+        return (Nucleotide::Code)code;
+    }
+    return Nucleotide::Adenine;
+}
+
+void Kmer::push(Nucleotide::Code code) {
+    _data  = (_data << 2) + (int)code;
+    ++_length;
 }
 
 Kmer& Kmer::operator = (const std::string& seq) {
@@ -112,7 +127,7 @@ Kmer Kmer::operator + (const Kmer& o) {
 Kmer& Kmer::operator += (const char c) {
     int code = Nucleotide::char2code(c);
     _data  = (_data << 2) + code;
-    _length += 1;
+    ++_length;
 
     return *this;
 }
@@ -143,6 +158,3 @@ std::ostream& operator << (std::ostream& os, const Kmer& kmer) {
     return os;
 }
 
-size_t Kmer::hash() const {
-    return _data.convert_to<size_t>();
-}
