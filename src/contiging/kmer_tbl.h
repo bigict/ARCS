@@ -4,6 +4,7 @@
 #include "kmer.h"
 
 #include <iostream>
+#include <map>
 #include <string>
 #include <tr1/unordered_map>
 

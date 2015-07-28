@@ -4,8 +4,9 @@
 #include <string>
 
 #include <boost/multiprecision/cpp_int.hpp>
+#include <boost/multiprecision/gmp.hpp>
 
-typedef boost::multiprecision::cpp_int bigint;
+typedef boost::multiprecision::gmp_int bigint;
 
 //
 // Utilities for encodeing Nucleotide
@@ -73,8 +74,8 @@ public:
     Kmer& operator += (const char c);
     Kmer& operator += (const std::string& sequence);
     Kmer& operator += (const Kmer& o);
-    bool operator < (const Kmer& o) const;
-    bool operator > (const Kmer& o) const;
+    bool operator < (const Kmer& o) const { return _data < o._data; }
+    bool operator > (const Kmer& o) const { return _data > o._data; }
     bool operator == (const Kmer& o) const;
     bool operator != (const Kmer& o) const;
 

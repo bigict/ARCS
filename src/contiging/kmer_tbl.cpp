@@ -8,7 +8,7 @@
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("contiging.kmer_tbl"));
 
-KmerTable::KmerTable(size_t K, bool do_filter) : _K(K), _do_filter(do_filter) {
+KmerTable::KmerTable(size_t K, bool do_filter) : _hash_tbl(1<<20), _K(K), _do_filter(do_filter) {
     BOOST_ASSERT(_K > 0);
 }
 

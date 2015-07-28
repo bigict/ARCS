@@ -34,11 +34,6 @@ private:
             memset(length, 0, _countof(length));
             count[nucleotide] = n;
         }
-        Node(char nucleotide, size_t n) {
-            memset(count, 0, _countof(count));
-            memset(length, 0, _countof(length));
-            count[Nucleotide::char2code(nucleotide)] = n;
-        }
         bool empty() const {
             for (size_t i = 0; i < _countof(count); ++i) {
                 if (count[i] > 0) {
