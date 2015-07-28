@@ -43,6 +43,8 @@ public:
         }
         return 'A';
     }
+
+    static bigint musk;
 };
 
 //

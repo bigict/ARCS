@@ -54,6 +54,9 @@ private:
             }
             return n;
         }
+        
+        typedef std::tr1::unordered_map< Kmer, size_t, KmerHasher > Children;
+        Children children;
 
         size_t count[4];
         size_t length[4];

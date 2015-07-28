@@ -59,6 +59,7 @@ void DeBruijnGraph::compact() {
 
     CountingList merge_nodelist;
     {
+    	LOG4CXX_DEBUG(logger, boost::format("counting indegree and outdegree begin"));
         // Counting in-degrees
         CountingList indegree, outdegree;
 
@@ -81,11 +82,13 @@ void DeBruijnGraph::compact() {
                 merge_nodelist[it->first] = 0;
             }
         }
+    	LOG4CXX_DEBUG(logger, boost::format("counting indegree and outdegree end"));
     }
 
 /*
     for (CountingList::iterator it = merge_nodelist.begin(); it != merge_nodelist.end(); ++it) {
     }
 */
+
     LOG4CXX_DEBUG(logger, boost::format("compact with %d nodes, end") % _nodelist.size());
 }

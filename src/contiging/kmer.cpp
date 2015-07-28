@@ -2,6 +2,8 @@
 
 #include <boost/foreach.hpp>
 
+bigint Nucleotide::musk = 0x03;
+
 Kmer::Kmer() : _data(0), _length(0) {
 }
 
@@ -23,11 +25,10 @@ Kmer::~Kmer() {
 
 Kmer Kmer::subKmer(size_t i, size_t j) const {
     j = (j == -1) ? _length : j;
-    bigint musk(0x03); 
     
     Kmer kmer;
     while (i < j) {
-        int code = boost::lexical_cast< int >((_data >> ((_length - i - 1) * 2)) & musk);
+        int code = boost::lexical_cast< int >((_data >> ((_length - i - 1) * 2)) & Nucleotide::musk);
         kmer._data = (kmer._data << 2) + code;
         kmer._length += 1;
         ++i;
@@ -38,8 +39,7 @@ Kmer Kmer::subKmer(size_t i, size_t j) const {
 Nucleotide::Code Kmer::nucleotide(size_t i) const {
     BOOST_ASSERT(i >=0 && i < _length);
     if (i >= 0 && i < _length) {
-        bigint musk(0x03); 
-        return (Nucleotide::Code)boost::lexical_cast< int >((_data >> ((_length - i - 1) * 2)) & musk);
+        return (Nucleotide::Code)boost::lexical_cast< int >((_data >> ((_length - i - 1) * 2)) & Nucleotide::musk);
     }
     return Nucleotide::Adenine;
 }
@@ -47,9 +47,8 @@ Nucleotide::Code Kmer::nucleotide(size_t i) const {
 const std::string Kmer::sequence() const {
     std::string seq;
 
-    bigint musk(0x03); 
     for (size_t i = 0; i < _length; ++i) {
-        int code = boost::lexical_cast< int >((_data >> ((_length - i - 1) * 2)) & musk);
+        int code = boost::lexical_cast< int >((_data >> ((_length - i - 1) * 2)) & Nucleotide::musk);
         seq += Nucleotide::code2char(code);
     }
 
@@ -72,8 +71,14 @@ void Kmer::sequence(const std::string& seq, size_t i, size_t j) {
 
 Nucleotide::Code Kmer::pop() {
     if (_length > 0) {
-        bigint musk(0x03); 
-        int code = boost::lexical_cast< int >((_data >> ((_length - 1) * 2)) & musk);
+        int code = boost::lexical_cast< int >((_data >> ((_length - 1) * 2)) & Nucleotide::musk);
+
+        bigint musk(1);
+        for (size_t i = 0; i < _length - 1; ++i) {
+            musk <<= 2;
+            musk += Nucleotide::musk;
+        }
+        _data &= musk;
         --_length;
         return (Nucleotide::Code)code;
     }
