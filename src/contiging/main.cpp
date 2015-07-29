@@ -35,11 +35,11 @@ int main(int argc, char* argv[]) {
     {
         // command line options
         Properties cmd;
-        std::string opt_string("s:d:K:E:p:h::");
+        std::string opt_string("s:d:K:E:p:c:h");
         int opt = -1;
         while ((opt = getopt(argc, argv, opt_string.c_str())) != -1) {
             std::string key(1, (char)opt);
-            if (key == "h") {
+            if (optarg == NULL) {
                 cmd.put(key, NULL);
             } else {
                 cmd.put(key, optarg);
@@ -47,7 +47,11 @@ int main(int argc, char* argv[]) {
         }
 
         // config log4cxx.
-        log4cxx::BasicConfigurator::configure();
+        if (cmd.find("c") != cmd.not_found()) {
+            log4cxx::PropertyConfigurator::configure(cmd.get< std::string >("c"));
+        } else {
+            log4cxx::BasicConfigurator::configure();
+        }
 
         
         // load ini options
@@ -65,7 +69,7 @@ int main(int argc, char* argv[]) {
             options.put(it->first,it->second.data());
         }
     }
-     
+
     // build contigs.
     Contiging c;
     return c.run(options);
