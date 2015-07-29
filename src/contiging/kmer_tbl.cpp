@@ -32,7 +32,7 @@ bool KmerTable::read(std::istream& stream) {
             _hash_tbl[kmer]++;
             for (size_t j = _K; j < read.seq.length(); ++j) {
                 kmer.pop();
-                kmer.push((Nucleotide::Code)Nucleotide::char2code(read.seq[j]));
+                kmer.push(read.seq[j]);
                 _hash_tbl[kmer]++;
             }
         }

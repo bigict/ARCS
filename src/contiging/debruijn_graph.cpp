@@ -1,8 +1,11 @@
 #include "debruijn_graph.h"
 #include "kmer_tbl.h"
 
+#include <list>
+#include <set>
 #include <tr1/unordered_set>
 
+#include <boost/assign.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 
@@ -21,31 +24,39 @@ DeBruijnGraph::~DeBruijnGraph() {
 
 void DeBruijnGraph::addKmer(const Kmer& kmer, size_t weight) {
     size_t k = kmer.length();
-    Kmer key = kmer.subKmer(0, k - 1);
-    Nucleotide::Code nucleotide = kmer.nucleotide(k - 1);
+    Kmer node = kmer.subKmer(0, k - 1);
+    Kmer edge = kmer.subKmer(1);
 
-    LOG4CXX_TRACE(logger, boost::format("addKmer: %s with key=[%s], edge=[%c]") % kmer % key % Nucleotide::code2char(nucleotide));
+    LOG4CXX_TRACE(logger, boost::format("addKmer: %s with node=[%s], edge=[%s]") % kmer % node % edge);
 
-    NodeList::iterator it = _nodelist.find(key);
-    if (it != _nodelist.end()) {
-        it->second.count[nucleotide] += weight;
-    } else {
-        _nodelist[key] = Node(nucleotide, 1);
+    // children
+    {
+        NodeList::iterator it = _nodelist.find(node);
+        if (it != _nodelist.end()) {
+            it->second.children[edge] += weight;
+        } else {
+            _nodelist[node] = Node(edge, 1);
+        }
+    }
+    // parents
+    {
+        NodeList::iterator it = _nodelist.find(edge);
+        if (it != _nodelist.end()) {
+            it->second.parents[node] += weight;
+        }
     }
 }
 
 void DeBruijnGraph::removeKmer(const Kmer& kmer) {
     size_t k = kmer.length();
-    Kmer key = kmer.subKmer(0, k - 1);
-    Nucleotide::Code nucleotide = kmer.nucleotide(k - 1);
+    Kmer node = kmer.subKmer(0, k - 1);
+    Kmer edge = kmer.subKmer(1);
 
-    LOG4CXX_TRACE(logger, boost::format("removeKmer: %s with key=[%s], edge=[%c]") % kmer % key % Nucleotide::code2char(nucleotide));
+    LOG4CXX_TRACE(logger, boost::format("removeKmer: %s with key=[%s], edge=[%s]") % kmer % node % edge);
     
-    NodeList::iterator it = _nodelist.find(key);
+    NodeList::iterator it = _nodelist.find(node);
     if (it != _nodelist.end()) {
-        if (it->second.count[nucleotide] > 0) {
-            it->second.count[nucleotide] = 0;
-        }
+        it->second.children.erase(edge);
         if (!it->second) {
             _nodelist.erase(it);
         }
@@ -53,42 +64,92 @@ void DeBruijnGraph::removeKmer(const Kmer& kmer) {
 }
 
 void DeBruijnGraph::compact() {
-    typedef std::tr1::unordered_map< Kmer, size_t, KmerHasher > CountingList;
+    //typedef std::tr1::unordered_set< Kmer, KmerHasher > CountingList;
+    typedef std::set< Kmer > CountingList;
 
     LOG4CXX_DEBUG(logger, boost::format("compact with %d nodes, begin") % _nodelist.size());
 
+    // xxxxxxxxxx
     CountingList merge_nodelist;
     {
-    	LOG4CXX_DEBUG(logger, boost::format("counting indegree and outdegree begin"));
-        // Counting in-degrees
-        CountingList indegree, outdegree;
+        LOG4CXX_DEBUG(logger, boost::format("counting indegree and outdegree begin"));
 
-        for (NodeList::const_iterator it = _nodelist.begin(); it != _nodelist.end(); ++it) {
-            for (size_t i = 0; i < _countof(it->second.count); ++i) {
-                if (it->second.count[i] > 0) {
-                    Kmer key = it->first.subKmer(1) + (Nucleotide::Code)i;
-                    if (_nodelist.find(key) != _nodelist.end()) {
-                        indegree[key]++;
-                    }
+        // Counting in-degrees & out-degrees
+        for (NodeList::const_iterator i = _nodelist.begin(); i != _nodelist.end(); ++i) {
+            if (i->second.indegree() == 1 && i->second.outdegree() == 1) {
+                merge_nodelist.insert(i->first);
+            }
+        }
+
+        LOG4CXX_DEBUG(logger, boost::format("counting indegree and outdegree end"));
+    }
+
+    LOG4CXX_DEBUG(logger, boost::format("%d nodes found") % merge_nodelist.size());
+
+    // Merge
+    while (!merge_nodelist.empty()) {
+        CountingList::iterator i = merge_nodelist.begin();
+        
+        NodeList::const_iterator j = _nodelist.find(*i);
+        BOOST_ASSERT(j != _nodelist.end());
+
+        std::list< Kmer > group = boost::assign::list_of(j->first);
+
+        // Look backword.
+        for (NodeList::const_iterator k = _nodelist.find(j->second.parents.begin()->first); k != _nodelist.end() && k->second.indegree() == 1 && k->second.outdegree() == 1 && k->first != j->first; k = _nodelist.find(k->second.parents.begin()->first)) {
+            group.push_front(k->first);
+        }
+
+        // Look forward
+        for (NodeList::const_iterator k = _nodelist.find(j->second.children.begin()->first); k != _nodelist.end() && k->second.indegree() == 1 && k->second.outdegree() == 1 && k->first != j->first; k = _nodelist.find(k->second.children.begin()->first)) {
+            group.push_back(k->first);
+        }
+
+        // Merge nodes
+        if (group.size() > 1) {
+            Kmer key;
+
+            BOOST_FOREACH(const Kmer& kmer, group) {
+                key += kmer;
+            }
+
+            Node val;
+
+            // Set parrents
+            Node& front(_nodelist[group.front()]);
+            val.parents = front.parents;
+            for (EdgeList::const_iterator it = front.parents.begin(); it != front.parents.end(); ++it) {
+                NodeList::iterator k = _nodelist.find(it->first);
+                if (k != _nodelist.end()) {
+                    k->second.children[key] = k->second.children[group.front()];
+                    k->second.children.erase(group.front());
                 }
             }
-            if (it->second.outdegree() == 1) {
-                outdegree[it->first] = 1;
+
+            // Set children
+            Node& back(_nodelist[group.back()]);
+            val.children = back.children;
+            for (EdgeList::const_iterator it = back.children.begin(); it != back.children.end(); ++it) {
+                NodeList::iterator k = _nodelist.find(it->first);
+                if (k != _nodelist.end()) {
+                    k->second.parents[key] = k->second.parents[group.back()];
+                    k->second.parents.erase(group.back());
+                }
             }
+
+            BOOST_FOREACH(const Kmer& kmer, group) {
+                _nodelist.erase(kmer);
+            }
+            
+            // Add a new condensed node
+            _nodelist[key] = val;
+        }
+        BOOST_FOREACH(const Kmer& kmer, group) {
+            merge_nodelist.erase(kmer);
         }
 
-        for (CountingList::const_iterator it = outdegree.begin(); it != outdegree.end(); ++it) {
-            if (indegree.find(it->first) != indegree.end()) {
-                merge_nodelist[it->first] = 0;
-            }
-        }
-    	LOG4CXX_DEBUG(logger, boost::format("counting indegree and outdegree end"));
+        LOG4CXX_TRACE(logger, boost::format("merge %d nodes with %d nodes left to be merged")  % group.size()% merge_nodelist.size());
     }
-
-/*
-    for (CountingList::iterator it = merge_nodelist.begin(); it != merge_nodelist.end(); ++it) {
-    }
-*/
 
     LOG4CXX_DEBUG(logger, boost::format("compact with %d nodes, end") % _nodelist.size());
 }

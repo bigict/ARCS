@@ -73,12 +73,16 @@ Nucleotide::Code Kmer::pop() {
     if (_length > 0) {
         int code = boost::lexical_cast< int >((_data >> ((_length - 1) * 2)) & Nucleotide::musk);
 
-        bigint musk(1);
-        for (size_t i = 0; i < _length - 1; ++i) {
-            musk <<= 2;
-            musk += Nucleotide::musk;
+/*
+        bigint musk(0);
+        if (_length > 1) {
+            for (size_t i = 0; i < _length - 1; ++i) {
+                musk <<= 2;
+                musk += Nucleotide::musk;
+            }
         }
-        _data &= musk;
+*/
+        _data &= musk() >> 2;
         --_length;
         return (Nucleotide::Code)code;
     }
@@ -88,6 +92,20 @@ Nucleotide::Code Kmer::pop() {
 void Kmer::push(Nucleotide::Code code) {
     _data  = (_data << 2) + (int)code;
     ++_length;
+}
+
+size_t Kmer::overlap(const Kmer& o) const {
+    bigint bits = musk();
+
+    /*
+	for (size_t i = 0; i < _length; ++i) {
+        bits >>= (i * 2)
+		if ((data & bits) & (o._data >> ) == data) {
+			return i;
+		}
+	}
+    */
+	return -1;
 }
 
 Kmer& Kmer::operator = (const std::string& seq) {
@@ -158,8 +176,23 @@ bool Kmer::operator == (const Kmer& o) const {
     return _data == o._data && _length == o._length;
 }
 
+bool Kmer::operator != (const Kmer& o) const {
+    return _data != o._data || _length != o._length;
+}
+
 std::ostream& operator << (std::ostream& os, const Kmer& kmer) {
     os << kmer.sequence();
     return os;
+}
+
+bigint Kmer::musk() const {
+    bigint musk(0);
+
+    for (size_t i = 0; i < _length; ++i) {
+        musk <<= 2;
+        musk += Nucleotide::musk;
+    }
+
+    return musk;
 }
 

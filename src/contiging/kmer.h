@@ -72,6 +72,9 @@ public:
 
     Nucleotide::Code pop();
     void push(Nucleotide::Code nucleotide);
+    void push(char nucleotide) { push((Nucleotide::Code)Nucleotide::char2code(nucleotide)); }
+
+    size_t overlap(const Kmer& o) const;
 
     Kmer& operator = (const std::string& sequence);
     Kmer& operator = (const Kmer& o);
@@ -92,6 +95,7 @@ public:
     }
 private:
     friend std::ostream& operator << (std::ostream& os, const Kmer& kmer);
+    bigint musk() const;
 
     bigint _data;
     size_t _length;

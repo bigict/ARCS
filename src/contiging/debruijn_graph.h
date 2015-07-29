@@ -23,43 +23,30 @@ public:
     // Build a condensed graph
     void compact();
 private:
+    typedef std::tr1::unordered_map< Kmer, size_t, KmerHasher > EdgeList;
+
     class Node {
     public:
         Node() {
-            memset(count, 0, _countof(count));
-            memset(length, 0, _countof(length));
         }
-        Node(Nucleotide::Code nucleotide, size_t n) {
-            memset(count, 0, _countof(count));
-            memset(length, 0, _countof(length));
-            count[nucleotide] = n;
+        Node(const Kmer& edge, size_t n) {
+            children[edge] = n;
         }
         bool empty() const {
-            for (size_t i = 0; i < _countof(count); ++i) {
-                if (count[i] > 0) {
-                    return false;
-                }
-            }
-            return true;
+            return children.empty();
         }
         operator bool() const {
             return !empty();
         }
         size_t outdegree() const {
-            size_t n = 0;
-            for (size_t i = 0; i < _countof(count); ++i) {
-                if (count[i] > 0) {
-                    ++n;
-                }
-            }
-            return n;
+            return children.size();
+        }
+        size_t indegree() const {
+            return parents.size();
         }
         
-        typedef std::tr1::unordered_map< Kmer, size_t, KmerHasher > Children;
-        Children children;
-
-        size_t count[4];
-        size_t length[4];
+        EdgeList parents;
+        EdgeList children;
     };
 
     struct NodeKey {
