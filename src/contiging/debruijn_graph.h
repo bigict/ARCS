@@ -22,6 +22,9 @@ public:
 
     // Build a condensed graph
     void compact();
+    
+    // Remove suspicious nodes
+    void removeNoise();
 private:
     typedef std::tr1::unordered_map< Kmer, size_t, KmerHasher > EdgeList;
 
@@ -44,6 +47,7 @@ private:
         size_t indegree() const {
             return parents.size();
         }
+        size_t average() const;
         
         EdgeList parents;
         EdgeList children;
@@ -62,6 +66,7 @@ private:
     typedef std::tr1::unordered_map< Kmer, Node, KmerHasher > NodeList;
     NodeList _nodelist;
     size_t _K;
+    double _average;
 };
 
 #endif // debruijn_graph_h_

@@ -13,9 +13,10 @@
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("contiging.debruijn"));
 
-DeBruijnGraph::DeBruijnGraph(const KmerTable& tbl) : _K(tbl.K()) {
+DeBruijnGraph::DeBruijnGraph(const KmerTable& tbl) : _K(tbl.K()), _average(0) {
     LOG4CXX_DEBUG(logger, boost::format("build debruijn graph from kmer hash table with K=[%d]") % _K);
 
+    tbl.statistics(&_average, NULL);
     tbl.buildDeBruijn(this);
 }
 
@@ -109,9 +110,17 @@ void DeBruijnGraph::compact() {
         if (group.size() > 1) {
             Kmer key;
 
+            LOG4CXX_DEBUG(logger, boost::format("compact key begin"));
             BOOST_FOREACH(const Kmer& kmer, group) {
-                key += kmer;
+                size_t overlap = key.overlap(kmer);
+                if (overlap == -1) {
+                    LOG4CXX_DEBUG(logger, boost::format("compact: key=[%s]-[%s]") % key % kmer);
+                }
+                BOOST_ASSERT(overlap != -1);
+                key += kmer.subKmer(key.length() - overlap);
+                LOG4CXX_DEBUG(logger, boost::format("compact: key=[%s]/[%s]") % key % kmer);
             }
+            LOG4CXX_DEBUG(logger, boost::format("compact key end"));
 
             Node val;
 
@@ -153,3 +162,37 @@ void DeBruijnGraph::compact() {
 
     LOG4CXX_DEBUG(logger, boost::format("compact with %d nodes, end") % _nodelist.size());
 }
+
+void DeBruijnGraph::removeNoise() {
+    LOG4CXX_DEBUG(logger, boost::format("remove noise with %d nodes, begin") % _nodelist.size());
+
+    std::set< Kmer > noise_nodelist;
+    for (NodeList::const_iterator i = _nodelist.begin(); i != _nodelist.end(); ++i) {
+        // Condensed node
+        if (i->first.length() != _K) {
+            continue;
+        }
+        
+        for (EdgeList::const_iterator j = i->second.children.begin(); j != i->second.children.end(); ++j) {
+            NodeList::const_iterator k = _nodelist.find(j->first);
+            if (k == _nodelist.end() || j->first.length() < 2 * _K + 1 || k->second.average() < _average / 5.0) {
+                noise_nodelist.insert(i->first); 
+                LOG4CXX_DEBUG(logger, boost::format("remove node key=[%s]") % (i->first));
+            }
+        }
+    }
+
+    LOG4CXX_DEBUG(logger, boost::format("remove noise with %d nodes, end") % _nodelist.size());
+}
+
+size_t DeBruijnGraph::Node::average() const {
+    if (!children.empty()) {
+        size_t n = 0;
+        for (EdgeList::const_iterator it = children.begin(); it != children.end(); ++it) {
+            n += it->second;
+        }
+        return n / children.size();
+    }
+    return 0;
+}
+

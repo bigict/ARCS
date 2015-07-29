@@ -97,15 +97,17 @@ void Kmer::push(Nucleotide::Code code) {
 size_t Kmer::overlap(const Kmer& o) const {
     bigint bits = musk();
 
-    /*
-	for (size_t i = 0; i < _length; ++i) {
-        bits >>= (i * 2)
-		if ((data & bits) & (o._data >> ) == data) {
-			return i;
-		}
-	}
-    */
-	return -1;
+    if (_length == 0) {
+        return 0;
+    }
+    for (size_t i = _length > o._length ? _length - o._length : 0; i < _length; ++i) {
+        bigint data(_data & (bits >> (2 * i)));
+        if ((data & (o._data >> ((o._length - _length + i) * 2))) == data) {
+            return i;
+        }
+    }
+
+    return -1;
 }
 
 Kmer& Kmer::operator = (const std::string& seq) {
@@ -140,7 +142,7 @@ Kmer Kmer::operator + (const std::string& seq) {
 Kmer Kmer::operator + (const Kmer& o) {
     Kmer kmer = *this;
 
-    kmer._data <<= o._length;
+    kmer._data <<= (o._length * 2);
     kmer._data += o._data;
     kmer._length += o._length;
 
@@ -164,9 +166,9 @@ Kmer& Kmer::operator += (const std::string& seq) {
 
 Kmer& Kmer::operator += (const Kmer& o) {
     if (o._length > 0) {
-            _data <<= o._length;
-            _data += o._data;
-            _length += o._length;
+        _data <<= (o._length * 2);
+        _data += o._data;
+        _length += o._length;
     }
     return *this;
 }

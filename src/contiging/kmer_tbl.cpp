@@ -54,3 +54,6 @@ void KmerTable::buildDeBruijn(DeBruijnGraph* graph) const {
 
     LOG4CXX_DEBUG(logger, boost::format("construct de bruijn graph end"));
 }
+
+void KmerTable::statistics(double* average, double* variance) const {
+}

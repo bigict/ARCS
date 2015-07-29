@@ -7,8 +7,8 @@
 #include <boost/multiprecision/gmp.hpp>
 
 //typedef boost::multiprecision::mpz_int bigint;
-//typedef boost::multiprecision::int128_t bigint;
-typedef uint64_t bigint;
+typedef boost::multiprecision::int128_t bigint;
+//typedef uint64_t bigint;
 
 //
 // Utilities for encodeing Nucleotide
@@ -90,8 +90,8 @@ public:
     bool operator != (const Kmer& o) const;
 
     size_t hash() const {
-        return (size_t)_data;
-        //return _data.convert_to<size_t>();
+        //return (size_t)_data;
+        return _data.convert_to< size_t >();
     }
 private:
     friend std::ostream& operator << (std::ostream& os, const Kmer& kmer);

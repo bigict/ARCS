@@ -20,6 +20,7 @@ public:
     bool read(std::istream& stream);
     void buildDeBruijn(DeBruijnGraph* graph) const;
 
+    void statistics(double* average, double* variance) const;
 private:
     typedef std::tr1::unordered_map< Kmer, size_t, KmerHasher > KmerList;
     KmerList _hash_tbl;    
