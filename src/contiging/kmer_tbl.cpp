@@ -2,6 +2,8 @@
 #include "debruijn_graph.h"
 #include "kseq.h"
 
+#include <numeric>
+
 #include <boost/format.hpp>
 
 #include <log4cxx/logger.h>
@@ -55,5 +57,25 @@ void KmerTable::buildDeBruijn(DeBruijnGraph* graph) const {
     LOG4CXX_DEBUG(logger, boost::format("construct de bruijn graph end"));
 }
 
+struct Statistics {
+    std::pair< double, double > operator()(const std::pair< double, double >& l, const std::pair< Kmer, size_t >& r) const {
+        return std::make_pair(l.first + r.second, l.second + r.second * r.second);
+    }
+};
+
+struct CoverageSquare {
+    double operator()(double l, size_t r) const {
+        return l + r * r;
+    }
+};
+
 void KmerTable::statistics(double* average, double* variance) const {
+    if (_hash_tbl.size() > 0) {
+       	std::pair< double, double > sigma = std::accumulate(_hash_tbl.begin(), _hash_tbl.end(), std::make_pair(0.0, 0.0), Statistics());
+        if (average != NULL) {
+            *average = sigma.first / _hash_tbl.size();
+        }
+        if (variance != NULL) {
+        }
+    }
 }

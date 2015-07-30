@@ -14,18 +14,6 @@ class KmerTable;
 //
 class DeBruijnGraph {
 public:
-    DeBruijnGraph(const KmerTable& tbl);
-    virtual ~DeBruijnGraph();
-
-    void addKmer(const Kmer& kmer, size_t weight = 1);
-    void removeKmer(const Kmer& kmer);
-
-    // Build a condensed graph
-    void compact();
-    
-    // Remove suspicious nodes
-    void removeNoise();
-private:
     typedef std::tr1::unordered_map< Kmer, size_t, KmerHasher > EdgeList;
 
     class Node {
@@ -36,7 +24,7 @@ private:
             children[edge] = n;
         }
         bool empty() const {
-            return children.empty();
+            return children.empty() && parents.empty();
         }
         operator bool() const {
             return !empty();
@@ -52,6 +40,22 @@ private:
         EdgeList parents;
         EdgeList children;
     };
+    typedef std::tr1::unordered_map< Kmer, Node, KmerHasher > NodeList;
+
+    DeBruijnGraph(const KmerTable& tbl);
+    virtual ~DeBruijnGraph();
+
+    void addKmer(const Kmer& kmer, size_t weight = 1);
+    void removeKmer(const Kmer& kmer);
+    bool findKmer(const Kmer& kmer, Node* val) const;
+
+	void removeEdge(const Kmer& node, const Kmer& edge);
+
+    // Build a condensed graph
+    void compact();
+    
+    // Remove suspicious nodes
+    void removeNoise();
 
     struct NodeKey {
         NodeKey(size_t K) : _K(K) {}
@@ -63,7 +67,7 @@ private:
         size_t _K;
     };
 
-    typedef std::tr1::unordered_map< Kmer, Node, KmerHasher > NodeList;
+private:
     NodeList _nodelist;
     size_t _K;
     double _average;
