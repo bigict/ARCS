@@ -18,6 +18,8 @@ DeBruijnGraph::DeBruijnGraph(const KmerTable& tbl) : _K(tbl.K()), _average(0) {
     LOG4CXX_DEBUG(logger, boost::format("build debruijn graph from kmer hash table with K=[%d]") % _K);
 
     tbl.statistics(&_average, NULL);
+    LOG4CXX_DEBUG(logger, boost::format("average coverage=[%f]") % _average);
+
     tbl.buildDeBruijn(this);
 }
 
@@ -67,10 +69,6 @@ void DeBruijnGraph::removeKmer(const Kmer& kmer) {
             _nodelist.erase(it);
         }
     }
-}
-
-bool DeBruijnGraph::findKmer(const Kmer& kmer, Node* node) const {
-    return false;
 }
 
 void DeBruijnGraph::removeEdge(const Kmer& src, const Kmer& dest) {
@@ -131,14 +129,12 @@ void DeBruijnGraph::compact() {
         if (group.size() > 1) {
             Kmer key;
 
-            LOG4CXX_DEBUG(logger, boost::format("compact key begin"));
             BOOST_FOREACH(const Kmer& kmer, group) {
                 size_t overlap = key.overlap(kmer);
                 BOOST_ASSERT(overlap != -1);
                 key += kmer.subKmer(key.length() - overlap);
-                LOG4CXX_DEBUG(logger, boost::format("compact: key=[%s]/[%s]") % key % kmer);
+                LOG4CXX_TRACE(logger, boost::format("compact: key=[%s]/[%s]") % key % kmer);
             }
-            LOG4CXX_DEBUG(logger, boost::format("compact key end"));
 
             Node val;
 

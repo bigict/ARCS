@@ -1,13 +1,14 @@
 #ifndef kmer_h_
 #define kmer_h_
 
+#include <bitset>
 #include <string>
 
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/multiprecision/gmp.hpp>
 
 //typedef boost::multiprecision::mpz_int bigint;
-typedef boost::multiprecision::int128_t bigint;
+typedef boost::multiprecision::cpp_int bigint;
 //typedef uint64_t bigint;
 
 //
@@ -90,21 +91,27 @@ public:
     bool operator != (const Kmer& o) const;
 
     size_t hash() const {
-        //return (size_t)_data;
+        //return _data;
         return _data.convert_to< size_t >();
     }
 private:
     friend std::ostream& operator << (std::ostream& os, const Kmer& kmer);
-    bigint musk() const;
+    bigint musk() const {
+        if (_length > 0) {
+            bigint musk(1);
+            return musk << (2 * _length) - 1;
+        }
+        return bigint(0);
+    }
 
     bigint _data;
     size_t _length;
 };
 
 struct KmerHasher {
-        size_t operator()(const Kmer& o) const {
-            return o.hash();
-        }
+    size_t operator()(const Kmer& o) const {
+        return o.hash();
+    }
 };
 
 #endif // kmer_h_

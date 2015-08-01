@@ -47,9 +47,8 @@ public:
 
     void addKmer(const Kmer& kmer, size_t weight = 1);
     void removeKmer(const Kmer& kmer);
-    bool findKmer(const Kmer& kmer, Node* val) const;
 
-	void removeEdge(const Kmer& node, const Kmer& edge);
+    void removeEdge(const Kmer& node, const Kmer& edge);
 
     // Build a condensed graph
     void compact();

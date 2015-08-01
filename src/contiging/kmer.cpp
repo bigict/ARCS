@@ -28,7 +28,8 @@ Kmer Kmer::subKmer(size_t i, size_t j) const {
     
     Kmer kmer;
     while (i < j) {
-        int code = boost::lexical_cast< int >((_data >> ((_length - i - 1) * 2)) & Nucleotide::musk);
+        bigint code((_data >> ((_length - i - 1) * 2)) & Nucleotide::musk);
+        //int code = boost::lexical_cast< int >((_data >> ((_length - i - 1) * 2)) & Nucleotide::musk);
         kmer._data = (kmer._data << 2) + code;
         kmer._length += 1;
         ++i;
@@ -39,7 +40,9 @@ Kmer Kmer::subKmer(size_t i, size_t j) const {
 Nucleotide::Code Kmer::nucleotide(size_t i) const {
     BOOST_ASSERT(i >=0 && i < _length);
     if (i >= 0 && i < _length) {
-        return (Nucleotide::Code)boost::lexical_cast< int >((_data >> ((_length - i - 1) * 2)) & Nucleotide::musk);
+        bigint code((_data >> ((_length - i - 1) * 2)) & Nucleotide::musk);
+        //return (Nucleotide::Code)boost::lexical_cast< int >((_data >> ((_length - i - 1) * 2)) & Nucleotide::musk);
+        return (Nucleotide::Code)code.convert_to< int >();
     }
     return Nucleotide::Adenine;
 }
@@ -48,8 +51,9 @@ const std::string Kmer::sequence() const {
     std::string seq;
 
     for (size_t i = 0; i < _length; ++i) {
-        int code = boost::lexical_cast< int >((_data >> ((_length - i - 1) * 2)) & Nucleotide::musk);
-        seq += Nucleotide::code2char(code);
+        //int code = boost::lexical_cast< int >((_data >> ((_length - i - 1) * 2)) & Nucleotide::musk);
+        bigint code((_data >> ((_length - i - 1) * 2)) & Nucleotide::musk);
+        seq += Nucleotide::code2char(code.convert_to< int >());
     }
 
     return seq;
@@ -71,20 +75,12 @@ void Kmer::sequence(const std::string& seq, size_t i, size_t j) {
 
 Nucleotide::Code Kmer::pop() {
     if (_length > 0) {
-        int code = boost::lexical_cast< int >((_data >> ((_length - 1) * 2)) & Nucleotide::musk);
+        //int code = boost::lexical_cast< int >((_data >> ((_length - 1) * 2)) & Nucleotide::musk);
+        bigint code((_data >> ((_length - 1) * 2)) & Nucleotide::musk);
 
-/*
-        bigint musk(0);
-        if (_length > 1) {
-            for (size_t i = 0; i < _length - 1; ++i) {
-                musk <<= 2;
-                musk += Nucleotide::musk;
-            }
-        }
-*/
         _data &= musk() >> 2;
         --_length;
-        return (Nucleotide::Code)code;
+        return (Nucleotide::Code)code.convert_to< int >();
     }
     return Nucleotide::Adenine;
 }
@@ -175,7 +171,7 @@ Kmer& Kmer::operator += (const Kmer& o) {
 
 
 bool Kmer::operator == (const Kmer& o) const {
-    return _data == o._data && _length == o._length;
+    return _length == o._length && _data == o._data;
 }
 
 bool Kmer::operator != (const Kmer& o) const {
@@ -185,16 +181,5 @@ bool Kmer::operator != (const Kmer& o) const {
 std::ostream& operator << (std::ostream& os, const Kmer& kmer) {
     os << kmer.sequence();
     return os;
-}
-
-bigint Kmer::musk() const {
-    bigint musk(0);
-
-    for (size_t i = 0; i < _length; ++i) {
-        musk <<= 2;
-        musk += Nucleotide::musk;
-    }
-
-    return musk;
 }
 
