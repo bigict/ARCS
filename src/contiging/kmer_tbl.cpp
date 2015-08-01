@@ -27,7 +27,6 @@ bool KmerTable::read(std::istream& stream) {
 
     DNASeqReader reader(stream);
 
-    size_t i = 0;
     DNASeq read;
     while (reader.read(read)) {
         if (read.seq.length() > _K) {
@@ -39,10 +38,6 @@ bool KmerTable::read(std::istream& stream) {
                 _hash_tbl[kmer]++;
             }
         }
-        if (i % 100000 == 0) {
-            LOG4CXX_DEBUG(logger, boost::format("#%d reads have bean loaded") % (i));
-        }
-        ++i;
     }
 
     LOG4CXX_DEBUG(logger, boost::format("construct kmer table end"));
