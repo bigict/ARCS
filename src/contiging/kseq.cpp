@@ -1,5 +1,7 @@
 #include "kseq.h"
 
+#include <numeric>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 
@@ -7,15 +9,11 @@
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("contiging.kseq"));
 
-int DNASeq::quality() const {
-    return 0;
-}
-
 std::ostream& operator << (std::ostream& os, const DNASeq& seq) {
     os << '@' << seq.name << std::endl;
     os << seq.seq << std::endl;
     os << '+' << std::endl;
-    os << seq._quality << std::endl;
+    os << seq.quality << std::endl;
     return os;
 }
 
@@ -52,7 +50,7 @@ bool DNASeqReader::read(DNASeq& sequence) {
                 }
             } else if (state == kQuality) {
                 if (buf.length() == sequence.seq.length()) {
-                    sequence._quality = buf;
+                    sequence.quality = buf;
                     return true;
                 } else {
                     LOG4CXX_WARN(logger, boost::format("fastq=>length of sequence and quality are not equal: %s") % buf);

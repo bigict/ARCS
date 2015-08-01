@@ -45,7 +45,9 @@ void DeBruijnGraph::addKmer(const Kmer& kmer, size_t weight) {
     // parents
     {
         NodeList::iterator it = _nodelist.find(edge);
-        if (it == _nodelist.end()) {
+        if (it != _nodelist.end()) {
+            it->second.parents[node] = 0;
+        } else {
             // Add a virtual node
             Node n;
             n.parents[node] = 0;
@@ -83,13 +85,25 @@ void DeBruijnGraph::removeEdge(const Kmer& src, const Kmer& dest) {
     }
 }
 
+struct KmerLengthPlus {
+    size_t operator()(size_t l, const Kmer& r) const {
+        return l + r.length();
+    }
+};
+
+struct KmerCoveragePlus {
+    size_t operator()(size_t l, const Kmer& r) const {
+        return l + r.length();
+    }
+};
+
 void DeBruijnGraph::compact() {
     //typedef std::tr1::unordered_set< Kmer, KmerHasher > CountingList;
     typedef std::set< Kmer > CountingList;
 
     LOG4CXX_DEBUG(logger, boost::format("compact with %d nodes, begin") % _nodelist.size());
 
-    // Xxxx
+    // Searching nodes with indegree==1 and out outdegree==1
     CountingList merge_nodelist;
     {
         LOG4CXX_DEBUG(logger, boost::format("counting indegree and outdegree begin"));
@@ -149,10 +163,14 @@ void DeBruijnGraph::compact() {
                 }
             }
 
+            // Average coverage
+            size_t coverage = std::accumulate(group.begin(), group.end(), 0, KmerCoveragePlus());
+
             // Set children
             Node& back(_nodelist[group.back()]);
             val.children = back.children;
-            for (EdgeList::const_iterator it = back.children.begin(); it != back.children.end(); ++it) {
+            for (EdgeList::iterator it = back.children.begin(); it != back.children.end(); ++it) {
+                it->second = coverage / val.children.size(); // Use average coverage here.
                 NodeList::iterator k = _nodelist.find(it->first);
                 if (k != _nodelist.end()) {
                     k->second.parents[key] = k->second.parents[group.back()];
@@ -177,18 +195,9 @@ void DeBruijnGraph::compact() {
     LOG4CXX_DEBUG(logger, boost::format("compact with %d nodes, end") % _nodelist.size());
 }
 
-struct KmerLengthPlus {
-    size_t operator()(size_t l, const Kmer& r) const {
-        return l + r.length();
-    }
-};
-
-struct KmerCoveragePlus {
-    size_t operator()(size_t l, const Kmer& r) const {
-        return l + r.length();
-    }
-};
-
+//
+// Make each node to be an isolated node
+//
 struct KmerRemover {
     KmerRemover(DeBruijnGraph::NodeList* nodelist) : _nodelist(nodelist) {
     } 
@@ -196,7 +205,7 @@ struct KmerRemover {
     void operator()(const Kmer& kmer) const {
         DeBruijnGraph::NodeList::iterator k = _nodelist->find(kmer);
         if (k != _nodelist->end()) {
-            // Remove children
+            // Remove child's links
             for (DeBruijnGraph::EdgeList::const_iterator i = k->second.children.begin(); i != k->second.children.end(); ++i) {
                 DeBruijnGraph::NodeList::iterator j = _nodelist->find(i->first);
                 if (j != _nodelist->end()) {
@@ -205,7 +214,7 @@ struct KmerRemover {
             }
             k->second.children.clear();
 
-            // Remove parents
+            // Remove parent's links
             for (DeBruijnGraph::EdgeList::const_iterator i = k->second.parents.begin(); i != k->second.parents.end(); ++i) {
                 DeBruijnGraph::NodeList::iterator j = _nodelist->find(i->first);
                 if (j != _nodelist->end()) {
@@ -224,6 +233,9 @@ private:
 };
 
 
+//
+// Remove buble and tips. Note that this function is compatible with condensed and uncondensed graph.
+//
 void DeBruijnGraph::removeNoise() {
     LOG4CXX_DEBUG(logger, boost::format("remove noise with %d nodes, begin") % _nodelist.size());
 
@@ -238,6 +250,7 @@ void DeBruijnGraph::removeNoise() {
         for (EdgeList::const_iterator j = i->second.children.begin(); j != i->second.children.end(); ++j) {
 
             std::list< Kmer > group;
+            // Look forward
             for (NodeList::const_iterator k = _nodelist.find(j->first); k != _nodelist.end() && k->second.indegree() == 1 && k->second.outdegree() == 1 && k->first != i->first; k = _nodelist.find(k->second.children.begin()->first)) {
                 group.push_back(k->first);
             }
@@ -276,3 +289,6 @@ size_t DeBruijnGraph::Node::average() const {
     return 0;
 }
 
+std::ostream& operator << (std::ostream& os, const DeBruijnGraph& graph) {
+    return os;
+}

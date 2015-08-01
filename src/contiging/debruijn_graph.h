@@ -67,6 +67,8 @@ public:
     };
 
 private:
+    friend std::ostream& operator << (std::ostream& os, const DeBruijnGraph& graph);
+
     NodeList _nodelist;
     size_t _K;
     double _average;

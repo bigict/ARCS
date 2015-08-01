@@ -99,7 +99,7 @@ private:
     bigint musk() const {
         if (_length > 0) {
             bigint musk(1);
-            return musk << (2 * _length) - 1;
+            return (musk << (2 * _length)) - 1;
         }
         return bigint(0);
     }

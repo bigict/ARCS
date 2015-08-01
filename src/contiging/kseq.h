@@ -10,17 +10,15 @@
 class DNASeq {
 public:
     DNASeq() {}
-    DNASeq(const std::string& name, const std::string& seq, const std::string& quality) : name(name), seq(seq), _quality(quality) {}
+    DNASeq(const std::string& name, const std::string& seq, const std::string& quality) : name(name), seq(seq), quality(quality) {}
     virtual ~DNASeq() {}
 
     std::string name;
     std::string seq;
-    int quality() const;
+    std::string quality;
 private:
     friend class DNASeqReader;
     friend std::ostream& operator << (std::ostream& os, const DNASeq& seq);
-
-    std::string _quality;
 };
 
 //

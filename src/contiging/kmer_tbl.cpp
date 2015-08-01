@@ -26,16 +26,42 @@ bool KmerTable::read(std::istream& stream) {
     LOG4CXX_DEBUG(logger, boost::format("construct kmer table begin"));
 
     DNASeqReader reader(stream);
-
     DNASeq read;
+
+    double average_threshold = 0, min_threshold = 0;
+
+    if (_do_filter) {
+        size_t pos = stream.tellg();
+        size_t count = 0, quality = 0;
+
+        while (reader.read(read)) {
+            quality += std::accumulate(read.quality.begin(), read.quality.end(), 0);
+            count += read.seq.length();
+        }
+        stream.clear();
+        stream.seekg(pos, stream.beg);
+
+        if (count > 0) {
+            average_threshold =  (quality / count) * 0.9;
+            min_threshold = (quality / count) * 0.8;
+        }
+    }
+
     while (reader.read(read)) {
+        LOG4CXX_TRACE(logger, boost::format("read: %s") % read.seq);
+
         if (read.seq.length() > _K) {
             Kmer kmer(read.seq, 0, _K);
             _hash_tbl[kmer]++;
+
+            LOG4CXX_TRACE(logger, boost::format("kmer: %s") % kmer);
+
             for (size_t j = _K; j < read.seq.length(); ++j) {
                 kmer.pop();
                 kmer.push(read.seq[j]);
                 _hash_tbl[kmer]++;
+
+                LOG4CXX_TRACE(logger, boost::format("kmer: %s") % kmer);
             }
         }
     }
@@ -72,6 +98,7 @@ struct CoverageSquare {
 void KmerTable::statistics(double* average, double* variance) const {
     if (_hash_tbl.size() > 0) {
        	std::pair< double, double > sigma = std::accumulate(_hash_tbl.begin(), _hash_tbl.end(), std::make_pair(0.0, 0.0), Statistics());
+        LOG4CXX_DEBUG(logger, boost::format("statistics: count=[%d], sigma=[%f], delta=[%f]") % _hash_tbl.size() % sigma.first % sigma.second);
         if (average != NULL) {
             *average = sigma.first / _hash_tbl.size();
         }
