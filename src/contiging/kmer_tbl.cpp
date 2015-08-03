@@ -2,15 +2,17 @@
 #include "debruijn_graph.h"
 #include "kseq.h"
 
+#include <fstream>
 #include <numeric>
 
+#include <boost/foreach.hpp>
 #include <boost/format.hpp>
 
 #include <log4cxx/logger.h>
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("contiging.kmer_tbl"));
 
-KmerTable::KmerTable(size_t K, bool do_filter) : _K(K), _do_filter(do_filter) {
+KmerTable::KmerTable(size_t K, bool do_filter, bool do_reversed) : _K(K), _do_filter(do_filter), _do_reversed(do_reversed) {
     BOOST_ASSERT(_K > 0);
 }
 
@@ -51,17 +53,11 @@ bool KmerTable::read(std::istream& stream) {
         LOG4CXX_TRACE(logger, boost::format("read: %s") % read.seq);
 
         if (read.seq.length() > _K) {
-            Kmer kmer(read.seq, 0, _K);
-            _hash_tbl[kmer]++;
-
-            LOG4CXX_TRACE(logger, boost::format("kmer: %s") % kmer);
-
-            for (size_t j = _K; j < read.seq.length(); ++j) {
-                kmer.pop();
-                kmer.push(read.seq[j]);
-                _hash_tbl[kmer]++;
-
-                LOG4CXX_TRACE(logger, boost::format("kmer: %s") % kmer);
+            addRead(read);
+            if (_do_reversed) {
+                std::reverse(read.seq.begin(), read.seq.end());
+                std::reverse(read.quality.begin(), read.quality.end());
+                addRead(read);
             }
         }
     }
@@ -69,6 +65,35 @@ bool KmerTable::read(std::istream& stream) {
     LOG4CXX_DEBUG(logger, boost::format("construct kmer table end"));
 
     return true;
+}
+
+bool KmerTable::read(const std::string& file) {
+    std::ifstream stream(file.c_str());
+    return read(stream);
+}
+
+bool KmerTable::read(const std::vector< std::string >& filelist) {
+    BOOST_FOREACH(const std::string& file, filelist) {
+        if (!read(file)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void KmerTable::addRead(const DNASeq& read) {
+    Kmer kmer(read.seq, 0, _K);
+    _hash_tbl[kmer]++;
+
+    LOG4CXX_TRACE(logger, boost::format("kmer: %s") % kmer);
+
+    for (size_t j = _K; j < read.seq.length(); ++j) {
+        kmer.pop();
+        kmer.push(read.seq[j]);
+        _hash_tbl[kmer]++;
+
+        LOG4CXX_TRACE(logger, boost::format("kmer: %s") % kmer);
+    }
 }
 
 void KmerTable::buildDeBruijn(DeBruijnGraph* graph) const {
