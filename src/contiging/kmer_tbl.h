@@ -13,7 +13,7 @@ class DeBruijnGraph;
 
 class KmerTable {
 public:
-    KmerTable(size_t K, bool do_filter=false, bool do_reversed=true);
+    KmerTable(size_t K, double avg_quality, double min_quality, bool do_reversed=true);
     virtual ~KmerTable();
 
     size_t K() const { return _K; }
@@ -30,7 +30,8 @@ private:
     typedef std::tr1::unordered_map< Kmer, size_t, KmerHasher > KmerList;
     KmerList _hash_tbl;    
     size_t _K;
-    bool _do_filter;
+    double _avg_quality;
+    double _min_quality;
     bool _do_reversed;
 };
 

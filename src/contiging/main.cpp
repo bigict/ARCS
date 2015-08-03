@@ -1,5 +1,6 @@
-#include <iostream>
+#include <numeric>
 #include <fstream>
+#include <iostream>
 #include <vector>
 
 #include <boost/assign.hpp>
@@ -12,12 +13,83 @@
 #include <log4cxx/basicconfigurator.h>
 #include <log4cxx/propertyconfigurator.h>
 
-#include "kmer_tbl.h"
 #include "debruijn_graph.h"
+#include "kmer_tbl.h"
+#include "kseq.h"
 
 typedef boost::property_tree::ptree Properties;
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("contiging.main"));
+
+class ReadQuality {
+public:
+    ReadQuality(size_t max_count = -1) : _max_count(max_count) {
+    }
+
+    size_t quality(const std::vector< std::string >& filelist, size_t* count) const {
+        size_t q = 0, n = 0;
+
+        if (count != NULL) {
+            n = *count;
+        }
+
+        BOOST_FOREACH(const std::string& file, filelist) {
+            std::ifstream stream (file.c_str());
+            q += quality(stream, &n);
+        }
+
+        if (count != NULL) {
+            *count = n;
+        }
+        return q;
+    }
+    size_t quality(std::istream& stream, size_t* count) const {
+        size_t q = 0, n = 0;
+
+        if (count != NULL) {
+            n = *count;
+        }
+
+        if (stream) {
+            DNASeqReader reader(stream);
+            DNASeq read;
+            
+            while (reader.read(read) && n < _max_count) {
+                q += std::accumulate(read.quality.begin(), read.quality.end(), 0);
+                n += read.seq.length();
+            }
+        }
+
+        if (count != NULL) {
+            *count = n;
+        }
+        return q;
+    }
+
+    double threshold(const std::vector< std::string >& filelist, double* min_threshold) const {
+        size_t n = 0;
+        size_t q = quality(filelist, &n);
+        return threshold(q, n, min_threshold);
+    }
+
+    double threshold(std::istream& stream, double* min_threshold) const {
+        size_t n = 0;
+        size_t q = quality(stream, &n);
+        return threshold(q, n, min_threshold);
+    }
+    
+    double threshold(size_t quality, size_t count, double* min_threshold) const {
+        if (count > 0) {
+            if (min_threshold != NULL) {
+                *min_threshold = (quality / count) * 0.8;
+            }
+            return (quality / count) * 0.9;
+        }
+        return 0;
+    }
+private:
+    size_t _max_count;
+};
 
 class Contiging {
 public:
@@ -26,8 +98,16 @@ public:
             return 1;
         }
 
-        KmerTable tbl(options.get< size_t >("K"), options.find("E") != options.not_found(), options.find("S") == options.not_found());
         std::vector< std::string > filelist = boost::assign::list_of(options.get< std::string >("q1"))(options.get< std::string >("q2"));
+
+        double avg_quality = 0, min_quality = 0;
+        if (options.find("E") != options.not_found()) {
+            ReadQuality statistics;
+            avg_quality = statistics.threshold(filelist, & min_quality);
+        }
+
+        KmerTable tbl(options.get< size_t >("K"), avg_quality, min_quality, options.find("S") == options.not_found());
+
         if (!tbl.read(filelist)) {
             LOG4CXX_ERROR(logger, boost::format("faild to open file: %s") % options.get< std::string >("q1"));
             return -1;
