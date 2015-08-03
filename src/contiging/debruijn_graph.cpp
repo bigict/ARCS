@@ -46,11 +46,11 @@ void DeBruijnGraph::addKmer(const Kmer& kmer, size_t weight) {
     {
         NodeList::iterator it = _nodelist.find(edge);
         if (it != _nodelist.end()) {
-            it->second.parents[node] = 0;
+            it->second.parents[node] += weight;
         } else {
             // Add a virtual node
             Node n;
-            n.parents[node] = 0;
+            n.parents[node] = weight;
             _nodelist[edge] = n;
         }
     }
@@ -92,9 +92,17 @@ struct KmerLengthPlus {
 };
 
 struct KmerCoveragePlus {
+    KmerCoveragePlus(DeBruijnGraph::NodeList* nodelist) : _nodelist(nodelist) {
+    } 
+
     size_t operator()(size_t l, const Kmer& r) const {
-        return l + r.length();
+        return l + _nodelist->find(r)->second.parents.begin()->second;
     }
+
+    typedef std::set< Kmer > NoiseList;
+
+private:
+    DeBruijnGraph::NodeList* _nodelist;
 };
 
 void DeBruijnGraph::compact() {
@@ -146,11 +154,14 @@ void DeBruijnGraph::compact() {
             BOOST_FOREACH(const Kmer& kmer, group) {
                 size_t overlap = key.overlap(kmer);
                 BOOST_ASSERT(overlap != -1);
-                key += kmer.subKmer(key.length() - overlap);
+                key += kmer.subKmer(key.length() - overlap);//key->kmer????
                 LOG4CXX_TRACE(logger, boost::format("compact: key=[%s]/[%s]") % key % kmer);
             }
 
             Node val;
+
+            // Average coverage
+            size_t coverage = std::accumulate(group.begin(), group.end(), 0, KmerCoveragePlus(&_nodelist));
 
             // Set parrents
             Node& front(_nodelist[group.front()]);
@@ -158,22 +169,18 @@ void DeBruijnGraph::compact() {
             for (EdgeList::const_iterator it = front.parents.begin(); it != front.parents.end(); ++it) {
                 NodeList::iterator k = _nodelist.find(it->first);
                 if (k != _nodelist.end()) {
-                    k->second.children[key] = k->second.children[group.front()];
+                    k->second.children[key] = coverage / group.size(); // Use average coverage here.
                     k->second.children.erase(group.front());
                 }
             }
-
-            // Average coverage
-            size_t coverage = std::accumulate(group.begin(), group.end(), 0, KmerCoveragePlus());
 
             // Set children
             Node& back(_nodelist[group.back()]);
             val.children = back.children;
             for (EdgeList::iterator it = back.children.begin(); it != back.children.end(); ++it) {
-                it->second = coverage / val.children.size(); // Use average coverage here.
                 NodeList::iterator k = _nodelist.find(it->first);
                 if (k != _nodelist.end()) {
-                    k->second.parents[key] = k->second.parents[group.back()];
+                    k->second.parents[key] = coverage / group.size();
                     k->second.parents.erase(group.back());
                 }
             }
@@ -255,18 +262,59 @@ void DeBruijnGraph::removeNoise() {
                 group.push_back(k->first);
             }
 
-            size_t length = i->first.length() + std::accumulate(group.begin(), group.end(), 0, KmerLengthPlus());
-            size_t coverage = j->second + std::accumulate(group.begin(), group.end(), 0, KmerCoveragePlus());
-            if (i->second.indegree() == 0) {
-                if (length < (group.size() + 1) * (_K - 1) + _K + 1) {
+            size_t length = i->first.length() + std::accumulate(group.begin(), group.end(), 0, KmerLengthPlus()) + (group.size()!=0 ? _nodelist.find(*--group.end())->second.children.begin()->first.length() : j->first.length());
+            //size_t coverage = j->second + std::accumulate(group.begin(), group.end(), 0, KmerCoveragePlus());
+            size_t coverage = j->second * (j->first.length() - _K + 2);
+            size_t cov_num = j->first.length() -_K + 2;
+            for (std::list< Kmer >::const_iterator k=group.begin(); k!=group.end(); ++k) {
+                NodeList::const_iterator it = _nodelist.find( *k );
+                BOOST_ASSERT(it != _nodelist.end());
+                size_t kmer_len = it->second.children.begin() -> first.length() - _K + 2;
+                coverage += it->second.children.begin() -> second * kmer_len;
+                            
+                cov_num += kmer_len;
+            }
+            size_t avg_coverage = (coverage + cov_num / 2 ) / cov_num;
+
+            if (group.size() != 0) {
+                std::cout << *group.begin() << std::endl;
+            }
+            std::cout << "length:" << length << " avg_cov:" << avg_coverage << std::endl;
+            if (group.size() == 0) {
+                //group.push_back( j->first ); 
+                if (i->second.indegree() == 0 || _nodelist.find(j->first)->second.outdegree() ) {
+                    if (length - (group.size() + 1) * (_K - 2) < 2 * _K) {
+                        _nodelist.find(i->first)->second.children.erase( j->first );
+                        _nodelist.find(j->first)->second.parents.erase( i->first );
+                        //for_each(group.begin(), group.end(), remover);
+                    } else if (avg_coverage < _average / 5.0) {
+                        _nodelist.find(i->first)->second.children.erase( j->first );
+                        _nodelist.find(j->first)->second.parents.erase( i->first );
+                        //for_each(group.begin(), group.end(), remover);
+                    }
+                } else if (length - (group.size() + 1) * (_K - 2) < 2 * _K && avg_coverage < _average / 5.0) {
+                    _nodelist.find(i->first)->second.children.erase( j->first );
+                    _nodelist.find(j->first)->second.parents.erase( i->first );
+                    //for_each(group.begin(), group.end(), remover);
+                } else if (length <= (group.size() + 1) * 3.0 || avg_coverage < _average / 10.0) {
+                    _nodelist.find(i->first)->second.children.erase( j->first );
+                    _nodelist.find(j->first)->second.parents.erase( i->first );
+                    //for_each(group.begin(), group.end(), remover);
+                }
+                
+            }
+            else {
+                if (i->second.indegree() == 0 || _nodelist.find( _nodelist.find(*--group.end())->second.children.begin()->first)->second.outdegree() == 0) {
+                    if (length - (group.size() + 1) * (_K - 2) < 2 * _K) {
+                        for_each(group.begin(), group.end(), remover);
+                    } else if (avg_coverage < _average / 5.0) {
+                        for_each(group.begin(), group.end(), remover);
+                    }
+                } else if (length - (group.size() + 1) * (_K - 2) < 2 * _K && avg_coverage < _average / 5.0) {
                     for_each(group.begin(), group.end(), remover);
-                } else if (coverage < (group.size() + 1) * _average / 5.0) {
+                } else if (length <= (group.size() + 1) * 3.0 || avg_coverage < _average / 10.0) {
                     for_each(group.begin(), group.end(), remover);
                 }
-            } else if (length < (group.size() + 1) * (_K - 1) + _K + 1 && coverage < (group.size() + 1) * _average / 5.0) {
-                for_each(group.begin(), group.end(), remover);
-            } else if (coverage <= (group.size() + 1) * 3.0 || coverage < (group.size() + 1) * _average / 10.0) {
-                for_each(group.begin(), group.end(), remover);
             }
         }
     }
@@ -290,5 +338,24 @@ size_t DeBruijnGraph::Node::average() const {
 }
 
 std::ostream& operator << (std::ostream& os, const DeBruijnGraph& graph) {
+    DeBruijnGraph::EdgeList index;
+
+    size_t num = 1;
+    for (DeBruijnGraph::NodeList::const_iterator i=graph._nodelist.begin(); i!=graph._nodelist.end(); ++i) {
+        if ( i->second.indegree() != 0 || i->second.outdegree() != 0){
+            index[ i->first ] = ++num;
+        }
+    }
+    for (DeBruijnGraph::NodeList::const_iterator i=graph._nodelist.begin(); i!=graph._nodelist.end(); ++i) {
+        for(DeBruijnGraph::EdgeList::const_iterator j=i->second.children.begin(); j!=i->second.children.end(); ++j) {
+            Kmer key = i->first;
+            size_t overlap = key.overlap( j->first );
+            key += j->first.subKmer(key.length() - overlap);
+            os << index[ i->first ] << "\t" << index[ j->first] << "\t" << key << std::endl;
+            os << j->second << std::endl;
+        }
+    }
     return os;
 }
+
+

@@ -98,7 +98,7 @@ size_t Kmer::overlap(const Kmer& o) const {
     }
     for (size_t i = _length > o._length ? _length - o._length : 0; i < _length; ++i) {
         bigint data(_data & (bits >> (2 * i)));
-        if ((data & (o._data >> ((o._length - _length + i) * 2))) == data) {
+        if (data == (o._data >> ((o._length - _length + i) * 2))) {
             return i;
         }
     }

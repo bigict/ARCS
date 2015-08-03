@@ -55,6 +55,7 @@ bool KmerTable::read(std::istream& stream) {
         if (read.seq.length() > _K) {
             addRead(read);
             if (_do_reversed) {
+                // pair-end
                 std::reverse(read.seq.begin(), read.seq.end());
                 std::reverse(read.quality.begin(), read.quality.end());
                 addRead(read);
