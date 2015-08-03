@@ -65,17 +65,38 @@ bool KmerTable::read(const std::vector< std::string >& filelist) {
 
 void KmerTable::addRead(const DNASeq& read) {
     Kmer kmer(read.seq, 0, _K);
-    _hash_tbl[kmer]++;
+    if (isValid(read, 0, _K)) {
+        _hash_tbl[kmer]++;
+    }
 
     LOG4CXX_TRACE(logger, boost::format("kmer: %s") % kmer);
 
-    for (size_t j = _K; j < read.seq.length(); ++j) {
+    for (size_t i = 1,j = _K; j < read.seq.length(); ++i,++j) {
         kmer.pop();
         kmer.push(read.seq[j]);
-        _hash_tbl[kmer]++;
+        if (isValid(read, i, j + 1)) {
+            _hash_tbl[kmer]++;
+        }
 
         LOG4CXX_TRACE(logger, boost::format("kmer: %s") % kmer);
     }
+}
+
+bool KmerTable::isValid(const DNASeq& read, size_t i, size_t j) const {
+    if (_avg_quality > 0 || _min_quality > 0) {
+        size_t avg_quality = 0, min_quality = -1;
+        for (size_t k = i; k < j; ++k) {
+            avg_quality += read.quality[k];
+            min_quality = std::min(min_quality, (size_t)read.quality[k]);
+        }
+        if (j > i) {
+            avg_quality /= (j - i);
+        }
+        if (avg_quality < _avg_quality || min_quality < _min_quality) {
+            return false;
+        }
+    }
+    return true;
 }
 
 void KmerTable::buildDeBruijn(DeBruijnGraph* graph) const {

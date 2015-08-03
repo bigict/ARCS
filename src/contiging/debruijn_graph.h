@@ -56,6 +56,8 @@ public:
     // Remove suspicious nodes
     void removeNoise();
 
+    void outputCdbgGraphAndComponent0(const std::string& cdbg_file, const std::string& component0_file) const;
+
     struct NodeKey {
         NodeKey(size_t K) : _K(K) {}
         Kmer operator()(const Kmer& kmer) const {

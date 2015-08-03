@@ -103,7 +103,7 @@ public:
         double avg_quality = 0, min_quality = 0;
         if (options.find("E") != options.not_found()) {
             ReadQuality statistics;
-            avg_quality = statistics.threshold(filelist, & min_quality);
+            avg_quality = statistics.threshold(filelist, &min_quality);
         }
 
         KmerTable tbl(options.get< size_t >("K"), avg_quality, min_quality, options.find("S") == options.not_found());
@@ -116,6 +116,8 @@ public:
         DeBruijnGraph graph(tbl);
         graph.compact();
         graph.removeNoise();
+
+        std::cout << graph << std::endl;
         
         return 0;
     }

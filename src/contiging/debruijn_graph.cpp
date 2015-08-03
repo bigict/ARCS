@@ -4,6 +4,7 @@
 #include <list>
 #include <numeric>
 #include <set>
+#include <fstream>
 #include <tr1/unordered_set>
 
 #include <boost/assign.hpp>
@@ -18,6 +19,7 @@ DeBruijnGraph::DeBruijnGraph(const KmerTable& tbl) : _K(tbl.K()), _average(0) {
     LOG4CXX_DEBUG(logger, boost::format("build debruijn graph from kmer hash table with K=[%d]") % _K);
 
     tbl.statistics(&_average, NULL);
+
     LOG4CXX_DEBUG(logger, boost::format("average coverage=[%f]") % _average);
 
     tbl.buildDeBruijn(this);
@@ -230,6 +232,7 @@ struct KmerRemover {
             }
             k->second.parents.clear();
         }
+        std::cout << "remove: [" << kmer <<  "]" << std::endl;
     }
 
     typedef std::set< Kmer > NoiseList;
@@ -280,9 +283,10 @@ void DeBruijnGraph::removeNoise() {
                 std::cout << *group.begin() << std::endl;
             }
             std::cout << "length:" << length << " avg_cov:" << avg_coverage << std::endl;
+            //std::cout << i->first.length() << " " << " " << *group.begin() << " " << std::accumulate(group.begin(), group.end(), 0, KmerLengthPlus()) << " " << (group.size()!=0 ? _nodelist.find(*--group.end())->second.children.begin()->first.length() : j->first.length()) << std::endl;
             if (group.size() == 0) {
                 //group.push_back( j->first ); 
-                if (i->second.indegree() == 0 || _nodelist.find(j->first)->second.outdegree() ) {
+                if (i->second.indegree() == 0 || _nodelist.find(j->first)->second.outdegree() == 0 ) {
                     if (length - (group.size() + 1) * (_K - 2) < 2 * _K) {
                         _nodelist.find(i->first)->second.children.erase( j->first );
                         _nodelist.find(j->first)->second.parents.erase( i->first );
@@ -351,11 +355,41 @@ std::ostream& operator << (std::ostream& os, const DeBruijnGraph& graph) {
             Kmer key = i->first;
             size_t overlap = key.overlap( j->first );
             key += j->first.subKmer(key.length() - overlap);
+            //os << overlap << " " << j->first.subKmer(j->first.length() - overlap) << std::endl;
             os << index[ i->first ] << "\t" << index[ j->first] << "\t" << key << std::endl;
             os << j->second << std::endl;
         }
     }
     return os;
+}
+
+void DeBruijnGraph::outputCdbgGraphAndComponent0(const std::string& cdbg_file, const std::string& component0_file) const {
+    
+    std::ofstream cdbg(cdbg_file.c_str());
+    std::ofstream comp(component0_file.c_str());
+    if (!cdbg || !comp) {
+        LOG4CXX_DEBUG(logger, boost::format("open write file error"));
+        exit(1);
+    }
+    size_t contig_num = 0;
+    size_t unique_num = 0;
+    for (NodeList::const_iterator i=_nodelist.begin(); i!=_nodelist.end(); ++i) {
+        for(EdgeList::const_iterator j=i->second.children.begin(); j!=i->second.children.end(); ++j) {
+            size_t copy_num = size_t((j->second + _average/2) / _average);
+            Kmer key = i->first;
+            size_t overlap = key.overlap( j->first );
+            key += j->first.subKmer(key.length() - overlap);
+            //os << overlap << " " << j->first.subKmer(j->first.length() - overlap) << std::endl;
+            cdbg << ">seq_" << contig_num << "\t" << copy_num << std::endl;
+            cdbg << key << std::endl;
+            if (copy_num <= 1) {
+                comp << ">component " << "\t" << unique_num << std::endl;
+                comp << contig_num << std::endl << std::endl;
+                ++ unique_num;
+            }
+            ++ contig_num;
+        }
+    }
 }
 
 
