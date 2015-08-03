@@ -106,7 +106,7 @@ public:
             avg_quality = statistics.threshold(filelist, &min_quality);
         }
 
-        KmerTable tbl(options.get< size_t >("K"), avg_quality, min_quality, options.find("S") == options.not_found());
+        KmerTable tbl(options.get< size_t >("K"), avg_quality, min_quality, options.get< size_t >("READ_LENGTH_CUTOFF"), options.find("S") == options.not_found());
 
         if (!tbl.read(filelist)) {
             LOG4CXX_ERROR(logger, boost::format("faild to open file: %s") % options.get< std::string >("q1"));
@@ -139,10 +139,14 @@ int Contiging::checkOptions(const Properties& options) {
         }
     }
     
-    try {
-        size_t K = options.get< size_t >("K");
-    } catch (std::exception& e) {
-        std::cerr << boost::format("The argument -K should be a integer. type -h for more help") << std::endl;
+    std::vector< std::string > intopt = boost::assign::list_of("K")("READ_LENGTH_CUTOFF");
+    BOOST_FOREACH(const std::string& c, intopt) {
+        try {
+            size_t K = options.get< size_t >(c);
+        } catch (std::exception& e) {
+            std::cerr << boost::format("The argument -%s should be a integer. type -h for more help") % c << std::endl;
+            return 1;
+        }
     }
     
     return 0;

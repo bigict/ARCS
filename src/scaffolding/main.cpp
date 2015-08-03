@@ -39,8 +39,7 @@ int ITER = 0;
 
 static const char *optString = "d:K:c:e:L:D:1:2:P:p:i:r:R:";
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
 
 	cout<<"======================================================================================\n";
 	cout<<"Step 3. Scaffolding\n";

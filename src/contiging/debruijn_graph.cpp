@@ -8,6 +8,7 @@
 #include <tr1/unordered_set>
 
 #include <boost/assign.hpp>
+#include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 
@@ -88,23 +89,41 @@ void DeBruijnGraph::removeEdge(const Kmer& src, const Kmer& dest) {
 }
 
 struct KmerLengthPlus {
+    KmerLengthPlus(size_t K) : _K(K) {
+    }
     size_t operator()(size_t l, const Kmer& r) const {
         return l + r.length();
     }
+
+    static size_t length(size_t K, const Kmer& kmer) {
+        return kmer.length() - (K-1) + 1;
+    }
+private:
+    size_t _K;
 };
 
 struct KmerCoveragePlus {
-    KmerCoveragePlus(DeBruijnGraph::NodeList* nodelist) : _nodelist(nodelist) {
+    KmerCoveragePlus(DeBruijnGraph::NodeList* nodelist, size_t K) : _nodelist(nodelist), _K(K) {
     } 
 
     size_t operator()(size_t l, const Kmer& r) const {
-        return l + _nodelist->find(r)->second.parents.begin()->second;
+        DeBruijnGraph::NodeList::const_iterator i = _nodelist->find(r);
+        if (i != _nodelist->end()) {
+            for (DeBruijnGraph::EdgeList::const_iterator j = i->second.children.begin(); j != i->second.children.end(); ++j) {
+                l += coverage(_K, j->first, j->second);
+            }
+        }
+        //return l + _nodelist->find(r)->second.parents.begin()->second;
     }
 
     typedef std::set< Kmer > NoiseList;
 
+    static size_t coverage(size_t K, const Kmer& kmer, size_t n) {
+        return n * KmerLengthPlus::length(K, kmer);
+    }
 private:
     DeBruijnGraph::NodeList* _nodelist;
+    size_t _K;
 };
 
 void DeBruijnGraph::compact() {
@@ -163,7 +182,8 @@ void DeBruijnGraph::compact() {
             Node val;
 
             // Average coverage
-            size_t coverage = std::accumulate(group.begin(), group.end(), 0, KmerCoveragePlus(&_nodelist));
+            size_t length = std::accumulate(group.begin(), group.end(), 0, KmerLengthPlus(_K));
+            size_t coverage = std::accumulate(group.begin(), group.end(), 0, KmerCoveragePlus(&_nodelist, _K));
 
             // Set parrents
             Node& front(_nodelist[group.front()]);
@@ -171,7 +191,8 @@ void DeBruijnGraph::compact() {
             for (EdgeList::const_iterator it = front.parents.begin(); it != front.parents.end(); ++it) {
                 NodeList::iterator k = _nodelist.find(it->first);
                 if (k != _nodelist.end()) {
-                    k->second.children[key] = coverage / group.size(); // Use average coverage here.
+                    //k->second.children[key] = coverage / group.size(); // Use average coverage here.
+                    k->second.children[key] = k->second.children[group.front()];
                     k->second.children.erase(group.front());
                 }
             }
@@ -180,9 +201,13 @@ void DeBruijnGraph::compact() {
             Node& back(_nodelist[group.back()]);
             val.children = back.children;
             for (EdgeList::iterator it = back.children.begin(); it != back.children.end(); ++it) {
+
+                it->second = (coverage + length / 2) / length; // Use average coverage here.
+
                 NodeList::iterator k = _nodelist.find(it->first);
                 if (k != _nodelist.end()) {
-                    k->second.parents[key] = coverage / group.size();
+                    //k->second.parents[key] = coverage / group.size();
+                    k->second.parents[key] = k->second.parents[group.back()];
                     k->second.parents.erase(group.back());
                 }
             }
@@ -207,11 +232,24 @@ void DeBruijnGraph::compact() {
 //
 // Make each node to be an isolated node
 //
+#define KMER_REMOVER_TRANNSACTION_BEGIN(remover)     remover.transaction_begin();
+#define KMER_REMOVER_TRANNSACTION_END(remover)       remover.transaction_end();
 struct KmerRemover {
     KmerRemover(DeBruijnGraph::NodeList* nodelist) : _nodelist(nodelist) {
     } 
 
-    void operator()(const Kmer& kmer) const {
+    void operator()(const Kmer& kmer) {
+        _translist.insert(kmer);
+    }
+
+    void transaction_begin() {
+        _translist.clear();
+    }
+    void transaction_end() {
+        for_each(_translist.begin(), _translist.end(), boost::bind(&KmerRemover::clear, this, _1));
+    }
+
+    void clear(const Kmer& kmer) {
         DeBruijnGraph::NodeList::iterator k = _nodelist->find(kmer);
         if (k != _nodelist->end()) {
             // Remove child's links
@@ -231,14 +269,17 @@ struct KmerRemover {
                 }
             }
             k->second.parents.clear();
+            
+            // Add it to noise node list
+            noiselist.insert(kmer);
         }
-        std::cout << "remove: [" << kmer <<  "]" << std::endl;
     }
 
     typedef std::set< Kmer > NoiseList;
     NoiseList noiselist;
 
 private:
+    NoiseList _translist;
     DeBruijnGraph::NodeList* _nodelist;
 };
 
@@ -257,6 +298,8 @@ void DeBruijnGraph::removeNoise() {
             continue;
         }
 
+        KMER_REMOVER_TRANNSACTION_BEGIN(remover);
+
         for (EdgeList::const_iterator j = i->second.children.begin(); j != i->second.children.end(); ++j) {
 
             std::list< Kmer > group;
@@ -265,62 +308,35 @@ void DeBruijnGraph::removeNoise() {
                 group.push_back(k->first);
             }
 
-            size_t length = i->first.length() + std::accumulate(group.begin(), group.end(), 0, KmerLengthPlus()) + (group.size()!=0 ? _nodelist.find(*--group.end())->second.children.begin()->first.length() : j->first.length());
-            //size_t coverage = j->second + std::accumulate(group.begin(), group.end(), 0, KmerCoveragePlus());
-            size_t coverage = j->second * (j->first.length() - _K + 2);
-            size_t cov_num = j->first.length() -_K + 2;
-            for (std::list< Kmer >::const_iterator k=group.begin(); k!=group.end(); ++k) {
-                NodeList::const_iterator it = _nodelist.find( *k );
-                BOOST_ASSERT(it != _nodelist.end());
-                size_t kmer_len = it->second.children.begin() -> first.length() - _K + 2;
-                coverage += it->second.children.begin() -> second * kmer_len;
-                            
-                cov_num += kmer_len;
-            }
-            size_t avg_coverage = (coverage + cov_num / 2 ) / cov_num;
+            // front && back
+            NodeList::const_iterator front(i), back(group.empty() ? _nodelist.find(j->first) : _nodelist.find(_nodelist.find(group.back())->second.children.begin()->first));
 
-            if (group.size() != 0) {
-                std::cout << *group.begin() << std::endl;
-            }
-            std::cout << "length:" << length << " avg_cov:" << avg_coverage << std::endl;
-            //std::cout << i->first.length() << " " << " " << *group.begin() << " " << std::accumulate(group.begin(), group.end(), 0, KmerLengthPlus()) << " " << (group.size()!=0 ? _nodelist.find(*--group.end())->second.children.begin()->first.length() : j->first.length()) << std::endl;
-            if (group.size() == 0) {
-                //group.push_back( j->first ); 
-                if (i->second.indegree() == 0 || _nodelist.find(j->first)->second.outdegree() == 0 ) {
-                    if (length - (group.size() + 1) * (_K - 2) < 2 * _K) {
-                        _nodelist.find(i->first)->second.children.erase( j->first );
-                        _nodelist.find(j->first)->second.parents.erase( i->first );
-                        //for_each(group.begin(), group.end(), remover);
-                    } else if (avg_coverage < _average / 5.0) {
-                        _nodelist.find(i->first)->second.children.erase( j->first );
-                        _nodelist.find(j->first)->second.parents.erase( i->first );
-                        //for_each(group.begin(), group.end(), remover);
+            // length && coverage
+            size_t length = KmerLengthPlus::length(_K, front->first) + std::accumulate(group.begin(), group.end(), 0, KmerLengthPlus(_K)) + KmerLengthPlus::length(_K, back->first);
+            size_t coverage = (KmerCoveragePlus::coverage(_K, j->first, j->second) + std::accumulate(group.begin(), group.end(), 0, KmerCoveragePlus(&_nodelist, _K)) + length / 2) / length; 
+            LOG4CXX_DEBUG(logger, boost::format("length=[%d],avg_coverage=[%d]") % length % coverage);
+
+            // rules
+            if (front->second.indegree() == 0 || back->second.outdegree() == 0 ) { // tips
+                if (_K - 1 + length - 1 < 2 * _K || coverage < _average / 5.0) {
+                    if (front->second.indegree() == 0) {
+                        remover(front->first);
+                    } else {
+                        remover(back->first);
                     }
-                } else if (length - (group.size() + 1) * (_K - 2) < 2 * _K && avg_coverage < _average / 5.0) {
-                    _nodelist.find(i->first)->second.children.erase( j->first );
-                    _nodelist.find(j->first)->second.parents.erase( i->first );
-                    //for_each(group.begin(), group.end(), remover);
-                } else if (length <= (group.size() + 1) * 3.0 || avg_coverage < _average / 10.0) {
-                    _nodelist.find(i->first)->second.children.erase( j->first );
-                    _nodelist.find(j->first)->second.parents.erase( i->first );
-                    //for_each(group.begin(), group.end(), remover);
-                }
-                
-            }
-            else {
-                if (i->second.indegree() == 0 || _nodelist.find( _nodelist.find(*--group.end())->second.children.begin()->first)->second.outdegree() == 0) {
-                    if (length - (group.size() + 1) * (_K - 2) < 2 * _K) {
-                        for_each(group.begin(), group.end(), remover);
-                    } else if (avg_coverage < _average / 5.0) {
-                        for_each(group.begin(), group.end(), remover);
-                    }
-                } else if (length - (group.size() + 1) * (_K - 2) < 2 * _K && avg_coverage < _average / 5.0) {
-                    for_each(group.begin(), group.end(), remover);
-                } else if (length <= (group.size() + 1) * 3.0 || avg_coverage < _average / 10.0) {
                     for_each(group.begin(), group.end(), remover);
                 }
+            } else if ((_K - 1 + length - 1 < 2 * _K && coverage < _average / 5.0) || (coverage < _average / 10.0)) { // buble or link ?????????
+                if (front->second.indegree() == 0) {
+                    remover(front->first);
+                } else {
+                    remover(back->first);
+                }
+                for_each(group.begin(), group.end(), remover);
             }
         }
+
+        KMER_REMOVER_TRANNSACTION_END(remover);
     }
     
     BOOST_FOREACH(const Kmer& kmer, remover.noiselist) {
