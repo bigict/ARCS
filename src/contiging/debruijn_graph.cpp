@@ -1,6 +1,7 @@
 #include "debruijn_graph.h"
 #include "kmer_tbl.h"
 
+#include <algorithm>
 #include <list>
 #include <numeric>
 #include <set>
@@ -92,7 +93,7 @@ struct KmerLengthPlus {
     KmerLengthPlus(size_t K) : _K(K) {
     }
     size_t operator()(size_t l, const Kmer& r) const {
-        return l + r.length();
+        return l + length(_K, r);
     }
 
     static size_t length(size_t K, const Kmer& kmer) {
@@ -113,7 +114,7 @@ struct KmerCoveragePlus {
                 l += coverage(_K, j->first, j->second);
             }
         }
-        //return l + _nodelist->find(r)->second.parents.begin()->second;
+        return l;
     }
 
     typedef std::set< Kmer > NoiseList;
@@ -139,6 +140,7 @@ void DeBruijnGraph::compact() {
 
         // Counting in-degrees & out-degrees
         for (NodeList::const_iterator i = _nodelist.begin(); i != _nodelist.end(); ++i) {
+            LOG4CXX_TRACE(logger, boost::format("kmer=[%s],indegree=[%d],outdegree=[%d]") % i->first % i->second.indegree() % i->second.outdegree());
             if (i->second.indegree() == 1 && i->second.outdegree() == 1) {
                 merge_nodelist.insert(i->first);
             }
@@ -233,20 +235,23 @@ void DeBruijnGraph::compact() {
 // Make each node to be an isolated node
 //
 #define KMER_REMOVER_TRANNSACTION_BEGIN(remover)     remover.transaction_begin();
+#define KMER_REMOVER_TRANNSACTION_ADD(remover,kmer)  remover.transaction_add(kmer);
 #define KMER_REMOVER_TRANNSACTION_END(remover)       remover.transaction_end();
 struct KmerRemover {
     KmerRemover(DeBruijnGraph::NodeList* nodelist) : _nodelist(nodelist) {
     } 
 
-    void operator()(const Kmer& kmer) {
-        _translist.insert(kmer);
-    }
-
     void transaction_begin() {
+        LOG4CXX_TRACE(logger, boost::format("KmerRemover: transaction_begin"));
         _translist.clear();
     }
+    void transaction_add(const Kmer& kmer) {
+        LOG4CXX_TRACE(logger, boost::format("KmerRemover: transaction_add, kmer=[%s]") % kmer);
+        _translist.insert(kmer);
+    }
     void transaction_end() {
-        for_each(_translist.begin(), _translist.end(), boost::bind(&KmerRemover::clear, this, _1));
+        std::for_each(_translist.begin(), _translist.end(), boost::bind(&KmerRemover::clear, this, _1));
+        LOG4CXX_TRACE(logger, boost::format("KmerRemover: transaction_end, nodes=[%d]") % _translist.size());
     }
 
     void clear(const Kmer& kmer) {
@@ -313,26 +318,21 @@ void DeBruijnGraph::removeNoise() {
 
             // length && coverage
             size_t length = KmerLengthPlus::length(_K, front->first) + std::accumulate(group.begin(), group.end(), 0, KmerLengthPlus(_K)) + KmerLengthPlus::length(_K, back->first);
-            size_t coverage = (KmerCoveragePlus::coverage(_K, j->first, j->second) + std::accumulate(group.begin(), group.end(), 0, KmerCoveragePlus(&_nodelist, _K)) + length / 2) / length; 
-            LOG4CXX_DEBUG(logger, boost::format("length=[%d],avg_coverage=[%d]") % length % coverage);
+            size_t coverage = (KmerCoveragePlus::coverage(_K, j->first, j->second) + std::accumulate(group.begin(), group.end(), 0, KmerCoveragePlus(&_nodelist, _K)) + (length-1) / 2) / (length-1); 
+            LOG4CXX_DEBUG(logger, boost::format("kmer=[%s],length=[%d],avg_coverage=[%d]") % front->first % length % coverage);
 
             // rules
-            if (front->second.indegree() == 0 || back->second.outdegree() == 0 ) { // tips
+            if ((front->second.indegree() == 0 && front->second.outdegree() == 1) || (back->second.indegree() == 1 && back->second.outdegree() == 0)) { // tips
                 if (_K - 1 + length - 1 < 2 * _K || coverage < _average / 5.0) {
                     if (front->second.indegree() == 0) {
-                        remover(front->first);
+                        KMER_REMOVER_TRANNSACTION_ADD(remover, front->first);
                     } else {
-                        remover(back->first);
+                        KMER_REMOVER_TRANNSACTION_ADD(remover, back->first);
                     }
-                    for_each(group.begin(), group.end(), remover);
+                    std::for_each(group.begin(), group.end(), boost::bind(&KmerRemover::transaction_add, &remover, _1));
                 }
             } else if ((_K - 1 + length - 1 < 2 * _K && coverage < _average / 5.0) || (coverage < _average / 10.0)) { // buble or link ?????????
-                if (front->second.indegree() == 0) {
-                    remover(front->first);
-                } else {
-                    remover(back->first);
-                }
-                for_each(group.begin(), group.end(), remover);
+                std::for_each(group.begin(), group.end(), boost::bind(&KmerRemover::transaction_add, &remover, _1));
             }
         }
 
