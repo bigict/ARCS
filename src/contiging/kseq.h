@@ -16,6 +16,8 @@ public:
     std::string name;
     std::string seq;
     std::string quality;
+
+    void make_complement();
 private:
     friend class DNASeqReader;
     friend std::ostream& operator << (std::ostream& os, const DNASeq& seq);

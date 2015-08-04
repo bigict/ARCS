@@ -3,11 +3,28 @@
 #include <numeric>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/assign.hpp>
 #include <boost/format.hpp>
 
 #include <log4cxx/logger.h>
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("contiging.kseq"));
+
+void DNASeq::make_complement() {
+	std::reverse(seq.begin(), seq.end());
+	std::reverse(quality.begin(), quality.end());
+
+	static std::map< char, char > mapping = boost::assign::map_list_of
+		('A', 'T')
+		('C', 'G')
+		('G', 'C')
+		('T', 'A')
+		('N', 'N');
+
+	for (size_t i = 0; i < seq.size(); ++i) {
+		seq[i] = mapping[seq[i]];
+	}
+}
 
 std::ostream& operator << (std::ostream& os, const DNASeq& seq) {
     os << '@' << seq.name << std::endl;
