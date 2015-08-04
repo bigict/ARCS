@@ -29,7 +29,7 @@ bool KmerTable::read(std::istream& stream) {
 
     LOG4CXX_DEBUG(logger, boost::format("construct kmer table begin"));
 
-    DNASeqReader reader(stream, _read_cutoff);
+    DNASeqReader reader(stream, _percent, _read_cutoff);
     DNASeq read;
 
     while (reader.read(read)) {

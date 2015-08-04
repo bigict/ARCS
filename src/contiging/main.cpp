@@ -104,7 +104,7 @@ public:
         if (options.find("E") != options.not_found()) {
             ReadQuality statistics;
             avg_quality = statistics.threshold(filelist, &min_quality);
-            percent = 0.9;
+            percent = 0.95;
         }
 
         KmerTable tbl(options.get< size_t >("K"), avg_quality, min_quality, percent, options.get< size_t >("READ_LENGTH_CUTOFF"), options.find("S") == options.not_found());

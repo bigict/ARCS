@@ -148,51 +148,6 @@ void Linearization::print_edge()
 	cout << "print edge end" << endl;
 }
 
-/*
- void Linearization::initialize_kmer_hash()
-{
-	long index = 0;
-	Kmer kmer;
-	for(int i = 0; i < component.size(); i++)
-	{
-		index = 0;
-		for(int j = 0; j < component[i].size() - 1; j++)
-		{
-			if( int(edge[component[i][j]].seq.size()) < EDGE_CUTOFF ){
-				index += int(edge[component[i][j]].seq.size()) - K + 1;
-				index += gap[i][j];
-				continue;
-			}
-			for (int k = 0; k < int(edge[component[i][j]].seq.size()) - K + 1; k ++)
-			{
-				kmer = edge[component[i][j]].seq.substr(k, K);
-				pos.push_a_kmer(kmer, i, index);
-				index ++;
-			}
-			index += gap[i][j];
-		}
-		if(edge[component[i][component[i].size()-1]].seq.size() >= EDGE_CUTOFF){
-			for (int k = 0; k < int(edge[component[i][component[i].size()-1]].seq.size()) - K + 1; k ++)
-			{
-				kmer = edge[component[i][component[i].size()-1]].seq.substr(k, K);
-				pos.push_a_kmer(kmer, i, index);
-				index ++;
-			}
-		}else
-		{
-			index += int(int(edge[component[i][component[i].size()-1]].seq.size())) - K + 1;
-		}
-		if (index == 0)
-			len.push_back(edge[component[i][component[i].size()-1]].seq.size());
-		else
-			len.push_back(index + K);
-	}
-	pos.initialize_kmer_array();
-	pos.free_buff();
-
-}
-*/
-
 void Linearization::initialize_kmer_hash()
 {
 	long index = 0;

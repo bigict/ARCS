@@ -1,10 +1,6 @@
 #include "linearization.h"
 
 #include <iostream>
-#include <unistd.h>
-#include <stdlib.h>
-#include <sstream>
-#include <fstream>
 
 #include <boost/assign.hpp>
 #include <boost/foreach.hpp>
@@ -75,7 +71,7 @@ int Scaffolding::checkOptions(const Properties& options) {
         return printHelps();
     }
 
-    std::vector< std::string > necessary = boost::assign::list_of("c")("1")("2")("K");
+    std::vector< std::string > necessary = boost::assign::list_of("c")("1")("2");
     BOOST_FOREACH(const std::string& c, necessary) {
         if (options.find(c) == options.not_found()) {
             std::cerr << boost::format("The argument -%s is necessary! type -h for more help") % c << std::endl;
