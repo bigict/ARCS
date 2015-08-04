@@ -13,7 +13,7 @@ class DeBruijnGraph;
 
 class KmerTable {
 public:
-    KmerTable(size_t K, double avg_quality=0, double min_quality=0, size_t read_cutoff=-1, bool do_reversed=true);
+    KmerTable(size_t K, double avg_quality=0, double min_quality=0, double percent=1.0, size_t read_cutoff=-1, bool do_reversed=true);
     virtual ~KmerTable();
 
     size_t K() const { return _K; }
@@ -33,6 +33,7 @@ private:
     size_t _K;
     double _avg_quality;
     double _min_quality;
+    double _percent;
     size_t _read_cutoff;
     bool _do_reversed;
 };

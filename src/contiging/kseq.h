@@ -45,13 +45,15 @@ private:
 // 
 class DNASeqReader {
 public:
-    DNASeqReader(std::istream& stream, size_t read_cutoff = -1) : _stream(stream), _read_cutoff(read_cutoff) {}
+    DNASeqReader(std::istream& stream, double percent=1.0, size_t read_cutoff=-1) : _stream(stream), _percent(percent), _read_cutoff(read_cutoff) {
+    }
     
     bool read(DNASeq& sequence);
 private:
     void cutoff(DNASeq& sequence) const;
 
     std::istream& _stream;
+    double _percent;
     size_t _read_cutoff;
 };
 

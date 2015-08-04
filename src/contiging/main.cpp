@@ -100,13 +100,14 @@ public:
 
         std::vector< std::string > filelist = boost::assign::list_of(options.get< std::string >("q1"))(options.get< std::string >("q2"));
 
-        double avg_quality = 0, min_quality = 0;
+        double avg_quality = 0, min_quality = 0, percent = 1.0;
         if (options.find("E") != options.not_found()) {
             ReadQuality statistics;
             avg_quality = statistics.threshold(filelist, &min_quality);
+            percent = 0.9;
         }
 
-        KmerTable tbl(options.get< size_t >("K"), avg_quality, min_quality, options.get< size_t >("READ_LENGTH_CUTOFF"), options.find("S") == options.not_found());
+        KmerTable tbl(options.get< size_t >("K"), avg_quality, min_quality, percent, options.get< size_t >("READ_LENGTH_CUTOFF"), options.find("S") == options.not_found());
 
         if (!tbl.read(filelist)) {
             LOG4CXX_ERROR(logger, boost::format("faild to open file: %s") % options.get< std::string >("q1"));

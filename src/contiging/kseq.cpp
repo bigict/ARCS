@@ -65,8 +65,13 @@ bool DNASeqReader::read(DNASeq& sequence) {
 }
 
 void DNASeqReader::cutoff(DNASeq& sequence) const {
-    if (sequence.seq.length() > _read_cutoff) {
-        sequence.seq = sequence.seq.substr(0, _read_cutoff);
-        sequence.quality = sequence.quality.substr(0, _read_cutoff);
+    size_t length = sequence.seq.length();
+    if (_percent < 1.0) {
+        length = (size_t)(length * _percent);
+    }
+    length = std::min(length, _read_cutoff);
+    if (sequence.seq.length() > length) {
+        sequence.seq = sequence.seq.substr(0, length);
+        sequence.quality = sequence.quality.substr(0, length);
     }
 }

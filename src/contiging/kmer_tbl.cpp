@@ -12,9 +12,10 @@
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("contiging.kmer_tbl"));
 
-KmerTable::KmerTable(size_t K, double avg_quality, double min_quality, size_t read_cutoff, bool do_reversed) : _K(K), _avg_quality(avg_quality), _min_quality(min_quality), _read_cutoff(read_cutoff), _do_reversed(do_reversed) {
+KmerTable::KmerTable(size_t K, double avg_quality, double min_quality, double percent, size_t read_cutoff, bool do_reversed) : _K(K), _avg_quality(avg_quality), _min_quality(min_quality), _percent(percent), _read_cutoff(read_cutoff), _do_reversed(do_reversed) {
     BOOST_ASSERT(_K > 0);
     BOOST_ASSERT(_K <= _read_cutoff);
+    BOOST_ASSERT(0 < _percent && _percent <= 1.0);
 }
 
 KmerTable::~KmerTable() {
