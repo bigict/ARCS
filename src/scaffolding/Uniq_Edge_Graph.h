@@ -1,3 +1,6 @@
+#ifndef uniq_edge_graph_h_
+#define uniq_edge_graph_h_
+
 #include <string>
 #include <vector>
 #include <list>
@@ -54,3 +57,5 @@ public:
 private:
 	int log_pro_threshold;
 };
+
+#endif // uniq_edge_graph_h_

@@ -1,11 +1,14 @@
+#include "linearization.h"
+#include "Kmer_Hash.h"
+#include "Pos_Recorder.h"
+
 #include <iostream>
 #include <fstream>
 
-#include <stdlib.h>
-#include "Linearization.h"
+#include <cstdlib>
 #include <cmath>
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 #include <pthread.h>
 #include <sstream>
 
@@ -46,7 +49,7 @@ string reverse_complement(string fw)
 	return rc;
 }
 
-void Linearization::initialize_edge(string contig_file)
+void Linearization::initialize_edge(const std::string& contig_file)
 {
 	cout << "Reading contigs " << endl;
 	ifstream in(contig_file.c_str());

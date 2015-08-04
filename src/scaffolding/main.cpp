@@ -1,5 +1,4 @@
-#include "Linearization.h"
-#include "Lib.h"
+#include "linearization.h"
 
 #include <iostream>
 #include <unistd.h>
@@ -7,9 +6,17 @@
 #include <sstream>
 #include <fstream>
 
+#include <boost/assign.hpp>
+#include <boost/foreach.hpp>
+#include <boost/format.hpp>
+#include <boost/property_tree/ini_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
+
 #include <log4cxx/logger.h>
 #include <log4cxx/basicconfigurator.h>
 #include <log4cxx/propertyconfigurator.h>
+
+typedef boost::property_tree::ptree Properties;
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("scaffolding.main"));
 
@@ -43,91 +50,73 @@ int ITER = 0;
 
 static const char *optString = "d:K:c:e:L:D:1:2:P:p:i:r:R:";
 
+class Scaffolding {
+public:
+    int run(const Properties& options) {
+        if (checkOptions(options) != 0) {
+            return 1;
+        }
+
+        Linearization li(options.get< size_t >("K"));
+        li.initialize_edge(options.get< std::string >("c"));
+        li.initialize_scaf();
+        li.linearize(options.get< std::string >("1"), options.get< std::string >("2"));
+
+        return 0;
+    }
+
+private:
+    int checkOptions(const Properties& options);
+    int printHelps() const;
+};
+
+int Scaffolding::checkOptions(const Properties& options) {
+    if (options.find("h") != options.not_found()) {
+        return printHelps();
+    }
+
+    std::vector< std::string > necessary = boost::assign::list_of("c")("1")("2")("K");
+    BOOST_FOREACH(const std::string& c, necessary) {
+        if (options.find(c) == options.not_found()) {
+            std::cerr << boost::format("The argument -%s is necessary! type -h for more help") % c << std::endl;
+            return 1;
+        }
+    }
+    
+    std::vector< std::string > intopt = boost::assign::list_of("K");
+    BOOST_FOREACH(const std::string& c, intopt) {
+        try {
+            size_t K = options.get< size_t >(c);
+        } catch (std::exception& e) {
+            std::cerr << boost::format("The argument -%s should be a integer. type -h for more help") % c << std::endl;
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+int Scaffolding::printHelps() const {
+    return 1;
+}
+
 int main(int argc, char **argv) {
-
-	cout<<"======================================================================================\n";
-	cout<<"Step 3. Scaffolding\n";
-	cout<<"======================================================================================\n\n";
-	time_t start, end;
-	start = time(NULL);
-
-	string contig_file, scaffold_file, work_dir, read1, read2;
-	int opt = 0;
-	opt = getopt(argc, argv, optString);
-	while(opt != -1)
-	{
-		switch(opt)
-		{
-			case 'c':
-				contig_file = string(optarg);
-				//cout << "contig file : " << contig_file << endl;
-				break;
-			//case 'l':
-			//	scaffold_file = string(optarg);
-			//	break;
-			case 'K':
-				K = atoi(optarg);
-				if (EDGE_CUTOFF == 0)
-				{
-					EDGE_CUTOFF = K;
-				}
-				break;
-			case 'e':
-				EDGE_CUTOFF = atoi(optarg);
-				if (EDGE_CUTOFF < 0)
-				{
-					cout << "edge length cutoff must be positive." << endl;
-					exit(0);
-				}
-				break;
-			case 'd':
-				work_dir = string(optarg);
-				break;
-			case 'L':
-				INSERT_SIZE = atoi(optarg);
-				break;
-			case '1':
-				read1 = string(optarg);
-				break;
-			case '2':
-				read2 = string(optarg);
-				break;
-			case 'P':
-				LINK_QUALITY_PERCENT = atof(optarg);
-				break;
-			case 'p':
-				CPU_NUM = atoi(optarg);
-				break;
-			case 'i':
-				ITER = atoi(optarg);
-				break;
-			case 'r':
-				PAIR_KMER_CUTOFF = atoi(optarg);
-				break;
-			case 'R':
-				PAIR_READS_CUTOFF = atoi(optarg);
-				break;
-			default:
-				cout << "incorrect parameter." << endl;
-				break;
-		}
-		opt = getopt(argc, argv, optString);
-	}
-
-	if(chdir(work_dir.c_str()))
-	{
-		cout << "change work directory failed" << endl;
-		exit(0);
-	}
-
-	Linearization li;
-	li.initialize_edge(contig_file);
-	li.initialize_scaf();
-	li.linearize(read1, read2);
+    Properties options;
+    {
+        // command line options
+        std::string opt_string("d:K:c:e:L:D:1:2:P:p:i:r:R:h");
+        int opt = -1;
+        while ((opt = getopt(argc, argv, opt_string.c_str())) != -1) {
+            std::string key(1, (char)opt);
+            if (optarg == NULL) {
+                options.put(key, NULL);
+            } else {
+                options.put(key, optarg);
+            }
+        }
+    }
 	
-	end = time(NULL);
-	cout << "scaffolding time = " << difftime(end, start) << " seconds" << endl;
-	return 0;
-
+    Scaffolding s;
+    return s.run(options);
 }
 
