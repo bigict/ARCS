@@ -159,12 +159,12 @@ void DeBruijnGraph::compact() {
         std::list< Kmer > group = boost::assign::list_of(j->first);
 
         // Look backword.
-        for (NodeList::const_iterator k = _nodelist.find(j->second.parents.begin()->first); k != _nodelist.end() && k->second.indegree() == 1 && k->second.outdegree() == 1 && k->first != j->first; k = _nodelist.find(k->second.parents.begin()->first)) {
+        for (NodeList::const_iterator k = _nodelist.find(j->second.parents.begin()->first); k != _nodelist.end() && k->second.indegree() <= 1 && k->second.outdegree() == 1 && k->first != j->first; k = (k->second.parents.empty() ? _nodelist.end() : _nodelist.find(k->second.parents.begin()->first))) {
             group.push_front(k->first);
         }
 
         // Look forward
-        for (NodeList::const_iterator k = _nodelist.find(j->second.children.begin()->first); k != _nodelist.end() && k->second.indegree() == 1 && k->second.outdegree() == 1 && k->first != j->first; k = _nodelist.find(k->second.children.begin()->first)) {
+        for (NodeList::const_iterator k = _nodelist.find(j->second.children.begin()->first); k != _nodelist.end() && k->second.indegree() == 1 && k->second.outdegree() == 1 && k->first != j->first; k = (k->second.children.empty() ? _nodelist.end() : _nodelist.find(k->second.children.begin()->first))) {
             group.push_back(k->first);
         }
 

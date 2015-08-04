@@ -106,7 +106,9 @@ void KmerTable::buildDeBruijn(DeBruijnGraph* graph) const {
     BOOST_ASSERT(graph != NULL);
 
     for (KmerList::const_iterator it = _hash_tbl.begin(); it != _hash_tbl.end(); ++it) {
-        graph->addKmer(it->first, it->second);
+        if (it->second > 1) {
+            graph->addKmer(it->first, it->second);
+        }
     }
 
     LOG4CXX_DEBUG(logger, boost::format("construct de bruijn graph end"));
