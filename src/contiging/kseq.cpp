@@ -51,6 +51,7 @@ bool DNASeqReader::read(DNASeq& sequence) {
             } else if (state == kQuality) {
                 if (buf.length() == sequence.seq.length()) {
                     sequence.quality = buf;
+                    cutoff(sequence);
                     return true;
                 } else {
                     LOG4CXX_WARN(logger, boost::format("fastq=>length of sequence and quality are not equal: %s") % buf);
@@ -61,4 +62,11 @@ bool DNASeqReader::read(DNASeq& sequence) {
     }
 
     return false;
+}
+
+void DNASeqReader::cutoff(DNASeq& sequence) const {
+    if (sequence.seq.length() > _read_cutoff) {
+        sequence.seq = sequence.seq.substr(0, _read_cutoff);
+        sequence.quality = sequence.quality.substr(0, _read_cutoff);
+    }
 }

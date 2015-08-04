@@ -1,13 +1,17 @@
+#include "Linearization.h"
+#include "Lib.h"
+
 #include <iostream>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sstream>
 #include <fstream>
-#include <time.h>
 
-#include "Linearization.h"
-#include "Lib.h"
+#include <log4cxx/logger.h>
+#include <log4cxx/basicconfigurator.h>
+#include <log4cxx/propertyconfigurator.h>
 
+static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("scaffolding.main"));
 
 using namespace std;
 

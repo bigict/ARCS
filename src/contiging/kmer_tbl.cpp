@@ -14,6 +14,7 @@ static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("contiging.kmer_tbl"
 
 KmerTable::KmerTable(size_t K, double avg_quality, double min_quality, size_t read_cutoff, bool do_reversed) : _K(K), _avg_quality(avg_quality), _min_quality(min_quality), _read_cutoff(read_cutoff), _do_reversed(do_reversed) {
     BOOST_ASSERT(_K > 0);
+    BOOST_ASSERT(_K <= _read_cutoff);
 }
 
 KmerTable::~KmerTable() {
@@ -27,13 +28,13 @@ bool KmerTable::read(std::istream& stream) {
 
     LOG4CXX_DEBUG(logger, boost::format("construct kmer table begin"));
 
-    DNASeqReader reader(stream);
+    DNASeqReader reader(stream, _read_cutoff);
     DNASeq read;
 
     while (reader.read(read)) {
         LOG4CXX_TRACE(logger, boost::format("read: %s") % read.seq);
 
-        if (read.seq.length() > _K) {
+        if (read.seq.length() >= _K) {
             addRead(read);
             if (_do_reversed) {
                 // pair-end
