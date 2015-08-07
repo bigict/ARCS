@@ -107,6 +107,7 @@ public:
             percent = 0.95;
         }
 
+        LOG4CXX_INFO(logger, boost::format("avg_quality=%lf min_quality=%lf") % avg_quality % min_quality);
         KmerTable tbl(options.get< size_t >("K"), avg_quality, min_quality, percent, options.get< size_t >("READ_LENGTH_CUTOFF"), options.find("S") == options.not_found());
 
         if (!tbl.read(filelist)) {
@@ -115,11 +116,25 @@ public:
         }
 
         DeBruijnGraph graph(tbl);
-        graph.compact();
-        graph.removeNoise();
 
-        std::cout << graph << std::endl;
+        std::cerr << "befor compact:" << std::endl;
+        //std::cerr << graph << std::endl;
         
+        LOG4CXX_INFO(logger, boost::format("befor compact"));
+        graph.compact();
+        //std::cerr<< "after compact:" << std::endl;
+
+        LOG4CXX_INFO(logger, boost::format("befor remove noise"));
+        //std::cerr << graph << std::endl;
+        graph.removeNoise();
+        
+        LOG4CXX_INFO(logger, boost::format("after remove noise"));
+        graph.compact();
+        //std::cerr << "after remove noise:" << std::endl;
+        //std::cerr << graph << std::endl;
+        
+        LOG4CXX_INFO(logger, boost::format("after compact"));
+
         return 0;
     }
 private:

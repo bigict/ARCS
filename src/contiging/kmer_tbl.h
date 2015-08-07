@@ -21,6 +21,7 @@ public:
     bool read(std::istream& stream);
     bool read(const std::string& stream);
     bool read(const std::vector< std::string >& stream_list);
+    bool write(std::ostream& stream) const;
     void buildDeBruijn(DeBruijnGraph* graph) const;
 
     void statistics(double* average, double* variance) const;

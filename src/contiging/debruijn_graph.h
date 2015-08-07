@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "kmer.h"
 
+#include <iostream>
 #include <string>
 #include <tr1/unordered_map>
 
@@ -35,7 +36,6 @@ public:
         size_t indegree() const {
             return parents.size();
         }
-        size_t average() const;
         
         EdgeList parents;
         EdgeList children;

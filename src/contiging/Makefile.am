@@ -12,4 +12,4 @@ contiging_CXXFLAGS=${LOG4CXX_CFLAGS}
 contiging_LDFLAGS=${LOG4CXX_LIBS} \
             -lgmp
 
-SUBDIRS=32-mer 64-mer 96-mer
+#SUBDIRS=32-mer 64-mer 96-mer

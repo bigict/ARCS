@@ -5,6 +5,7 @@
 #include <fstream>
 #include <numeric>
 
+#include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 
@@ -64,6 +65,15 @@ bool KmerTable::read(const std::vector< std::string >& filelist) {
     return true;
 }
 
+bool KmerTable::write(std::ostream& stream) const {
+    for (KmerList::const_iterator it = _hash_tbl.begin(); it != _hash_tbl.end(); ++it) {
+        if (it->second > 1) {
+            stream << boost::format("%s\t%d") % it->first % it->second << std::endl;
+        }
+    }
+    return true;
+}
+
 void KmerTable::addRead(const DNASeq& read) {
     Kmer kmer(read.seq, 0, _K);
     if (isValid(read, 0, _K)) {
@@ -115,23 +125,33 @@ void KmerTable::buildDeBruijn(DeBruijnGraph* graph) const {
 }
 
 struct Statistics {
-    std::pair< double, double > operator()(const std::pair< double, double >& l, const std::pair< Kmer, size_t >& r) const {
-        return std::make_pair(l.first + r.second, l.second + r.second * r.second);
+    Statistics(size_t min_threshold) : _min_threshold(min_threshold), sigma(0), delta(0), count(0) {
     }
-};
 
-struct CoverageSquare {
-    double operator()(double l, size_t r) const {
-        return l + r * r;
+    void run(const std::pair< Kmer, size_t >& item) {
+        if (item.second >= _min_threshold) {
+            sigma += item.second;
+            delta += item.second * item.second;
+            ++count;
+        }
     }
+
+    double sigma;
+    double delta;
+    size_t count;
+private:
+	size_t _min_threshold;
 };
 
 void KmerTable::statistics(double* average, double* variance) const {
     if (_hash_tbl.size() > 0) {
-       	std::pair< double, double > sigma = std::accumulate(_hash_tbl.begin(), _hash_tbl.end(), std::make_pair(0.0, 0.0), Statistics());
-        LOG4CXX_DEBUG(logger, boost::format("statistics: count=[%d], sigma=[%f], delta=[%f]") % _hash_tbl.size() % sigma.first % sigma.second);
-        if (average != NULL) {
-            *average = sigma.first / _hash_tbl.size();
+        Statistics helper(4);
+        std::for_each(_hash_tbl.begin(), _hash_tbl.end(), boost::bind(&Statistics::run, &helper, _1));
+
+        LOG4CXX_DEBUG(logger, boost::format("statistics: count=[%d], sigma=[%f], delta=[%f],count=[%d]") % _hash_tbl.size() % helper.sigma % helper.delta % helper.count);
+
+        if (average != NULL && helper.count > 0) {
+            *average = helper.sigma / helper.count;
         }
         if (variance != NULL) {
         }
