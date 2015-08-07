@@ -117,9 +117,6 @@ public:
 
         DeBruijnGraph graph(tbl);
 
-        std::cerr << "befor compact:" << std::endl;
-        //std::cerr << graph << std::endl;
-        
         LOG4CXX_INFO(logger, boost::format("befor compact"));
         graph.compact();
         //std::cerr<< "after compact:" << std::endl;
@@ -131,7 +128,7 @@ public:
         LOG4CXX_INFO(logger, boost::format("after remove noise"));
         graph.compact();
         //std::cerr << "after remove noise:" << std::endl;
-        //std::cerr << graph << std::endl;
+        std::cerr << graph << std::endl;
         
         LOG4CXX_INFO(logger, boost::format("after compact"));
 

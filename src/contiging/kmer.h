@@ -79,9 +79,9 @@ public:
 
     Kmer& operator = (const std::string& sequence);
     Kmer& operator = (const Kmer& o);
-    Kmer operator + (const char c);
-    Kmer operator + (const std::string& sequence);
-    Kmer operator + (const Kmer& o);
+    Kmer operator + (const char c) const;
+    Kmer operator + (const std::string& sequence) const;
+    Kmer operator + (const Kmer& o) const;
     Kmer& operator += (const char c);
     Kmer& operator += (const std::string& sequence);
     Kmer& operator += (const Kmer& o);
@@ -96,6 +96,7 @@ public:
     }
 private:
     friend std::ostream& operator << (std::ostream& os, const Kmer& kmer);
+
     bigint musk() const {
         if (_length > 0) {
             bigint musk(1);

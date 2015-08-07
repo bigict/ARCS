@@ -259,9 +259,9 @@ struct KmerRemover {
             _nodelist->erase(kmer);
         }
     }
-	size_t size() const {
-		return _noiselist.size();
-	}
+    size_t size() const {
+        return _noiselist.size();
+    }
 
 private:
     void unlink(const Kmer& kmer) {
@@ -353,6 +353,41 @@ void DeBruijnGraph::removeNoise() {
     LOG4CXX_DEBUG(logger, boost::format("remove %d noise nodes, %d nodes left") % remover.size() % _nodelist.size());
 }
 
+struct KmerIndexer {
+    typedef std::tr1::unordered_map< Kmer, size_t, KmerHasher > IndexTable;
+
+    KmerIndexer(const DeBruijnGraph::NodeList& nodelist) {
+        size_t i = 0;
+        for (DeBruijnGraph::NodeList::const_iterator it = nodelist.begin(); it != nodelist.end(); ++it) {
+            _index_tbl[it->first] = ++i;
+        }
+    }
+    size_t operator[](const Kmer& kmer) const {
+        IndexTable::const_iterator it = _index_tbl.find(kmer);
+        if (it != _index_tbl.end()) {
+            return it->second;
+        }
+        return 0;
+    }
+private:
+    IndexTable _index_tbl;
+};
+
+/*
+std::ostream& operator << (std::ostream& os, const DeBruijnGraph& graph) {
+    KmerIndexer indexer(graph._nodelist);
+    
+    for (DeBruijnGraph::NodeList::const_iterator i = graph._nodelist.begin(); i != graph._nodelist.end(); ++i) {
+        for (DeBruijnGraph::EdgeList::const_iterator j = i->second.children.begin(); j != i->second.children.end(); ++j) {
+            Kmer kmer = i->first + j->first.subKmer(graph._K - 2);
+            os << boost::format("%d\t%d\t%s\t%d") % indexer[i->first] % indexer[j->first] % kmer % j->second << std::endl;
+        }
+    }
+
+    return os;
+}
+
+*/
 std::ostream& operator << (std::ostream& os, const DeBruijnGraph& graph) {
     DeBruijnGraph::EdgeList index;
 
@@ -364,6 +399,7 @@ std::ostream& operator << (std::ostream& os, const DeBruijnGraph& graph) {
     }
     for (DeBruijnGraph::NodeList::const_iterator i=graph._nodelist.begin(); i!=graph._nodelist.end(); ++i) {
         if (i->second.indegree() == 1 && i->second.outdegree() == 1) {
+		LOG4CXX_DEBUG(logger, boost::format("<< kmer=[%s]") % i->first);
             continue;
         }
         for(DeBruijnGraph::EdgeList::const_iterator j=i->second.children.begin(); j!=i->second.children.end(); ++j){
