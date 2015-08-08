@@ -373,55 +373,33 @@ private:
     IndexTable _index_tbl;
 };
 
-/*
 std::ostream& operator << (std::ostream& os, const DeBruijnGraph& graph) {
     KmerIndexer indexer(graph._nodelist);
     
+    // Merge nodes with indegree == outdegree == 1
     for (DeBruijnGraph::NodeList::const_iterator i = graph._nodelist.begin(); i != graph._nodelist.end(); ++i) {
-        for (DeBruijnGraph::EdgeList::const_iterator j = i->second.children.begin(); j != i->second.children.end(); ++j) {
-            Kmer kmer = i->first + j->first.subKmer(graph._K - 2);
-            os << boost::format("%d\t%d\t%s\t%d") % indexer[i->first] % indexer[j->first] % kmer % j->second << std::endl;
-        }
-    }
-
-    return os;
-}
-
-*/
-std::ostream& operator << (std::ostream& os, const DeBruijnGraph& graph) {
-    DeBruijnGraph::EdgeList index;
-
-    size_t num = 0;
-    for (DeBruijnGraph::NodeList::const_iterator i=graph._nodelist.begin(); i!=graph._nodelist.end(); ++i) {
-        if ( i->second.indegree() != 0 || i->second.outdegree() != 0){
-            index[ i->first ] = ++num;
-        }
-    }
-    for (DeBruijnGraph::NodeList::const_iterator i=graph._nodelist.begin(); i!=graph._nodelist.end(); ++i) {
         if (i->second.indegree() == 1 && i->second.outdegree() == 1) {
-		LOG4CXX_DEBUG(logger, boost::format("<< kmer=[%s]") % i->first);
             continue;
         }
-        for(DeBruijnGraph::EdgeList::const_iterator j=i->second.children.begin(); j!=i->second.children.end(); ++j){
-            
-            Kmer kmer = i->first;
-            kmer += j->first.subKmer(graph._K - 2);
 
-            size_t length = 1;
-            size_t sum_cov = j->second;
-            DeBruijnGraph::NodeList::const_iterator it = graph._nodelist.find(j->first);
-            while(it->second.indegree()==1 && it->second.outdegree()==1){
-                size_t l = KmerLengthPlus::length(graph._K, it->first);
-                length += l;
-                sum_cov += l * it->second.children.begin()->second;
+        for (DeBruijnGraph::EdgeList::const_iterator j = i->second.children.begin(); j != i->second.children.end(); ++j) {
+            Kmer key = i->first + j->first.subKmer(graph._K - 2);
 
-                it = graph._nodelist.find( it->second.children.begin()->first );
-                kmer += it->first.subKmer(graph._K - 2);
+            std::list< Kmer > group;
+            for (DeBruijnGraph::NodeList::const_iterator k = graph._nodelist.find(j->first); k != graph._nodelist.end() && k->second.indegree() == 1 && k->second.outdegree() == 1 && k->first != i->first; k = graph._nodelist.find(k->second.children.begin()->first)) {
+                group.push_back(k->first);
             }
-            os << index[i->first] << "\t" << index[j->first] << "\t" << kmer << std::endl;
-            os << (sum_cov + length / 2) / length << std::endl;
+
+            BOOST_FOREACH(const Kmer& kmer, group) {
+                key += kmer.subKmer(graph._K - 2);
+            }
+            size_t length = KmerLengthPlus::length(graph._K, i->first) + std::accumulate(group.begin(), group.end(), 0, KmerLengthPlus(graph._K));
+            size_t coverage = KmerCoveragePlus::coverage(graph._K, i->first, j->second) + std::accumulate(group.begin(), group.end(), 0, KmerCoveragePlus(&graph._nodelist, graph._K));
+
+            os << boost::format("%d\t%d\t%s\t%d") % indexer[i->first] % indexer[j->first] % key % (size_t)((coverage + length / 2) / length) << std::endl;
         }
     }
+
     return os;
 }
 
