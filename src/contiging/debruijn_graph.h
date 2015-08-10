@@ -47,16 +47,12 @@ public:
 
     void addKmer(const Kmer& kmer, size_t weight = 1);
     void removeKmer(const Kmer& kmer);
-
     void removeEdge(const Kmer& node, const Kmer& edge);
 
     // Build a condensed graph
     void compact();
-    
     // Remove suspicious nodes
     void removeNoise();
-
-    void outputCdbgGraphAndComponent0(const std::string& cdbg_file, const std::string& component0_file) const;
 
     struct NodeKey {
         NodeKey(size_t K) : _K(K) {}

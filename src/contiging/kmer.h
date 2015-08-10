@@ -5,11 +5,8 @@
 #include <string>
 
 #include <boost/multiprecision/cpp_int.hpp>
-#include <boost/multiprecision/gmp.hpp>
 
-//typedef boost::multiprecision::mpz_int bigint;
 typedef boost::multiprecision::cpp_int bigint;
-//typedef uint64_t bigint;
 
 //
 // Utilities for encodeing Nucleotide
