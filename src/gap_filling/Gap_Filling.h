@@ -22,7 +22,6 @@
 
 #include "Edge.h"
 #include "Scaffold.h"
-#include "Split_String.h"
 #include "Constant.h"
 
 using namespace std;

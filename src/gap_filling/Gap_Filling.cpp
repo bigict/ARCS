@@ -1,4 +1,7 @@
 #include "Gap_Filling.h"
+#include "Split_String.h"
+
+
 #define TRAINING
 #define RESULT
 

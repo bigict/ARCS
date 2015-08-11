@@ -4,6 +4,8 @@
 #include <string>
 #include <iostream>
 
+std::string make_complement_dna(const std::string& dna);
+
 //
 // DNASeq represents a DNA sequence.
 //

@@ -4,26 +4,49 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/assign.hpp>
+#include <boost/foreach.hpp>
 #include <boost/format.hpp>
 
 #include <log4cxx/logger.h>
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("contiging.kseq"));
 
+std::string make_complement_dna(const std::string& sequence) {
+    std::string complement;
+
+    static std::map< char, char > mapping = boost::assign::map_list_of
+        ('A', 'T')
+        ('C', 'G')
+        ('G', 'C')
+        ('T', 'A')
+        ('N', 'N');
+
+    BOOST_FOREACH(char c, sequence) {
+        complement += mapping[c];
+    }
+
+    std::reverse(complement.begin(), complement.end());
+
+    return complement;
+}
+
 void DNASeq::make_complement() {
-	std::reverse(seq.begin(), seq.end());
-	std::reverse(quality.begin(), quality.end());
+//    std::reverse(seq.begin(), seq.end());
+    seq = make_complement_dna(seq);
+    std::reverse(quality.begin(), quality.end());
 
-	static std::map< char, char > mapping = boost::assign::map_list_of
-		('A', 'T')
-		('C', 'G')
-		('G', 'C')
-		('T', 'A')
-		('N', 'N');
+/*
+    static std::map< char, char > mapping = boost::assign::map_list_of
+        ('A', 'T')
+        ('C', 'G')
+        ('G', 'C')
+        ('T', 'A')
+        ('N', 'N');
 
-	for (size_t i = 0; i < seq.size(); ++i) {
-		seq[i] = mapping[seq[i]];
-	}
+    for (size_t i = 0; i < seq.size(); ++i) {
+        seq[i] = mapping[seq[i]];
+    }
+*/
 }
 
 std::ostream& operator << (std::ostream& os, const DNASeq& seq) {
