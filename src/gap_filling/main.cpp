@@ -1,11 +1,11 @@
 #include "Gap_Filling.h"
+#include "Constant.h"
 
 #include <time.h>
 #include <stdlib.h>
 #include <string>
 #include <unistd.h>
 #include <sstream>
-#include "Constant.h"
 
 using namespace std;
 

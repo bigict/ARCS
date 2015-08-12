@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "Uniq_Edge_Graph.h"
+#include "uniq_edge_graph.h"
 
 class Linearization {
 public:

@@ -1,80 +1,133 @@
+#include "uniq_edge_graph.h"
+
 #include <iostream>
-#include <unistd.h>
-#include <stdlib.h>
-#include "Uniq_Edge_Graph.h"
-#include <time.h>
+#include <string>
+#include <vector>
 
-using namespace std;
+#include <boost/assign.hpp>
+#include <boost/format.hpp>
+#include <boost/foreach.hpp>
+#include <boost/property_tree/ini_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
 
-extern int K ;
-extern int MAX_OVERLAP ;
-extern int EDGE_NUM ;
-extern int ITER;
+#include <log4cxx/logger.h>
+#include <log4cxx/basicconfigurator.h>
+#include <log4cxx/propertyconfigurator.h>
 
-int K = 31;
-int MAX_OVERLAP = 200;
-int EDGE_NUM = 10000;
-int ITER = 0;
+typedef boost::property_tree::ptree Properties;
 
-static const char *optString = "K:d:O:i:";
+static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("remove_repeats.main"));
 
-int main(int argc, char **argv)
-{
-	time_t start, end;
-	start = time(NULL);
+class RepeatRemover {
+public:
+    int run(const Properties& options) {
+        if (checkOptions(options) != 0) {
+            return 1;
+        }
 
-	string work_dir;	
-	int opt = 0;
-	opt = getopt(argc, argv, optString);
-	while (opt != -1)
-	{
-		switch (opt)
-		{	
-		case 'd':
-			work_dir = string(optarg);
-			//cout << "work directory " << work_dir << endl;
-			break;
-		case 'O':
-			MAX_OVERLAP = atoi(optarg);
-			//cout << "max overlap " << MAX_OVERLAP << endl;
-			break;
-		case 'K':
-			K = atoi(optarg);
-			//cout << "Kmer size = " << K << endl;
-			break;
-		case 'i':
-			ITER = atoi(optarg);
-			break;
-		default:
-			/* You won't actually get here. */
-			//cout << "no \"" << opt << "\" opinion !!" << endl;
-			break;
-		}
-		opt = getopt(argc, argv, optString);
-	}
+	size_t EDGE_NUM = options.get< size_t >("EDGE_CLUSTER_NUM");
 
-	if(chdir(work_dir.c_str()))
-	{
-		cout << "change work directory failed" << endl;
-		exit(0);
-	}
+        LOG4CXX_INFO(logger, boost::format("remove repeats begin"));
+        UniqEdgeGraph graph(options.get< size_t >("K"), EDGE_NUM, options.get< size_t >("MAX_OVERLAP"), options.get< size_t >("ITERATION"));
+        
+        graph.input_edge_len();
+        graph.input_edge_pos();
+        graph.resize(EDGE_NUM);
+    
+        LOG4CXX_INFO(logger, boost::format("Edge num=%d") % EDGE_NUM);
 
-	cout << "begin to remove repeats" << endl;
-	Uniq_Edge_Graph u_e_g;
-		
-	u_e_g.input_parameter();
-	u_e_g.input_edge_len();
-	u_e_g.input_edge_pos();
-	u_e_g.resize(EDGE_NUM);
-	
-	cout << "Edge num = " << EDGE_NUM << endl;
+        graph.input_edge_link("contig_arc_graph_after_remove_ambigous_arcs");
+        graph.input_inner_component();
+        graph.linearize();
+        
+        LOG4CXX_INFO(logger, boost::format("remove repeats end"));
 
-	u_e_g.input_edge_link("contig_arc_graph_after_remove_ambigous_arcs");
-	u_e_g.input_inner_component();
-	u_e_g.linearize();
-	
-	end = time(NULL);
+        return 0;
+    }
 
-	cout << "removing repeats time = " << difftime(end, start) << " seconds" << endl;
-	return 0;
+private:
+    int checkOptions(const Properties& options);
+    int printHelps() const;
+};
+
+int RepeatRemover::checkOptions(const Properties& options) {
+    if (options.find("h") != options.not_found()) {
+        return printHelps();
+    }
+
+    std::vector< std::string > necessary = boost::assign::list_of("K")("MAX_OVERLAP");
+    BOOST_FOREACH(const std::string& c, necessary) {
+        if (options.find(c) == options.not_found()) {
+            std::cerr << boost::format("The argument -%s is necessary! type -h for more help") % c << std::endl;
+            return 1;
+        }
+    }
+    
+    std::vector< std::string > intopt = boost::assign::list_of("K");
+    BOOST_FOREACH(const std::string& c, intopt) {
+        try {
+            size_t K = options.get< size_t >(c);
+        } catch (std::exception& e) {
+            std::cerr << boost::format("The argument -%s should be a integer. type -h for more help") % c << std::endl;
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+int RepeatRemover::printHelps() const {
+    return 1;
+}
+
+int main(int argc, char **argv) {
+    Properties options;
+    {
+        // command line options
+        Properties cmd;
+        std::map< std::string, std::string > alphabet = boost::assign::map_list_of
+                ("K", "K")
+                ("O", "MAX_OVERLAP")
+                ("i", "ITERATION")
+                ;
+        // command line options
+        std::string opt_string("K:d:O:i:c:h");
+        int opt = -1;
+        while ((opt = getopt(argc, argv, opt_string.c_str())) != -1) {
+            std::string key(1, (char)opt);
+            if (alphabet.find(key) != alphabet.end()) {
+                key = alphabet[key];
+            }
+            if (optarg == NULL) {
+                cmd.put(key, NULL);
+            } else {
+                cmd.put(key, optarg);
+            }
+        }
+
+        // config log4cxx.
+        if (cmd.find("c") != cmd.not_found()) {
+            log4cxx::PropertyConfigurator::configure(options.get< std::string >("c"));
+        } else {
+            log4cxx::BasicConfigurator::configure();
+        }
+
+        // load ini options
+        if (cmd.find("s") != cmd.not_found()) {
+            try {
+                boost::property_tree::read_ini(cmd.get< std::string >("s"), options);
+            } catch (const boost::property_tree::ini_parser_error& e) {
+                LOG4CXX_ERROR(logger, boost::format("load test.cfg failed(%s).") % e.what());
+                return 1;
+            }
+        }
+
+        // merge options
+        for (Properties::const_iterator it = cmd.begin(); it != cmd.end(); it++){
+            options.put(it->first,it->second.data());
+        }
+    }
+    
+    RepeatRemover rr;
+    return rr.run(options);
 }

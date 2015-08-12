@@ -1,6 +1,6 @@
+#include "uniq_edge_graph.h"
 
 #include <list>
-#include "Uniq_Edge_Graph.h"
 #include <iostream>
 #include <fstream>
 #include <algorithm>
@@ -11,22 +11,23 @@
 #include <string.h>
 //#include <stdio.h>
 
-extern int K;
-extern int MAX_OVERLAP;
-extern int EDGE_NUM;
-extern int ITER;
+#include <boost/format.hpp>
 
-void Uniq_Edge_Graph::add_a_len(int a_len)
+#include <log4cxx/logger.h>
+
+static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("remove_repeats.uniq_edge_graph"));
+
+void UniqEdgeGraph::add_a_len(int a_len)
 {
 	len.push_back(a_len);
 }
 
-void Uniq_Edge_Graph::add_a_pos(int pos_tmp)
+void UniqEdgeGraph::add_a_pos(int pos_tmp)
 {
 	pos.push_back(pos_tmp);
 }
 
-void Uniq_Edge_Graph::add_a_dis(int i, int j, int c_dis, int cc, int sc)
+void UniqEdgeGraph::add_a_dis(int i, int j, int c_dis, int cc, int sc)
 {
 	if(i >= con.size() | j >= con.size())
 	{
@@ -58,7 +59,7 @@ void Uniq_Edge_Graph::add_a_dis(int i, int j, int c_dis, int cc, int sc)
 	}
 }
 
-bool Uniq_Edge_Graph::is_a_dis(int i, int j)
+bool UniqEdgeGraph::is_a_dis(int i, int j)
 {
 	if(i >= con.size() | j >= con.size())
 	{
@@ -77,7 +78,7 @@ bool Uniq_Edge_Graph::is_a_dis(int i, int j)
 	return false;
 }
 
-void Uniq_Edge_Graph::add_a_arc(int i, int j, int c_dis, int cc, int sc)
+void UniqEdgeGraph::add_a_arc(int i, int j, int c_dis, int cc, int sc)
 {
 	if(i >= arc.size() | j >= arc.size())
 	{
@@ -109,7 +110,7 @@ void Uniq_Edge_Graph::add_a_arc(int i, int j, int c_dis, int cc, int sc)
 	}
 }
 
-void Uniq_Edge_Graph::add_a_rev_arc(int i, int j, int c_dis, int cc, int sc)
+void UniqEdgeGraph::add_a_rev_arc(int i, int j, int c_dis, int cc, int sc)
 {
 	if(i >= rev_arc.size() | j >= rev_arc.size())
 	{
@@ -139,7 +140,7 @@ void Uniq_Edge_Graph::add_a_rev_arc(int i, int j, int c_dis, int cc, int sc)
 	}
 }
 
-int Uniq_Edge_Graph::get_dis(int i, int j)
+int UniqEdgeGraph::get_dis(int i, int j)
 {
 	if(i >= arc.size() | j >= arc.size())
 	{
@@ -157,7 +158,7 @@ int Uniq_Edge_Graph::get_dis(int i, int j)
 }
 
 
-void Uniq_Edge_Graph::del_a_dis(int i, int j)
+void UniqEdgeGraph::del_a_dis(int i, int j)
 {
 	if(i >= con.size() | j >= con.size())
 	{
@@ -176,7 +177,7 @@ void Uniq_Edge_Graph::del_a_dis(int i, int j)
 	}
 }
 
-void Uniq_Edge_Graph::del_a_arc(int i, int j)
+void UniqEdgeGraph::del_a_arc(int i, int j)
 {
 	if(i >= arc.size() | j >= arc.size())
 	{
@@ -195,7 +196,7 @@ void Uniq_Edge_Graph::del_a_arc(int i, int j)
 	}
 }
 
-void Uniq_Edge_Graph::del_a_rev_arc(int i, int j)
+void UniqEdgeGraph::del_a_rev_arc(int i, int j)
 {
 	if(i >= rev_arc.size() | j >= rev_arc.size())
 	{
@@ -214,101 +215,13 @@ void Uniq_Edge_Graph::del_a_rev_arc(int i, int j)
 	}
 }
 
-void Uniq_Edge_Graph::input_parameter()
-{
-	char buff[100];
-	sprintf(buff, "scaffold_parameter_%d", ITER);
-	ifstream fin(buff);
-
-	if (!fin)
-	{
-		cout << "parameter file can not open" << endl;
-		exit(0);
-	}
+void UniqEdgeGraph::input_inner_component() {
+    
+    std::string file = boost::str(boost::format("component_%ld") % _iteration);
+	ifstream in(file.c_str());
 	
-	string key;
-	string value;
-	int eql_pos = 0;
-	string line;
-	
-	while (getline(fin, line))
-	{		
-		if (line[0] == '#')
-		{
-			continue;
-		}	
-		for(int i = 0; i < line.size(); i++)
-		{
-			if( line[i] == '=' | line[i] == ':')
-			{
-				eql_pos = i;
-			}
-		}
-		
-		key = line.substr(0, eql_pos);
-		value = line.substr(eql_pos+1);
-		
-		int left, right;
-		
-		for (int i = 0; i < key.size(); i ++)
-		{
-			if (key[i] != ' ')
-			{
-				left = i;
-				break;
-			}
-		}
-
-		for (int i = key.size() - 1; i >= 0; i --)
-		{
-			if (key[i] != ' ')
-			{
-				right = i;
-				break;
-			}
-		}
-
-		key = key.substr(left, right - left + 1);
-
-		for (int i = 0; i < value.size(); i ++)
-		{
-			if (value[i] != ' ')
-			{
-				left = i;
-				break;
-			}
-		}
-
-		for (int i = value.size() - 1; i >= 0; i --)
-		{
-			if (value[i] != ' ')
-			{
-				right = i;
-				break;
-			}
-		}
-
-		value = value.substr(left, right - left + 1);
-
-		if (key == string("EDGE_CLUSTER_NUM"))
-		{
-			EDGE_NUM = atoi(value.c_str());
-		}
-	}
-
-	fin.close();
-}
-
-void Uniq_Edge_Graph::input_inner_component()
-{
-	//cout << " component and gap " << endl;
-	char buff[100];
-	sprintf(buff, "component_%d", ITER);
-	ifstream in(buff);
-	
-	if (!in)
-	{
-		cout << buff << " open failed" << endl;
+	if (!in) {
+        LOG4CXX_ERROR(logger, boost::format("%s open failed") % file);
 		exit(0);
 	}
 	
@@ -323,7 +236,7 @@ void Uniq_Edge_Graph::input_inner_component()
 	inner_component.resize(count / 3);
 	gap.resize(count / 3);
 	in.close();
-	in.open(buff);
+	in.open(file.c_str());
 	
 	char *word;
 	count = 0;
@@ -370,15 +283,12 @@ void Uniq_Edge_Graph::input_inner_component()
 */
 }
 
-void Uniq_Edge_Graph::input_edge_pos()
-{
-	//cout << "begin input edge pos" << endl;
-	char buff[100];
-	sprintf(buff, "edge_cluster_pos_%d", ITER);
-	ifstream fin(buff);
-	if(!fin)
-	{
-		cout << "edge pos file can not open" << endl;
+void UniqEdgeGraph::input_edge_pos() {
+
+    std::string file = boost::str(boost::format("edge_cluster_pos_%ld") % _iteration);
+	ifstream fin(file.c_str());
+	if(!fin) {
+        LOG4CXX_ERROR(logger, boost::format("%s open failed") % file);
 		exit(0);
 	}
 	
@@ -393,15 +303,12 @@ void Uniq_Edge_Graph::input_edge_pos()
 	}
 }
 
-void Uniq_Edge_Graph::input_edge_len()
-{
-	//cout << "begin input edge len" << endl;
-	char buff[100];
-	sprintf(buff, "edge_cluster_len_%d", ITER);
-	ifstream fin(buff);
-	if(!fin)
-	{
-		cout << "edge len file can not open" << endl;
+void UniqEdgeGraph::input_edge_len() {
+
+    std::string file = boost::str(boost::format("edge_cluster_len_%ld") % _iteration);
+	ifstream fin(file.c_str());
+	if(!fin) {
+        LOG4CXX_ERROR(logger, boost::format("%s open failed") % file);
 		exit(0);
 	}
 	int len_tmp = 0;
@@ -413,16 +320,12 @@ void Uniq_Edge_Graph::input_edge_len()
 	}
 }
 
-void Uniq_Edge_Graph::input_edge_link(string name)
-{
-	char buff[100];
-	sprintf(buff, "%s_%d", name.c_str(), ITER);
-
-	ifstream fin(buff);
+void UniqEdgeGraph::input_edge_link(string name) {
+    std::string file = boost::str(boost::format("%s_%ld") % name % _iteration);
+	ifstream fin(file.c_str());
 	
-	if (!fin)
-	{
-		cout << "file does not exist" << endl;
+	if (!fin) {
+        LOG4CXX_ERROR(logger, boost::format("%s open failed") % file);
 		exit(0);
 	}
  	int from, to, dis, c;
@@ -439,7 +342,7 @@ void Uniq_Edge_Graph::input_edge_link(string name)
 	fin.close();
 }
 
-void Uniq_Edge_Graph::linearize()
+void UniqEdgeGraph::linearize()
 {
 	
 	//output_graph("tmp_graph_before_repeats_removing.data");
@@ -457,7 +360,7 @@ void Uniq_Edge_Graph::linearize()
 	tran_to_line();
 }
 
-void Uniq_Edge_Graph::tran_to_line()
+void UniqEdgeGraph::tran_to_line()
 {
 	//cout << "begin transform to line" << endl;
 
@@ -588,9 +491,8 @@ void Uniq_Edge_Graph::tran_to_line()
 	//cout << "inner component size : " << inner_component.size() << endl;
 	//cout << "line component size : " << line_component.size() << endl;
 
-	char buff[100];
-    sprintf(buff, "component_%d", ITER + 1);
-    ofstream out(buff);
+    std::string file = boost::str(boost::format("component_%ld") % (_iteration + 1));
+    ofstream out(file.c_str());
 
 	for(int i = 0; i < line_component.size(); i ++)
 	{
@@ -615,10 +517,10 @@ void Uniq_Edge_Graph::tran_to_line()
 			int tmp_dis = get_dis(line_component[i][j-1].id, line_component[i][j].id);
 			if (tmp_dis >= 0)
 			{
-				out << tmp_dis - line_component[i][j-1].len + K  << " " ;
+				out << tmp_dis - line_component[i][j-1].len + _K  << " " ;
 			}else
 			{
-				out << pos[line_component[i][j].id] - pos[line_component[i][j-1].id] - len[line_component[i][j-1].id] + K << " " ;
+				out << pos[line_component[i][j].id] - pos[line_component[i][j-1].id] - len[line_component[i][j-1].id] + _K << " " ;
 			}
 
 			for (int k = 0; k < gap[line_component[i][j].id].size(); k ++)
@@ -630,9 +532,8 @@ void Uniq_Edge_Graph::tran_to_line()
 	}
 	out.close();
 	
-	sprintf(buff, "component_cluster_%d", ITER);
-	
-	out.open(buff);
+    file = boost::str(boost::format("component_cluster_%ld") % _iteration);
+	out.open(file.c_str());
 	
 	for(int i = 0; i < line_component.size(); i ++)
 	{
@@ -648,10 +549,10 @@ void Uniq_Edge_Graph::tran_to_line()
 			int tmp_dis = get_dis(line_component[i][j-1].id, line_component[i][j].id);
 			if (tmp_dis >= 0)
 			{
-				out << tmp_dis - line_component[i][j-1].len + K  << " " ;
+				out << tmp_dis - line_component[i][j-1].len + _K  << " " ;
 			}else
 			{
-				out << pos[line_component[i][j].id] - pos[line_component[i][j-1].id] - len[line_component[i][j-1].id] + K << " " ;
+				out << pos[line_component[i][j].id] - pos[line_component[i][j-1].id] - len[line_component[i][j-1].id] + _K << " " ;
 			}
 		}
 		out << endl;
@@ -659,7 +560,7 @@ void Uniq_Edge_Graph::tran_to_line()
 	out.close();
 }
 
-void Uniq_Edge_Graph::transform_single_direction()
+void UniqEdgeGraph::transform_single_direction()
 {
 	list<Dis_Node>::iterator it;
 	for (int i = 0; i < con.size(); i++)
@@ -683,13 +584,14 @@ int cmp( Edge_Seq_Element es1, Edge_Seq_Element es2)
 	return es1.pos < es2.pos;
 }
 
-void Uniq_Edge_Graph::initialize_component(string cmp_name)
+void UniqEdgeGraph::initialize_component(string cmp_name)
 {
 	cout << "initialize scaffolds" << endl;
 	
 	vector<int> flag;
 	component.clear();
 
+    // BFS
 	flag.resize(con.size());
 	for(int i = 0; i < flag.size(); i ++)
 	{
@@ -761,7 +663,7 @@ void Uniq_Edge_Graph::initialize_component(string cmp_name)
 		out << endl;
 		for (int j = 1; j < component[i].size(); j ++)
 		{
-			out << (component[i][j].pos - component[i][j - 1].pos - len[component[i][j - 1].id] + K ) << " ";
+			out << (component[i][j].pos - component[i][j - 1].pos - len[component[i][j - 1].id] + _K ) << " ";
 		}
 		out << endl;
 	}
@@ -784,7 +686,7 @@ void Uniq_Edge_Graph::initialize_component(string cmp_name)
 				{
 					if (component[index][i].pos + component[index][i].len < component[index][j].pos + component[index][j].len )
 					{
-						if (MAX_OVERLAP <= component[index][i].pos + component[index][i].len 
+						if (_max_overlap <= component[index][i].pos + component[index][i].len 
 								- component[index][j].pos)
 						{
 							overlap_pair.push_back(make_pair(component[index][i].id, component[index][j].id));
@@ -794,7 +696,7 @@ void Uniq_Edge_Graph::initialize_component(string cmp_name)
 
 					}else
 					{
-						if (MAX_OVERLAP <= component[index][j].len)
+						if (_max_overlap <= component[index][j].len)
 						{
 							overlap_pair.push_back(make_pair(component[index][i].id, component[index][j].id));
 							overlap_com_id.push_back(index);
@@ -837,7 +739,7 @@ int avg_score(const vector<Ed> &tmp)
 	return sum / tmp.size();
 }
 
-Ed Uniq_Edge_Graph::get_min_ed(int index)
+Ed UniqEdgeGraph::get_min_ed(int index)
 {
 	vector<Ed> tmp_ed_set;
 	Ed tmp_ed;
@@ -886,16 +788,15 @@ Ed Uniq_Edge_Graph::get_min_ed(int index)
 	}
 }
 
-void Uniq_Edge_Graph::remove_arc_con_edge_from_overlap_pair()
+void UniqEdgeGraph::remove_arc_con_edge_from_overlap_pair()
 {
 	int temp1, temp2;
 	Ed tmp_ed;
 
 	//ofstream fout("contig_removed");
 	
-	char buff[100];
-	sprintf(buff, "chimeric_link_repeat_removed_log_%d", ITER );
-	ofstream fout(buff);
+    std::string file = boost::str(boost::format("chimeric_link_repeat_removed_log_%ld") % _iteration);
+	ofstream fout(file.c_str());
 
 	for (int i = 0; i < overlap_pair.size(); i++)
 	{
@@ -969,19 +870,15 @@ void Uniq_Edge_Graph::remove_arc_con_edge_from_overlap_pair()
 
 }
 
-int Uniq_Edge_Graph::get_ancestor(int i, int j)
+int UniqEdgeGraph::get_ancestor(int i, int j)
 {
-	vector<int> flag;
-	flag.resize(rev_arc.size());
+    std::vector<int> flag(rev_arc.size(), 0);
 	int depth = 2,count = 0,k = 0;
-	for(int index = 0; index < flag.size(); index ++)
-	{
-		flag[index] = 0;
-	}
-	queue<int> qu;
+    std::queue<int> qu;
 	qu.push(i);
 	count = 1;
 
+    // BFS
 	int tmp;
 	list<Dis_Node>::iterator it;
 	while (!qu.empty())
@@ -989,7 +886,7 @@ int Uniq_Edge_Graph::get_ancestor(int i, int j)
 		tmp = qu.front();
 		qu.pop();
 		flag[tmp] = depth;
-		for(it = rev_arc[tmp].begin(); it != rev_arc[tmp].end(); it++)
+		for (it = rev_arc[tmp].begin(); it != rev_arc[tmp].end(); it++)
 		{
 			if(flag[it->id] == 0)
 			{
@@ -1044,7 +941,7 @@ int Uniq_Edge_Graph::get_ancestor(int i, int j)
 	return -1;
 }
 
-int Uniq_Edge_Graph::get_descendant(int i, int j)
+int UniqEdgeGraph::get_descendant(int i, int j)
 {
 	vector<int> flag;
 	int depth = 2,count = 0,k = 0;
@@ -1119,7 +1016,7 @@ int Uniq_Edge_Graph::get_descendant(int i, int j)
 	return -1;
 }
 
-void Uniq_Edge_Graph::del_a_edge(int i)
+void UniqEdgeGraph::del_a_edge(int i)
 {
 	if(i >= con.size() || i < 0)
 	{
@@ -1168,7 +1065,7 @@ void Uniq_Edge_Graph::del_a_edge(int i)
 	arc[i].clear();
 }
 
-void Uniq_Edge_Graph::transform_bidirection()
+void UniqEdgeGraph::transform_bidirection()
 {
 //	cout << "uniq edge graph tran bidirect" << endl;
 	list<Dis_Node>::iterator it;
@@ -1183,7 +1080,7 @@ void Uniq_Edge_Graph::transform_bidirection()
 }
 
 
-void Uniq_Edge_Graph::resize(int n)
+void UniqEdgeGraph::resize(int n)
 {
 	arc.resize(n);
 	con.resize(n);
@@ -1191,13 +1088,11 @@ void Uniq_Edge_Graph::resize(int n)
 	rev_arc.resize(n);
 }
 
-void Uniq_Edge_Graph::output_graph(string s)
+void UniqEdgeGraph::output_graph(string s)
 {
 	//cout << "begin output edge graph" << endl;
-	char buff[100];
-	sprintf(buff, "%s_%d", s.c_str(), ITER);
-
-	ofstream out(buff);
+    std::string file = boost::str(boost::format("%s_%ld") % s % _iteration);
+	ofstream out(file.c_str());
 
 	list<Dis_Node>::iterator it;
 	for(int i = 0; i < con.size(); i ++)

@@ -1,8 +1,19 @@
-#include "Kmer_Hash.h"
+#include "kmer_hash.h"
+
 #include <vector>
-#include <iostream>
+#include <fstream>
 #include <algorithm>
 #include <assert.h>
+
+bool KmerHash::read(std::istream& stream) {
+    return true;
+}
+
+bool KmerHash::read(const std::string& file) {
+    std::ifstream stream(file.c_str());
+    return read(stream);
+}
+
 using namespace std;
 
 vector<Kmer> tmp_kmer_array;
@@ -53,11 +64,11 @@ void Kmer_Hash::clear()
 
 bool mycmpkmer(long i, long j)
 {
-	if ((tmp_kmer_array[i].code[0] < tmp_kmer_array[j].code[0])
+	if ((tmp_kmer_array[i] < tmp_kmer_array[j])
 			||
-			(tmp_kmer_array[i].code[0] == tmp_kmer_array[j].code[0] & tmp_kmer_array[i].code[1] < tmp_kmer_array[j].code[1])
+			(tmp_kmer_array[i] == tmp_kmer_array[j] & tmp_kmer_array[i] < tmp_kmer_array[j])
 			||
-			(tmp_kmer_array[i].code[0] == tmp_kmer_array[j].code[0] & tmp_kmer_array[i].code[1] == tmp_kmer_array[j].code[1] & tmp_kmer_array[i].code[2] < tmp_kmer_array[j].code[2])
+			(tmp_kmer_array[i] == tmp_kmer_array[j] & tmp_kmer_array[i] == tmp_kmer_array[j] & tmp_kmer_array[i] < tmp_kmer_array[j])
 	   )
 		return true;
 	else

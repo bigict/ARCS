@@ -1,5 +1,7 @@
 bin_PROGRAMS=remove_repeats 
-AM_CXXFLAGS = -O3
 remove_repeats_SOURCES=main.cpp \
-				 Uniq_Edge_Graph.cpp\
-				 Uniq_Edge_Graph.h
+            uniq_edge_graph.cpp\
+            uniq_edge_graph.h
+remove_repeats_CXXFLAGS=${LOG4CXX_CFLAGS}
+remove_repeats_LDFLAGS=${LOG4CXX_LIBS} \
+            -lgmp

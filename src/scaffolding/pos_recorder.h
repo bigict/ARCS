@@ -4,7 +4,7 @@
 #include <list>
 #include <pthread.h>
 
-#include "Uniq_Edge_Graph.h"
+#include "uniq_edge_graph.h"
 
 using namespace std;
 

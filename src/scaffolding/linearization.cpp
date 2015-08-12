@@ -1,6 +1,6 @@
 #include "linearization.h"
-#include "Kmer_Hash.h"
-#include "Pos_Recorder.h"
+#include "kmer_hash.h"
+#include "pos_recorder.h"
 
 #include <iostream>
 #include <fstream>

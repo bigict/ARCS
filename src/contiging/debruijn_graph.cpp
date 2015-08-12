@@ -377,6 +377,7 @@ std::ostream& operator << (std::ostream& os, const DeBruijnGraph& graph) {
     
     // Merge nodes with indegree == outdegree == 1
     for (DeBruijnGraph::NodeList::const_iterator i = graph._nodelist.begin(); i != graph._nodelist.end(); ++i) {
+        // seq && component
         for (DeBruijnGraph::EdgeList::const_iterator j = i->second.children.begin(); j != i->second.children.end(); ++j) {
             Kmer key = i->first + j->first.subKmer(graph._K - 2);
             size_t copy_num = (size_t)((j->second + graph._average/2) / graph._average);
@@ -388,12 +389,12 @@ std::ostream& operator << (std::ostream& os, const DeBruijnGraph& graph) {
             ++contig_index;
         }
 
+        // edge
         if (i->second.indegree() == 1 && i->second.outdegree() == 1) {
             continue;
         }
-
         for (DeBruijnGraph::EdgeList::const_iterator j = i->second.children.begin(); j != i->second.children.end(); ++j) {
-            Kmer key = i->first + j->first.subKmer(graph._K - 2);
+            Kmer edge = i->first + j->first.subKmer(graph._K - 2);
             size_t length = KmerLengthPlus::length(graph._K, i->first);
             size_t coverage = KmerCoveragePlus::coverage(graph._K, i->first, j->second);
 
@@ -403,11 +404,11 @@ std::ostream& operator << (std::ostream& os, const DeBruijnGraph& graph) {
                 coverage += KmerCoveragePlus::coverage(graph._K, k->first, k->second.children.begin()->second);
                 k = graph._nodelist.find(k->second.children.begin()->first);
                 if (k != graph._nodelist.end()) {
-                    key += k->first.subKmer(graph._K - 2);
+                    edge += k->first.subKmer(graph._K - 2);
                 }
             }
 
-            os << boost::format("edge\t%d\t%d\t%s\t%d") % indexer[i->first] % indexer[j->first] % key % (size_t)((coverage + length / 2) / length) << std::endl;
+            os << boost::format("edge\t%d\t%d\t%s\t%d") % indexer[i->first] % indexer[j->first] % edge % (size_t)((coverage + length / 2) / length) << std::endl;
         }
     }
 

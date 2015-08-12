@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <fstream>
 
-#include "Pos_Recorder.h"
+#include "pos_recorder.h"
 
 extern int PAIR_KMER_CUTOFF;
 extern int PAIR_READS_CUTOFF;

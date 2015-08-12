@@ -1,5 +1,6 @@
+#include "uniq_edge_graph.h"
+
 #include <list>
-#include "Uniq_Edge_Graph.h"
 #include <iostream>
 #include <fstream>
 #include <algorithm>

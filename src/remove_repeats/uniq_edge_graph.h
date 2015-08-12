@@ -4,33 +4,33 @@
 
 using namespace std;
 
-typedef struct Dis_Node
-{
-	unsigned int id;
+struct Dis_Node {
+	size_t id;
 	int dis;
 	int c;
 	int score;
-} Dis_Node;
+};
 
-typedef struct Edge_Seq_Element
-{
-	unsigned int id;
+struct Edge_Seq_Element {
+	size_t id;
 	int pos;
 	int len;
-} Edge_Seq_Element;
+};
 
-typedef struct Ed
-{
+struct Ed {
 	int from;
 	int to;
 	int score;
-} Ed;
+};
 
 
-class Uniq_Edge_Graph
-{
+class UniqEdgeGraph {
 public:
-	void input_parameter();
+    UniqEdgeGraph(size_t K, size_t edge_num, size_t max_overlap, size_t iteration) : _K(K), _edge_num(edge_num), _max_overlap(max_overlap), _iteration(iteration) {
+    }
+    virtual ~UniqEdgeGraph() {
+    }
+
 	void input_edge_pos();
 	void input_edge_len();
 	void input_edge_link(string);
@@ -73,6 +73,9 @@ public:
 	void output_lp();
 
 private:
+	void transform_bidirection();
+	void transform_single_direction();
+
 	vector<list<Dis_Node> > arc;
 	vector<list<Dis_Node> > rev_arc;
 	vector< list<Dis_Node> > con;
@@ -89,8 +92,8 @@ private:
 	vector<pair<int, int> > overlap_pair;
 	vector<int> overlap_com_id;
 	//int compute_log_chimeric(int, int, int);
-
-private:
-	void transform_bidirection();
-	void transform_single_direction();
+    size_t _K;
+    size_t _edge_num;
+    size_t _max_overlap;
+    size_t _iteration;
 };

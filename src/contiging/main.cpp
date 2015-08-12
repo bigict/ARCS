@@ -29,26 +29,18 @@ public:
     size_t quality(const std::vector< std::string >& filelist, size_t* count) const {
         size_t q = 0, n = 0;
 
-        if (count != NULL) {
-            n = *count;
-        }
-
         BOOST_FOREACH(const std::string& file, filelist) {
             std::ifstream stream (file.c_str());
             q += quality(stream, &n);
         }
 
         if (count != NULL) {
-            *count = n;
+            *count += n;
         }
         return q;
     }
     size_t quality(std::istream& stream, size_t* count) const {
         size_t q = 0, n = 0;
-
-        if (count != NULL) {
-            n = *count;
-        }
 
         if (stream) {
             DNASeqReader reader(stream);
@@ -61,7 +53,7 @@ public:
         }
 
         if (count != NULL) {
-            *count = n;
+            *count += n;
         }
         return q;
     }
@@ -87,6 +79,7 @@ public:
         }
         return 0;
     }
+
 private:
     size_t _max_count;
 };

@@ -1,12 +1,35 @@
-#ifndef _kmer_hash
-#define _kmer_hash
+#ifndef kmer_hash_h_
+#define kmer_hash_h_
 
-#include "Kmer.h"
+#include "kmer.h"
+
+#include <iostream>
+#include <string>
+#include <tr1/unordered_map>
+
+class KmerHash {
+public:
+    KmerHash(size_t K) : _K(K) {
+    }
+
+    bool read(std::istream& stream);
+    bool read(const std::string& stream);
+
+private:
+    struct Position {
+        size_t component;
+        size_t offset;
+    };
+
+    typedef std::tr1::unordered_multimap< Kmer, Position, KmerHasher > KmerList;
+    KmerList _hash_tbl;
+    size_t _K;
+};
+
+using namespace std;
 #include <vector>
 #include <list>
 #include <utility>
-
-using namespace std;
 
 
 typedef struct Kmer_Node
@@ -65,4 +88,4 @@ private:
 
 	vector<long> kmer_index;
 };
-#endif
+#endif // kmer_hash_h_
