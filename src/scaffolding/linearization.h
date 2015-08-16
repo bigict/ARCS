@@ -2,9 +2,8 @@
 #define linearization_h_
 
 #include <string>
-#include <vector>
 
-#include "uniq_edge_graph.h"
+#include "Uniq_Edge_Graph.h"
 
 class Linearization {
 public:
@@ -25,11 +24,6 @@ private:
         std::string seq;
         int copy_num;
     };
-    struct Component {
-        size_t length;
-        size_t gap;
-    };
-    typedef std::vector< Component > ComponentList;
 
     Uniq_Edge_Graph u_e_g;
     

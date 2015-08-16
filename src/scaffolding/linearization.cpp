@@ -1,6 +1,6 @@
 #include "linearization.h"
-#include "kmer_hash.h"
-#include "pos_recorder.h"
+#include "Kmer_Hash.h"
+#include "Pos_Recorder.h"
 
 #include <iostream>
 #include <fstream>
@@ -512,6 +512,7 @@ void Linearization::estimate_insert_size()
 			left = pos1.get_kmer_pos(kmer1);
 			right = pos1.get_kmer_pos(kmer2);
 
+			
 			if(left.first != -1  && right.first != -1 && left.first == right.first)
 			{
 				if (right.second - left.second > INSERT_SIZE / 4 && right.second - left.second < 2*INSERT_SIZE) 

@@ -25,19 +25,18 @@ public:
             return 1;
         }
 
-	size_t EDGE_NUM = options.get< size_t >("EDGE_CLUSTER_NUM");
+	    size_t EDGE_NUM = options.get< size_t >("EDGE_CLUSTER_NUM");
 
         LOG4CXX_INFO(logger, boost::format("remove repeats begin"));
-        UniqEdgeGraph graph(options.get< size_t >("K"), EDGE_NUM, options.get< size_t >("MAX_OVERLAP"), options.get< size_t >("ITERATION"));
-        
-        graph.input_edge_len();
-        graph.input_edge_pos();
-        graph.resize(EDGE_NUM);
-    
         LOG4CXX_INFO(logger, boost::format("Edge num=%d") % EDGE_NUM);
 
-        graph.input_edge_link("contig_arc_graph_after_remove_ambigous_arcs");
-        graph.input_inner_component();
+        UniqEdgeGraph graph(options.get< size_t >("K"), EDGE_NUM, options.get< size_t >("MAX_OVERLAP"), options.get< size_t >("ITERATION"));
+        
+        if (!graph.input_edge_length() || !graph.input_edge_position() || !graph.input_edge_link("contig_arc_graph_after_remove_ambigous_arcs") || !graph.input_inner_component()) {
+            LOG4CXX_ERROR(logger, boost::format("load data failed."));
+            return 2;
+        }
+    
         graph.linearize();
         
         LOG4CXX_INFO(logger, boost::format("remove repeats end"));
@@ -77,6 +76,16 @@ int RepeatRemover::checkOptions(const Properties& options) {
 }
 
 int RepeatRemover::printHelps() const {
+     std::cerr << "ARCS - version v0.9" << std::endl
+         << "Usage:" << std::endl
+         << "Arguments:" << std::endl
+         << "-K:     select your kmer size." << std::endl
+         << "-O:     select your maximum overlap." << std::endl
+         << "-i:     which iteration." << std::endl
+         << "-s:     select your configure file name." << std::endl
+         << "-c:     select a log config file." << std::endl
+         << "-h:     help" << std::endl;
+
     return 1;
 }
 
@@ -91,7 +100,7 @@ int main(int argc, char **argv) {
                 ("i", "ITERATION")
                 ;
         // command line options
-        std::string opt_string("K:d:O:i:c:h");
+        std::string opt_string("K:d:O:i:s:c:h");
         int opt = -1;
         while ((opt = getopt(argc, argv, opt_string.c_str())) != -1) {
             std::string key(1, (char)opt);

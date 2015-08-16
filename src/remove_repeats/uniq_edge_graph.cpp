@@ -1,360 +1,93 @@
 #include "uniq_edge_graph.h"
 
-#include <list>
-#include <iostream>
+#include <deque>
 #include <fstream>
 #include <algorithm>
-#include <cmath>
-#include <assert.h>
-#include <stack>
-#include <queue>
-#include <string.h>
-//#include <stdio.h>
 
+#include <boost/assign.hpp>
+#include <boost/foreach.hpp>
 #include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <log4cxx/logger.h>
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("remove_repeats.uniq_edge_graph"));
 
-void UniqEdgeGraph::add_a_len(int a_len)
-{
-	len.push_back(a_len);
-}
-
-void UniqEdgeGraph::add_a_pos(int pos_tmp)
-{
-	pos.push_back(pos_tmp);
-}
-
-void UniqEdgeGraph::add_a_dis(int i, int j, int c_dis, int cc, int sc)
-{
-	if(i >= con.size() | j >= con.size())
-	{
-		cout << "i or j out of range" << endl;
-		exit(0);
-	}
-
-	list<Dis_Node>::iterator it;
-	bool find = false;
-	for(it = con[i].begin(); it != con[i].end(); it++)
-	{
-		if(it->id == j)
-		{
-			find = true;
-			it->dis = c_dis;
-			it->c = cc;
-			it->score = sc;
-			break;
-		}	
-	}
-	if(find == false)
-	{
-		Dis_Node nd;
-		nd.id = j;
-		nd.dis = c_dis;
-		nd.c = cc;
-		nd.score = sc;
-		con[i].push_back(nd);
-	}
-}
-
-bool UniqEdgeGraph::is_a_dis(int i, int j)
-{
-	if(i >= con.size() | j >= con.size())
-	{
-		return false;
-	}
-
-	list<Dis_Node>::iterator it;
-
-	for(it = con[i].begin(); it != con[i].end(); it++)
-	{
-		if(it->id == j)
-		{
-			return true;
-		}	
-	}
-	return false;
-}
-
-void UniqEdgeGraph::add_a_arc(int i, int j, int c_dis, int cc, int sc)
-{
-	if(i >= arc.size() | j >= arc.size())
-	{
-		cout << "i or j out of range" << endl;
-		exit(0);
-	}
-	list<Dis_Node>::iterator it;
-	bool find = false;
-	for(it = arc[i].begin(); it != arc[i].end(); it++)
-	{
-		if(it->id == j)
-		{
-			find = true;
-			it->dis = c_dis;
-			it->c = cc;
-			it->score = sc;
-			break;
-		}	
-	}
-
-	if(find == false)
-	{
-		Dis_Node nd;
-		nd.id = j;
-		nd.dis = c_dis;
-		nd.c = cc;
-		nd.score = sc;
-		arc[i].push_back(nd);
-	}
-}
-
-void UniqEdgeGraph::add_a_rev_arc(int i, int j, int c_dis, int cc, int sc)
-{
-	if(i >= rev_arc.size() | j >= rev_arc.size())
-	{
-		return;
-	}
-	list<Dis_Node>::iterator it;
-	bool find = false;
-	for(it = rev_arc[i].begin(); it != rev_arc[i].end(); it++)
-	{
-		if(it->id == j)
-		{
-			find = true;
-			it->dis = c_dis;
-			it->c = cc;
-			it->score = sc;
-			break;
-		}	
-	}
-	if(find == false)
-	{
-		Dis_Node nd;
-		nd.id = j;
-		nd.dis = c_dis;
-		nd.c = cc;
-		nd.score = sc;
-		rev_arc[i].push_back(nd);
-	}
-}
-
-int UniqEdgeGraph::get_dis(int i, int j)
-{
-	if(i >= arc.size() | j >= arc.size())
-	{
-		return 0;
-	}
-	list<Dis_Node>::iterator it;
-	for(it = arc[i].begin(); it != arc[i].end(); it++)
-	{
-		if(it->id == j)
-		{
-			return it->dis;
-		}
-	}
-	return -1;
-}
-
-
-void UniqEdgeGraph::del_a_dis(int i, int j)
-{
-	if(i >= con.size() | j >= con.size())
-	{
-		cout << "out of range" << endl;
-	}
-	list<Dis_Node>::iterator it = con[i].begin();
-	while( it != con[i].end())
-	{
-		if(it->id == j)
-		{
-			it = con[i].erase(it);
-		}else
-		{
-			it ++;
-		}
-	}
-}
-
-void UniqEdgeGraph::del_a_arc(int i, int j)
-{
-	if(i >= arc.size() | j >= arc.size())
-	{
-		cout << "out of range" << endl;
-	}
-	list<Dis_Node>::iterator it = arc[i].begin();
-	while( it != arc[i].end())
-	{
-		if(it->id == j)
-		{
-			it = arc[i].erase(it);
-		}else
-		{
-			it ++;
-		}
-	}
-}
-
-void UniqEdgeGraph::del_a_rev_arc(int i, int j)
-{
-	if(i >= rev_arc.size() | j >= rev_arc.size())
-	{
-		cout << "out of range" << endl;
-	}
-	list<Dis_Node>::iterator it = rev_arc[i].begin();
-	while( it != rev_arc[i].end())
-	{
-		if(it->id == j)
-		{
-			it = rev_arc[i].erase(it);
-		}else
-		{
-			it ++;
-		}
-	}
-}
-
-void UniqEdgeGraph::input_inner_component() {
+bool UniqEdgeGraph::input_inner_component() {
     
     std::string file = boost::str(boost::format("component_%ld") % _iteration);
-	ifstream in(file.c_str());
+	ifstream stream(file.c_str());
 	
-	if (!in) {
+	if (!stream) {
         LOG4CXX_ERROR(logger, boost::format("%s open failed") % file);
-		exit(0);
+        return false;
 	}
-	
-	string line;
-	unsigned int count = 0;
-	
-	while(!in.eof())
-	{
-		getline(in, line);
-		count ++;
-	}
-	inner_component.resize(count / 3);
-	gap.resize(count / 3);
-	in.close();
-	in.open(file.c_str());
-	
-	char *word;
-	count = 0;
-	
-	while(!in.eof())
-	{
-		getline(in, line);
-		getline(in, line);
-		word = strtok(const_cast<char*>(line.c_str()), " \t,");
-		while(word)
-		{
-			//cout << word << endl;
-			inner_component[count].push_back(atoi(word));
-			word = strtok(NULL, " \t,");
-		}
-		getline(in, line);
-		word = strtok(const_cast<char*>(line.c_str()), " \t,");
-		while(word)
-		{
-			//cout << word << endl;
-			gap[count].push_back(atoi(word));
-			word = strtok(NULL, " \t,");
-		}
-		count ++;
-	}
-/*
-	ofstream out("inner_component");
-	for (int i = 0; i < inner_component.size(); i ++)
-	{
-		out << ">component " << i << endl;
-		for (int j = 0; j < inner_component[i].size(); j ++)
-		{
-			out << inner_component[i][j] << " ";
-		}
-		out << endl;
-		
-		for(int j = 0; j < gap[i].size(); j ++)
-		{
-			out << gap[i][j] << " ";
-		}
-		out << endl;
-	}
-	out.close();
-*/
+
+    ComponentReader reader(stream);
+    Component component;
+    while (reader.read(component)) {
+        _component_tbl.push_back(component);
+    }
+
+    return true;
 }
 
-void UniqEdgeGraph::input_edge_pos() {
+bool UniqEdgeGraph::input_edge_position() {
 
     std::string file = boost::str(boost::format("edge_cluster_pos_%ld") % _iteration);
-	ifstream fin(file.c_str());
-	if(!fin) {
+	ifstream stream(file.c_str());
+	if (!stream) {
         LOG4CXX_ERROR(logger, boost::format("%s open failed") % file);
-		exit(0);
+        return false;
 	}
 	
-	int pos_tmp = 0;
-	string line;
-	int eql_pos = 0;
-
-	while(getline(fin, line))
-	{
-		pos_tmp = atoi(line.c_str());
-		add_a_pos(pos_tmp);
+    std::string line;
+	while (std::getline(stream, line)) {
+        _position_tbl.push_back(boost::lexical_cast< size_t >(line));
 	}
+    return true;
 }
 
-void UniqEdgeGraph::input_edge_len() {
+bool UniqEdgeGraph::input_edge_length() {
 
     std::string file = boost::str(boost::format("edge_cluster_len_%ld") % _iteration);
-	ifstream fin(file.c_str());
-	if(!fin) {
+	ifstream stream(file.c_str());
+	if (!stream) {
         LOG4CXX_ERROR(logger, boost::format("%s open failed") % file);
-		exit(0);
+        return false;
 	}
-	int len_tmp = 0;
-	string line;
-	while(getline(fin, line))
-	{	
-		len_tmp = atoi(line.c_str());
-		add_a_len(len_tmp);
+
+    std::string line;
+	while (std::getline(stream, line)) {	
+        _length_tbl.push_back(boost::lexical_cast< size_t >(line));
 	}
+    return true;
 }
 
-void UniqEdgeGraph::input_edge_link(string name) {
+bool UniqEdgeGraph::input_edge_link(const std::string& name) {
     std::string file = boost::str(boost::format("%s_%ld") % name % _iteration);
-	ifstream fin(file.c_str());
+	ifstream stream(file.c_str());
 	
-	if (!fin) {
+	if (!stream) {
         LOG4CXX_ERROR(logger, boost::format("%s open failed") % file);
-		exit(0);
+        return false;
 	}
+
  	int from, to, dis, c;
 	double score;
-	string line;
-	while (getline(fin, line))
-	{
+    std::string line;
+	while (std::getline(stream, line)) {
 		sscanf(line.c_str(), "%d\t%d\t%d\t%d\t%lf", &from, &to, &dis, &c, &score);
-		add_a_dis(from, to, dis, c, score);
-		add_a_arc(from, to, dis, c, score);
-		add_a_rev_arc(to, from, -dis, c, score);
+		addEdge(from, to, dis, c, score);
 	}
-	
-	fin.close();
+    return true;
 }
 
-void UniqEdgeGraph::linearize()
-{
-	
-	//output_graph("tmp_graph_before_repeats_removing.data");
-	transform_bidirection();
+void UniqEdgeGraph::linearize() {
 	initialize_component("new_component");
-	transform_single_direction();
 	remove_arc_con_edge_from_overlap_pair();	
-	//cout << "this time remove overlap end" << endl;
 	
-	transform_bidirection();
 	initialize_component("new_component");
-	transform_single_direction();
 
 	output_graph("contig_arc_graph_after_repeats_removing");	
 	tran_to_line();
@@ -364,109 +97,9 @@ void UniqEdgeGraph::tran_to_line()
 {
 	//cout << "begin transform to line" << endl;
 
-    vector<int> flag;
-	flag.resize(pos.size());
-	line_component.resize(component.size());
+	line_component = _component;
 	
-	//cout << "component size = " << component.size() << endl;
-
-	for(int i = 0; i < flag.size(); i++)
-	{
-		flag[i] = 0;
-	}
-	
-	//ofstream fout("no_end");
-
-	stack<int> st;
-	for(int i = 0; i < component.size(); i ++)
-	{
-		int size = component[i].size();
-		int first = component[i][0].id;
-		int end = component[i][size - 1].id;
-		
-		if(first == end)
-		{
-			line_component[i].resize(1);
-			line_component[i][0].id = first;
-			line_component[i][0].len = len[first];
-			line_component[i][0].pos = pos[first];
-			continue;
-		}
-
-		while (!st.empty())
-		{
-			st.pop();
-		}
-
-		// for(int j=0; j<size; j++){
-		// 	st.push(component[i][j].id);
-		// }
-
-		flag[first] = 1;
-		int temp;
-		bool find_next = false;
-		bool find_tar = false;
-
-		while(!st.empty())
-		{
-			temp = st.top();
-			find_next = false;
-			for(list<Dis_Node>::iterator it = con[temp].begin(); it != con[temp].end(); it ++)
-			{
-				if(flag[it->id] == 0 && it->id == end)
-				{
-					st.push(it->id);
-					flag[it->id] = 1;
-					find_next = true;
-					find_tar = true;
-					break;
-				}else if (flag[it->id] == 0)
-				{
-					st.push(it->id);
-					flag[it->id] = 1;
-					find_next = true;
-					break;
-				}
-			}
-
-			if(find_tar == true)
-			{
-				break;
-			}
-
-			if(find_next == true)
-			{
-				continue;
-			}else
-			{
-				flag[temp] = 2;
-				st.pop();
-			}
-		}
-		
-		if (find_tar == false)
-		{
-	//		fout << first << endl;
-			line_component[i] = component[i];
-		}else
-		{
-			line_component[i].resize(st.size());
-			for (int j = st.size() - 1; j >= 0; j--)
-			{
-				Edge_Seq_Element e_s_e;
-				e_s_e.id = st.top();
-				e_s_e.len = len[e_s_e.id];
-				e_s_e.pos = pos[e_s_e.id];
-				st.pop();
-				line_component[i][j] = e_s_e;
-			}
-		}
-	}
-	
-	for(int i = 0; i < flag.size(); i++)
-	{
-		flag[i] = 0;
-	}
+    std::vector< int > flag(_position_tbl.size(), 0);
 
 	for (int i = 0; i < line_component.size(); i ++)
 	{
@@ -481,7 +114,7 @@ void UniqEdgeGraph::tran_to_line()
 		if(flag[i] == 0)
 		{
 			count ++;
-			del_a_edge(i);
+			removeNode(i);
 		}
 	}
 	//cout << "\ttran to line delete " << count << " contigs " << endl;
@@ -501,31 +134,31 @@ void UniqEdgeGraph::tran_to_line()
 		for (int j = 0; j < line_component[i].size(); j ++)
 		{
 			//cout << "line component : " <<  line_component[i][j].id << endl;
-			for (int k = 0; k < inner_component[line_component[i][j].id].size(); k ++)
+			for (int k = 0; k < _component_tbl[line_component[i][j].id].items.size(); k ++)
 			{
-				out << inner_component[line_component[i][j].id][k] << " ";
+				out << _component_tbl[line_component[i][j].id].items[k].contig << " ";
 			}		
 		}
 		out << endl;
-		for (int k = 0; k < gap[line_component[i][0].id].size(); k ++)
+		for (int k = 0; k < _component_tbl[line_component[i][0].id].items.size(); k ++)
 		{
-			out << gap[line_component[i][0].id][k] << " ";
+			out << _component_tbl[line_component[i][0].id].items[k].gap << " ";
 		}
 		for (int j = 1; j < line_component[i].size(); j ++)
 		{	
-			//out << pos[line_component[i][j].id] - pos[line_component[i][j-1].id] - len[line_component[i][j-1].id] + K << " " ;
-			int tmp_dis = get_dis(line_component[i][j-1].id, line_component[i][j].id);
+			//out << _position_tbl[line_component[i][j].id] - _position_tbl[line_component[i][j-1].id] - _length_tbl[line_component[i][j-1].id] + K << " " ;
+			int tmp_dis = getDistance(line_component[i][j-1].id, line_component[i][j].id);
 			if (tmp_dis >= 0)
 			{
 				out << tmp_dis - line_component[i][j-1].len + _K  << " " ;
 			}else
 			{
-				out << pos[line_component[i][j].id] - pos[line_component[i][j-1].id] - len[line_component[i][j-1].id] + _K << " " ;
+				out << _position_tbl[line_component[i][j].id] - _position_tbl[line_component[i][j-1].id] - _length_tbl[line_component[i][j-1].id] + _K << " " ;
 			}
 
-			for (int k = 0; k < gap[line_component[i][j].id].size(); k ++)
+			for (int k = 0; k < _component_tbl[line_component[i][j].id].items.size(); k ++)
 			{
-				out << gap[line_component[i][j].id][k] << " ";
+				out << _component_tbl[line_component[i][j].id].items[k].gap << " ";
 			}
 		}
 		out << endl;
@@ -541,18 +174,18 @@ void UniqEdgeGraph::tran_to_line()
 		
 		for (int j = 0; j < line_component[i].size(); j ++)
 		{
-			out << line_component[i][j].id << "|" << len[line_component[i][j].id] << "|" << pos[line_component[i][j].id] << "\t";
+			out << line_component[i][j].id << "|" << _length_tbl[line_component[i][j].id] << "|" << _position_tbl[line_component[i][j].id] << "\t";
 		}
 		out << endl;
 		for (int j = 1; j < line_component[i].size(); j ++)
 		{	
-			int tmp_dis = get_dis(line_component[i][j-1].id, line_component[i][j].id);
+			int tmp_dis = getDistance(line_component[i][j-1].id, line_component[i][j].id);
 			if (tmp_dis >= 0)
 			{
 				out << tmp_dis - line_component[i][j-1].len + _K  << " " ;
 			}else
 			{
-				out << pos[line_component[i][j].id] - pos[line_component[i][j-1].id] - len[line_component[i][j-1].id] + _K << " " ;
+				out << _position_tbl[line_component[i][j].id] - _position_tbl[line_component[i][j-1].id] - _length_tbl[line_component[i][j-1].id] + _K << " " ;
 			}
 		}
 		out << endl;
@@ -560,110 +193,76 @@ void UniqEdgeGraph::tran_to_line()
 	out.close();
 }
 
-void UniqEdgeGraph::transform_single_direction()
-{
-	list<Dis_Node>::iterator it;
-	for (int i = 0; i < con.size(); i++)
-	{
-		it = con[i].begin();
-		while(it != con[i].end())
-		{
-			if(it->dis < 0)
-			{
-				it = con[i].erase(it);
-			}else
-			{
-				it ++;
-			}
-		}
-	}
-}
-
 int cmp( Edge_Seq_Element es1, Edge_Seq_Element es2)
 {
 	return es1.pos < es2.pos;
 }
 
-void UniqEdgeGraph::initialize_component(string cmp_name)
-{
+void UniqEdgeGraph::initialize_component(string cmp_name) {
 	cout << "initialize scaffolds" << endl;
 	
-	vector<int> flag;
-	component.clear();
+	_component.clear();
 
     // BFS
-	flag.resize(con.size());
-	for(int i = 0; i < flag.size(); i ++)
-	{
-		flag[i] = 0;
-	}
-	vector<Edge_Seq_Element> e_s;
-	Edge_Seq_Element e_s_e;
-	list<int> qu;
-	int tmp;
-	list<Dis_Node>::iterator it;
-	for(int i = 0; i < flag.size(); i++)
-	{
-		if(flag[i] == 0)
-		{
-			e_s.clear();
-			qu.push_back(i);
-			while(!qu.empty())
-			{
-				tmp = qu.front();
-				qu.pop_front();
-				e_s_e.id = tmp;
-				e_s_e.pos = pos[tmp];
-				e_s_e.len = len[tmp];
-				e_s.push_back(e_s_e);	
-				flag[tmp] = 2;
-				for(it = con[tmp].begin(); it != con[tmp].end(); it++)
-				{
-					if(flag[it->id] == 0)
-					{
-						flag[it->id] = 1;
-						qu.push_back(it->id);
-					}
-				}			
-			}
-			component.push_back(e_s);
-		}
-	}
+    std::map< size_t, size_t > flag;
+    //for (NodeList::const_iterator i = _nodelist.begin(); i != _nodelist.end(); ++i) {
+    for (size_t i = 0; i < _position_tbl.size(); ++i) {
+        if (flag.find(i) == flag.end()) {
+            std::vector< Edge_Seq_Element > elements;
+
+            std::deque< size_t > Q = boost::assign::list_of(i);
+            while (!Q.empty()) {
+                size_t node = Q.front();
+                Q.pop_front();
+                flag[node] = 2;
+
+                Edge_Seq_Element ele(node, _position_tbl[node], _length_tbl[node]);
+                elements.push_back(ele);
+
+                NodeList::const_iterator k = _nodelist.find(node);
+                if (k != _nodelist.end()) {
+                    for (Children::const_iterator j = k->second.children.begin(); j != k->second.children.end(); ++j) {
+                        if (flag.find(j->first) == flag.end()) {
+                            Q.push_back(j->first);
+                            flag[j->first] = 1;
+                        }
+                    }
+                    for (Parents::const_iterator j = k->second.parents.begin(); j != k->second.parents.end(); ++j) {
+                        if (flag.find(*j) == flag.end()) {
+                            Q.push_back(*j);
+                            flag[*j] = 1;
+                        }
+                    }
+                }
+            }
+
+            _component.push_back(elements);
+        }
+    }
+    
+    std::cout << boost::format("#### postion=[%d] componets=[%d] flag[%d],_nodelist[%d]") % _position_tbl.size() % _component.size() % flag.size() % _nodelist.size() << std::endl;
 	
-	for (int i = 0; i < component.size(); i++)
+	for (int i = 0; i < _component.size(); i++)
 	{
-		sort(component[i].begin(), component[i].end(), cmp);
+		sort(_component[i].begin(), _component[i].end(), cmp);
 	}
 
-	vector<vector<int> > pre;
-	pre.resize(con.size());
-	for(int i = 0; i < con.size(); i++)
-	{
-		for(list<Dis_Node>::iterator it = con[i].begin(); it != con[i].end(); it ++)
-		{
-			if(it->dis > 0)
-			{
-				pre[it->id].push_back(i);
-			}
-		}
-	}
-
-	cout << "\tscaffolds number = "<< component.size() << endl;
+	cout << "\tscaffolds number = "<< _component.size() << endl;
 
 	ofstream out(cmp_name.c_str());
 	
-	for(int i = 0; i < component.size(); i ++)
+	for(int i = 0; i < _component.size(); i ++)
 	{
 		out << ">component " << i << endl;
 		
-		for (int j = 0; j < component[i].size(); j ++)
+		for (int j = 0; j < _component[i].size(); j ++)
 		{
-			out << component[i][j].id << " ";
+			out << _component[i][j].id << " ";
 		}	
 		out << endl;
-		for (int j = 1; j < component[i].size(); j ++)
+		for (int j = 1; j < _component[i].size(); j ++)
 		{
-			out << (component[i][j].pos - component[i][j - 1].pos - len[component[i][j - 1].id] + _K ) << " ";
+			out << (_component[i][j].pos - _component[i][j - 1].pos - _length_tbl[_component[i][j - 1].id] + _K ) << " ";
 		}
 		out << endl;
 	}
@@ -672,33 +271,33 @@ void UniqEdgeGraph::initialize_component(string cmp_name)
     int conflict_scaf = 0;
     bool find_cft = false;
 
-	for (int index = 0; index < component.size(); index ++)
+	for (int index = 0; index < _component.size(); index ++)
 	{
 
         find_cft = false;
 
-		for (int i = 0; i < component[index].size() - 1; i ++)
+		for (int i = 0; i < _component[index].size() - 1; i ++)
 		{
-			for(int j = i + 1; j < component[index].size(); j ++)
+			for(int j = i + 1; j < _component[index].size(); j ++)
 			{
-				if (component[index][i].pos + component[index][i].len > component[index][j].pos&& !is_a_dis(component[index][i].id, component[index][j].id) &&
-				!is_a_dis(component[index][j].id, component[index][i].id))
+				if (_component[index][i].pos + _component[index][i].len > _component[index][j].pos&& !hasEdge(_component[index][i].id, _component[index][j].id) &&
+				!hasEdge(_component[index][j].id, _component[index][i].id))
 				{
-					if (component[index][i].pos + component[index][i].len < component[index][j].pos + component[index][j].len )
+					if (_component[index][i].pos + _component[index][i].len < _component[index][j].pos + _component[index][j].len )
 					{
-						if (_max_overlap <= component[index][i].pos + component[index][i].len 
-								- component[index][j].pos)
+						if (_max_overlap <= _component[index][i].pos + _component[index][i].len 
+								- _component[index][j].pos)
 						{
-							overlap_pair.push_back(make_pair(component[index][i].id, component[index][j].id));
+							overlap_pair.push_back(make_pair(_component[index][i].id, _component[index][j].id));
 							overlap_com_id.push_back(index);
                             find_cft = true;
 						}
 
 					}else
 					{
-						if (_max_overlap <= component[index][j].len)
+						if (_max_overlap <= _component[index][j].len)
 						{
-							overlap_pair.push_back(make_pair(component[index][i].id, component[index][j].id));
+							overlap_pair.push_back(make_pair(_component[index][i].id, _component[index][j].id));
 							overlap_com_id.push_back(index);
                             find_cft = true;
 
@@ -739,27 +338,39 @@ int avg_score(const vector<Ed> &tmp)
 	return sum / tmp.size();
 }
 
-Ed UniqEdgeGraph::get_min_ed(int index)
-{
+Ed UniqEdgeGraph::get_min_ed(int index) {
 	vector<Ed> tmp_ed_set;
 	Ed tmp_ed;
-	list<Dis_Node>::iterator it;
 	 
-	for(it = arc[index].begin(); it != arc[index].end(); it++)
-	{
-		tmp_ed.from = index;
-		tmp_ed.to = it->id;
-		tmp_ed.score = it->score;
-		tmp_ed_set.push_back(tmp_ed);
-	}
-	
-	for(it = rev_arc[index].begin(); it != rev_arc[index].end(); it++)
-	{
-		tmp_ed.from = it->id;
-		tmp_ed.to = index;
-		tmp_ed.score = it->score;
-		tmp_ed_set.push_back(tmp_ed);
-	}
+    // Children
+    {
+        NodeList::const_iterator i = _nodelist.find(index);
+        if (i != _nodelist.end()) {
+            for (Children::const_iterator j = i->second.children.begin(); j != i->second.children.end(); ++j) {
+                tmp_ed.from = index;
+                tmp_ed.to = j->first;
+                tmp_ed.score = j->second.score;
+                tmp_ed_set.push_back(tmp_ed);
+            }
+        }
+    }
+    // Parents
+    {
+        NodeList::const_iterator i = _nodelist.find(index);
+        if (i != _nodelist.end()) {
+            for (Parents::const_iterator j = i->second.parents.begin(); j != i->second.parents.end(); ++j) {
+                NodeList::const_iterator k = _nodelist.find(*j);
+                BOOST_ASSERT(k != _nodelist.end());
+                BOOST_ASSERT(k->second.children.find(i->first) != k->second.children.end());
+                tmp_ed.from = *j;
+                tmp_ed.to = index;
+                Children::const_iterator l = k->second.children.find(i->first);
+                tmp_ed.score = l->second.score;
+                tmp_ed_set.push_back(tmp_ed);
+
+            }
+        }
+    }
 
 	sort(tmp_ed_set.begin(), tmp_ed_set.end(), cmp_link);
 	
@@ -800,65 +411,61 @@ void UniqEdgeGraph::remove_arc_con_edge_from_overlap_pair()
 
 	for (int i = 0; i < overlap_pair.size(); i++)
 	{
-		//while (temp1 >= 0 && temp1 != overlap_pair[i].first && temp1 != overlap_pair[i].second && !is_a_dis(temp1, overlap_pair[i].first) && !is_a_dis(temp1, overlap_pair[i].second))
-		if ((is_a_dis(overlap_pair[i].first, overlap_pair[i].second)) 
+		//while (temp1 >= 0 && temp1 != overlap_pair[i].first && temp1 != overlap_pair[i].second && !hasEdge(temp1, overlap_pair[i].first) && !hasEdge(temp1, overlap_pair[i].second))
+		if ((hasEdge(overlap_pair[i].first, overlap_pair[i].second)) 
 				|| 
-				(is_a_dis(overlap_pair[i].second, overlap_pair[i].first)) )
+				(hasEdge(overlap_pair[i].second, overlap_pair[i].first)) )
 		{
 			continue;
 		}
 
-		temp1 = get_ancestor(overlap_pair[i].first, overlap_pair[i].second);	
+		temp1 = getAncestor(overlap_pair[i].first, overlap_pair[i].second);	
 		while (temp1 >= 0)
 		{
 			tmp_ed = get_min_ed(temp1);
 			if (tmp_ed.from >= 0)
 			{
 				//fout << "del " << tmp_ed.from << "\t" << tmp_ed.to << endl;
-				del_a_dis(tmp_ed.from, tmp_ed.to);
-				del_a_arc(tmp_ed.from, tmp_ed.to);
-				del_a_rev_arc(tmp_ed.to, tmp_ed.from);
+				removeEdge(tmp_ed.from, tmp_ed.to);
 				fout <<  "backward chimeric link " << tmp_ed.from << "," << tmp_ed.to << endl; 
 			}else
 			{
 				break;
 			}
-			temp1 = get_ancestor(overlap_pair[i].first, overlap_pair[i].second);
+			temp1 = getAncestor(overlap_pair[i].first, overlap_pair[i].second);
 		}
 		
 		while (temp1 >= 0) 
 		{
 			fout << temp1 << "\tancestor of\t(" << overlap_pair[i].first << "," << overlap_pair[i].second << ")" << endl; 
-			del_a_edge(temp1);
+			removeNode(temp1);
 
-			temp1 = get_ancestor(overlap_pair[i].first, overlap_pair[i].second);	
+			temp1 = getAncestor(overlap_pair[i].first, overlap_pair[i].second);	
 		}
-		//while (temp2 >= 0 && temp2 != overlap_pair[i].first && temp2 != overlap_pair[i].second && !is_a_dis( overlap_pair[i].first, temp2) && !is_a_dis( overlap_pair[i].second, temp2)) 
+		//while (temp2 >= 0 && temp2 != overlap_pair[i].first && temp2 != overlap_pair[i].second && !hasEdge( overlap_pair[i].first, temp2) && !hasEdge( overlap_pair[i].second, temp2)) 
 		
-		temp2 = get_descendant(overlap_pair[i].first, overlap_pair[i].second);
+		temp2 = getDescendant(overlap_pair[i].first, overlap_pair[i].second);
 		while (temp2 >= 0)
 		{
 			tmp_ed = get_min_ed(temp2);
 			if (tmp_ed.from >= 0)
 			{
 				//cout << "del " << tmp_ed.from << "\t" << tmp_ed.to << endl;
-				del_a_dis(tmp_ed.from, tmp_ed.to);
-				del_a_arc(tmp_ed.from, tmp_ed.to);
-				del_a_rev_arc(tmp_ed.to, tmp_ed.from);
+				removeEdge(tmp_ed.from, tmp_ed.to);
 				fout <<  "forward chimeric link " << tmp_ed.from << "," << tmp_ed.to << endl; 
 			}else
 			{
 				break;
 			}
-			temp2 = get_descendant(overlap_pair[i].first, overlap_pair[i].second);
+			temp2 = getDescendant(overlap_pair[i].first, overlap_pair[i].second);
 		}
 
 		while (temp2 >= 0) 
 		{
 			fout << temp2 << "\tdescendant of\t(" << overlap_pair[i].first << "," << overlap_pair[i].second << ")" << endl; 
-			del_a_edge(temp2);
+			removeNode(temp2);
 
-			temp2 = get_descendant(overlap_pair[i].first, overlap_pair[i].second);
+			temp2 = getDescendant(overlap_pair[i].first, overlap_pair[i].second);
 		}
 		
 	}
@@ -870,243 +477,277 @@ void UniqEdgeGraph::remove_arc_con_edge_from_overlap_pair()
 
 }
 
-int UniqEdgeGraph::get_ancestor(int i, int j)
-{
-    std::vector<int> flag(rev_arc.size(), 0);
-	int depth = 2,count = 0,k = 0;
-    std::queue<int> qu;
-	qu.push(i);
+int UniqEdgeGraph::getAncestor(size_t x, size_t y) const {
+    std::map< size_t, int > flag;
+
+    // BFS
+    // node=>x
+    {
+        int depth = 2, width = 0, count = 1;
+        std::deque< size_t > Q = boost::assign::list_of(x);
+        while (!Q.empty()) {
+            size_t node = Q.front();
+            Q.pop_front();
+
+            flag[node] = depth;
+            NodeList::const_iterator k = _nodelist.find(node);
+            if (k != _nodelist.end()) {
+                for (Parents::const_iterator i = k->second.parents.begin(); i != k->second.parents.end(); ++i) {
+                    if (flag.find(*i) == flag.end()) {
+                        Q.push_back(*i);
+                        flag[*i] = 1;
+                        ++width;
+                    }
+                }
+            }
+            if (--count == 0) {
+                count = width;
+                ++depth;
+            }
+        }
+    }
+    // node=>y
+    {
+        int depth = -1, width = 0, count = 1;
+        size_t id = -1;
+        int min_depth = 0;
+        std::deque< size_t > Q = boost::assign::list_of(y);
+        while (!Q.empty()) {
+            size_t node = Q.front();
+            Q.pop_front();
+
+            if (flag.find(node) != flag.end() && flag[node] >= 2) {
+                return node;
+            }
+
+            flag[node] = depth;
+            NodeList::const_iterator k = _nodelist.find(node);
+            if (k != _nodelist.end()) {
+                for (Parents::const_iterator i = k->second.parents.begin(); i != k->second.parents.end(); ++i) {
+                    if (flag.find(*i) == flag.end()) {
+                        Q.push_back(*i);
+                        flag[*i] = 1;
+                        ++width;
+                    } else if (flag[*i] >= 2) {
+                        if (id == -1 || flag[*i] < min_depth) {
+                            id = *i;
+                            min_depth = flag[*i];
+                        }
+                    }
+                }
+            }
+
+            if (--count == 0) {
+                if (id != -1) {
+                    return id;
+                }
+                count = width;
+                --depth;
+            }
+        }
+    }
+
+	return -1;
+}
+
+int UniqEdgeGraph::getDescendant(size_t x, size_t y) const {
+    std::map< size_t, int > flag;
+
+	int depth = 2,count = 0, width = 0;
+    std::deque<int> Q;
+	Q.push_back(x);
 	count = 1;
 
     // BFS
-	int tmp;
-	list<Dis_Node>::iterator it;
-	while (!qu.empty())
-	{
-		tmp = qu.front();
-		qu.pop();
-		flag[tmp] = depth;
-		for (it = rev_arc[tmp].begin(); it != rev_arc[tmp].end(); it++)
-		{
-			if(flag[it->id] == 0)
-			{
-				flag[it->id] = 1;
-				qu.push(it->id);
-				k++;
-			}
-		}
-		if((--count) == 0){
-			count = k;
-			depth++;
-		}
-	}
+    // node=>x
+    {
+        int depth = 2, width = 0, count = 1;
+        while (!Q.empty()) {
+            size_t node = Q.front();
+            Q.pop_front();
+            flag[node] = 2;
+        NodeList::const_iterator k = _nodelist.find(node);
+        if (k != _nodelist.end()) {
+            for (Children::const_iterator i = k->second.children.begin(); i != k->second.children.end(); ++i) {
+                if(flag[i->first] == 0)
+                {
+                    flag[i->first] = 1;
+                    Q.push_back(i->first);
+                    width++;
+                }
+            }
+        }
+            if((--count) == 0){
+                count = width;
+                depth++;
+            }
+        }
+    }
 
-	qu.push(j);
+	Q.push_back(y);
 	unsigned int id = 0;
 	depth = -1;
 	count = 1;
-	k = 0;
+	width = 0;
 	int min = 0;
-	while (!qu.empty())
-	{
-		tmp = qu.front();
-		qu.pop();
-		if(flag[tmp] >= 2)
-		{
-			return tmp;
+	while (!Q.empty()) {
+		size_t node = Q.front();
+		Q.pop_front();
+		if (flag[node] >= 2) {
+			return node;
 		}
-		flag[tmp] = depth;
-		for(it = rev_arc[tmp].begin(); it != rev_arc[tmp].end(); it++)
-		{
-			if (flag[it->id] == 0)
+		flag[node] = 3;
+    NodeList::const_iterator k = _nodelist.find(node);
+    if (k != _nodelist.end()) {
+        for (Children::const_reverse_iterator i = k->second.children.rbegin(); i != k->second.children.rend(); ++i) {
+			if (flag[i->first] == 0)
 			{
-				flag[it->id] = 1;
-				qu.push(it->id);
-				k++;
-			}else if (flag[it->id] >= 2)
+				flag[i->first] = 1;
+				Q.push_back(i->first);
+				width++;
+			}else if (flag[i->first] >= 2)
 			{
-				if(id == 0 || flag[it->id] < min){
-					id = it->id;
+				if(id == 0 || flag[i->first] > min){
+					id = i->first;
 					min = flag[id];
 				}
 			}
 		}
+    }
 		if((--count) == 0){
 			if(id != 0)
 				return id;
-			count = k;
+			count = width;
 			depth--;
 		}
 	}
+
 	return -1;
 }
 
-int UniqEdgeGraph::get_descendant(int i, int j)
-{
-	vector<int> flag;
-	int depth = 2,count = 0,k = 0;
-	flag.resize(arc.size());
-	for(int index = 0; index < flag.size(); index ++)
-	{
-		flag[index] = 0;
-	}
-	queue<int> qu;
-	qu.push(i);
-	count = 1;
-
-	int tmp;
-	list<Dis_Node>::iterator it;
-	while (!qu.empty())
-	{
-		tmp = qu.front();
-		qu.pop();
-		flag[tmp] = 2;
-		for(it = arc[tmp].begin(); it != arc[tmp].end(); it++)
-		{
-			if(flag[it->id] == 0)
-			{
-				flag[it->id] = 1;
-				qu.push(it->id);
-				k++;
-			}
-		}
-		if((--count) == 0){
-			count = k;
-			depth++;
-		}
-	}
-
-	qu.push(j);
-	unsigned int id = 0;
-	depth = -1;
-	count = 1;
-	k = 0;
-	int min = 0;
-	while (!qu.empty())
-	{
-		tmp = qu.front();
-		qu.pop();
-		if (flag[tmp] >= 2)
-		{
-			return tmp;
-		}
-		flag[tmp] = 3;
-		for(it = arc[tmp].begin(); it != arc[tmp].end(); it++)
-		{
-			if (flag[it->id] == 0)
-			{
-				flag[it->id] = 1;
-				qu.push(it->id);
-				k++;
-			}else if (flag[it->id] >= 2)
-			{
-				if(id == 0 || flag[it->id] > min){
-					id = it->id;
-					min = flag[id];
-				}
-			}
-		}
-		if((--count) == 0){
-			if(id != 0)
-				return id;
-			count = k;
-			depth--;
-		}
-	}
-	return -1;
-}
-
-void UniqEdgeGraph::del_a_edge(int i)
-{
-	if(i >= con.size() || i < 0)
-	{
-		cout << "out of range" << endl;
-		return; 
-	}
-	list<Dis_Node>::iterator it;
-	list<Dis_Node>::iterator it_next;
-	for(it = rev_arc[i].begin(); it != rev_arc[i].end(); it++)
-	{
-		for(it_next = con[it->id].begin(); it_next != con[it->id].end(); it_next++)
-		{
-			if(it_next->id == i)
-			{
-				con[it->id].erase(it_next);
-				break;
-			}	
-		}
-	}
-	con[i].clear();
-	
-	for(it = rev_arc[i].begin(); it != rev_arc[i].end(); it++)
-	{
-		for(it_next = arc[it->id].begin(); it_next != arc[it->id].end(); it_next++)
-		{
-			if(it_next->id == i)
-			{
-				arc[it->id].erase(it_next);
-				break;
-			}	
-		}
-	}
-
-	for(it = arc[i].begin(); it != arc[i].end(); it++)
-	{
-		for(it_next = rev_arc[it->id].begin(); it_next != rev_arc[it->id].end(); it_next++)
-		{
-			if(it_next->id == i)
-			{
-				rev_arc[it->id].erase(it_next);
-				break;
-			}	
-		}
-	}
-	rev_arc[i].clear();
-	arc[i].clear();
-}
-
-void UniqEdgeGraph::transform_bidirection()
-{
-//	cout << "uniq edge graph tran bidirect" << endl;
-	list<Dis_Node>::iterator it;
-	for(int i = 0; i < con.size(); i++)
-	{
-		for(it = con[i].begin(); it != con[i].end(); it++)
-		{
-			add_a_dis(it->id, i, -(it->dis), it->c, it->score);
-		}
-	}
-//	cout << "tran end" << endl;
-}
-
-
-void UniqEdgeGraph::resize(int n)
-{
-	arc.resize(n);
-	con.resize(n);
-	//pos.resize(n);
-	rev_arc.resize(n);
-}
-
-void UniqEdgeGraph::output_graph(string s)
-{
+void UniqEdgeGraph::output_graph(const std::string& filename) const {
 	//cout << "begin output edge graph" << endl;
-    std::string file = boost::str(boost::format("%s_%ld") % s % _iteration);
+    std::string file = boost::str(boost::format("%s_%ld") % filename % _iteration);
 	ofstream out(file.c_str());
 
-	list<Dis_Node>::iterator it;
-	for(int i = 0; i < con.size(); i ++)
-	{
-		for(it = con[i].begin();it != con[i].end(); it++)
-		{
-			//if (it->dis > 0)
-			{
-				out << i << "|" << len[i] << "|" << pos[i] << "\t" << it->id << "|" << len[it->id] << "|" << pos[it->id] << "\t" << it->dis << "|" << it->c << "|" << it->score << endl;
-			}
-		}
-	}
+    for (NodeList::const_iterator i = _nodelist.begin(); i != _nodelist.end(); ++i) {
+        for (Children::const_iterator j = i->second.children.begin(); j != i->second.children.end(); ++j) {
+				out << i->first << "|" << _length_tbl[i->first] << "|" << _position_tbl[i->first] << "\t" << j->first << "|" << _length_tbl[j->first] << "|" << _position_tbl[j->first] << "\t" << j->second.distance << "|" << j->second.count << "|" << j->second.score << endl;
+        }
+    }
 	out.close();
 	//cout << "end out put graph" << endl;
 }
 
+void UniqEdgeGraph::addEdge(size_t from, size_t to, int distance, int count, int score) {
+    // Add nodes
+    {
+        if (_nodelist.find(from) == _nodelist.end()) {
+           _nodelist[from] = Node();
+        }
+        if (_nodelist.find(to) == _nodelist.end()) {
+           _nodelist[to] = Node();
+        }
+    }
+    // Set Children
+    {
+        Node& node = _nodelist[from];
+        if (node.children.find(to) == node.children.end()) {
+            node.children[to] = Edge(distance, count, score);
+        }
+    }
+    // Set Parents
+    {
+        Node& node = _nodelist[to];
+        node.parents.insert(from);
+    }
 
+    LOG4CXX_TRACE(logger, boost::format("addEdge: %d,%d,%d,%d,%d") % from % to % distance % _nodelist[from].children.size() % _nodelist[to].parents.size());
+}
+
+void UniqEdgeGraph::removeEdge(size_t from, size_t to) {
+    LOG4CXX_TRACE(logger, boost::format("removeEdge: from=%d,to=%d") % from % to);
+    // Remove child
+    {
+        NodeList::iterator i = _nodelist.find(from);
+        if (i != _nodelist.end()) {
+            Children::iterator j = i->second.children.find(to);
+            if (j != i->second.children.end()) {
+                i->second.children.erase(j);
+            }
+        }
+    }
+    // Remove parent
+    {
+        NodeList::iterator i = _nodelist.find(to);
+        if (i != _nodelist.end()) {
+            Parents::iterator j = i->second.parents.find(from);
+            if (j != i->second.parents.end()) {
+                i->second.parents.erase(j);
+            }
+        }
+    }
+    // Clear
+    {
+        NodeList::iterator i = _nodelist.find(from);
+        if (i != _nodelist.end() && !i->second) {
+            _nodelist.erase(i);
+        }
+        NodeList::iterator j = _nodelist.find(to);
+        if (j != _nodelist.end() && !j->second) {
+            _nodelist.erase(j);
+        }
+    }
+}
+
+void UniqEdgeGraph::removeNode(size_t node) {
+    LOG4CXX_TRACE(logger, boost::format("removeNode: %d") % node);
+
+    NodeList::iterator i = _nodelist.find(node);
+    if (i != _nodelist.end()) {
+        std::vector< size_t > checklist;
+        for (Children::iterator j = i->second.children.begin(); j != i->second.children.end(); ++j) {
+            NodeList::iterator k = _nodelist.find(j->first);
+            if (k != _nodelist.end()) {
+                k->second.parents.erase(i->first);
+                checklist.push_back(k->first);
+            }
+        }
+        for (Parents::iterator j = i->second.parents.begin(); j != i->second.parents.end(); ++j) {
+            NodeList::iterator k = _nodelist.find(*j);
+            if (k != _nodelist.end()) {
+                k->second.children.erase(i->first);
+                checklist.push_back(k->first);
+            }
+
+        }
+
+        _nodelist.erase(i);
+
+        BOOST_FOREACH(size_t id, checklist) {
+            NodeList::iterator k = _nodelist.find(id);
+            if (k != _nodelist.end() && !k->second) {
+                _nodelist.erase(k);
+            }
+        }
+    }
+}
+
+bool UniqEdgeGraph::hasEdge(size_t from, size_t to) const {
+    NodeList::const_iterator i = _nodelist.find(from);
+    if (i != _nodelist.end()) {
+        return i->second.children.find(to) != i->second.children.end();
+    }
+    return false;
+}
+
+int UniqEdgeGraph::getDistance(size_t from, size_t to) const {
+    NodeList::const_iterator i = _nodelist.find(from);
+    if (i != _nodelist.end()) {
+        Children::const_iterator j = i->second.children.find(to);
+        if (j != i->second.children.end()) {
+            return j->second.distance;
+        }
+    }
+    return -1;
+}
