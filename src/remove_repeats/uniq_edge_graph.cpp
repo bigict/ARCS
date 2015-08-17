@@ -185,7 +185,7 @@ void ConflictResolver::resolve() {
 	}
 }
 
-bool UniqEdgeGraph::input_inner_component() {
+bool UniqEdgeGraph::input_component() {
     
     std::string file = boost::str(boost::format("component_%ld") % _iteration);
     std::ifstream stream(file.c_str());
@@ -276,167 +276,24 @@ void UniqEdgeGraph::linearize() {
 			}		
 		}
 		out << std::endl;
-		for (int k = 0; k < _component_tbl[scaffolds[i][0].id].items.size(); k ++)
-		{
+		for (size_t k = 0; k < _component_tbl[scaffolds[i][0].id].items.size(); ++k) {
 			out << _component_tbl[scaffolds[i][0].id].items[k].gap << " ";
 		}
-		for (int j = 1; j < scaffolds[i].size(); j ++)
-		{	
+		for (size_t j = 1; j < scaffolds[i].size(); ++j) {	
 			//out << _position_tbl[_component[i][j].id] - _position_tbl[_component[i][j-1].id] - _length_tbl[_component[i][j-1].id] + K << " " ;
 			int tmp_dis = getDistance(scaffolds[i][j-1].id, scaffolds[i][j].id);
-			if (tmp_dis >= 0)
-			{
+			if (tmp_dis >= 0) {
 				out << tmp_dis - scaffolds[i][j-1].length + _K  << " " ;
-			}else
-			{
+			} else {
 				out << _position_tbl[scaffolds[i][j].id] - _position_tbl[scaffolds[i][j-1].id] - _length_tbl[scaffolds[i][j-1].id] + _K << " " ;
 			}
 
-			for (int k = 0; k < _component_tbl[scaffolds[i][j].id].items.size(); k ++)
-			{
+			for (size_t k = 0; k < _component_tbl[scaffolds[i][j].id].items.size(); ++k) {
 				out << _component_tbl[scaffolds[i][j].id].items[k].gap << " ";
 			}
 		}
 		out << std::endl;
 	}
-
-	//initialize_component("new_component");
-	//remove_arc_con_edge_from_overlap_pair();	
-	
-    //resovler.init();
-	//initialize_component("new_component");
-
-	//output_graph("contig_arc_graph_after_repeats_removing");	
-	//tran_to_line();
-}
-
-void UniqEdgeGraph::tran_to_line() {
-	//cout << "begin transform to line" << endl;
-
-    std::string file = boost::str(boost::format("component_%ld") % (_iteration + 1));
-    std::ofstream out(file.c_str());
-
-	for(int i = 0; i < _component.size(); i ++)
-	{
-		out << ">component " << i << std::endl;
-		 	
-		for (int j = 0; j < _component[i].size(); j ++)
-		{
-			//cout << "line component : " <<  _component[i][j].id << endl;
-			for (int k = 0; k < _component_tbl[_component[i][j].id].items.size(); k ++)
-			{
-				out << _component_tbl[_component[i][j].id].items[k].contig << " ";
-			}		
-		}
-		out << std::endl;
-		for (int k = 0; k < _component_tbl[_component[i][0].id].items.size(); k ++)
-		{
-			out << _component_tbl[_component[i][0].id].items[k].gap << " ";
-		}
-		for (int j = 1; j < _component[i].size(); j ++)
-		{	
-			//out << _position_tbl[_component[i][j].id] - _position_tbl[_component[i][j-1].id] - _length_tbl[_component[i][j-1].id] + K << " " ;
-			int tmp_dis = getDistance(_component[i][j-1].id, _component[i][j].id);
-			if (tmp_dis >= 0)
-			{
-				out << tmp_dis - _component[i][j-1].len + _K  << " " ;
-			}else
-			{
-				out << _position_tbl[_component[i][j].id] - _position_tbl[_component[i][j-1].id] - _length_tbl[_component[i][j-1].id] + _K << " " ;
-			}
-
-			for (int k = 0; k < _component_tbl[_component[i][j].id].items.size(); k ++)
-			{
-				out << _component_tbl[_component[i][j].id].items[k].gap << " ";
-			}
-		}
-		out << std::endl;
-	}
-	out.close();
-	
-    file = boost::str(boost::format("component_cluster_%ld") % _iteration);
-	out.open(file.c_str());
-	
-	for(int i = 0; i < _component.size(); i ++)
-	{
-		out << ">component " << i << std::endl;
-		
-		for (int j = 0; j < _component[i].size(); j ++)
-		{
-			out << _component[i][j].id << "|" << _length_tbl[_component[i][j].id] << "|" << _position_tbl[_component[i][j].id] << "\t";
-		}
-		out << std::endl;
-		for (int j = 1; j < _component[i].size(); j ++)
-		{	
-			int tmp_dis = getDistance(_component[i][j-1].id, _component[i][j].id);
-			if (tmp_dis >= 0)
-			{
-				out << tmp_dis - _component[i][j-1].len + _K  << " " ;
-			}else
-			{
-				out << _position_tbl[_component[i][j].id] - _position_tbl[_component[i][j-1].id] - _length_tbl[_component[i][j-1].id] + _K << " " ;
-			}
-		}
-		out << std::endl;
-	}
-	out.close();
-}
-
-int cmp( Edge_Seq_Element es1, Edge_Seq_Element es2)
-{
-	return es1.pos < es2.pos;
-}
-
-void UniqEdgeGraph::initialize_component(const std::string& cmp_name) {
-    std::cout << "initialize scaffolds" << std::endl;
-	
-	_component.clear();
-
-    // BFS
-    std::map< size_t, size_t > flag;
-    //for (NodeList::const_iterator i = _nodelist.begin(); i != _nodelist.end(); ++i) {
-    for (size_t i = 0; i < _position_tbl.size(); ++i) {
-        if (flag.find(i) == flag.end()) {
-            std::vector< Edge_Seq_Element > elements;
-
-            std::deque< size_t > Q = boost::assign::list_of(i);
-            while (!Q.empty()) {
-                size_t node = Q.front();
-                Q.pop_front();
-                flag[node] = 2;
-
-                Edge_Seq_Element ele(node, _position_tbl[node], _length_tbl[node]);
-                elements.push_back(ele);
-
-                NodeList::const_iterator k = _nodelist.find(node);
-                if (k != _nodelist.end()) {
-                    for (Children::const_iterator j = k->second.children.begin(); j != k->second.children.end(); ++j) {
-                        if (flag.find(j->first) == flag.end()) {
-                            Q.push_back(j->first);
-                            flag[j->first] = 1;
-                        }
-                    }
-                    for (Parents::const_iterator j = k->second.parents.begin(); j != k->second.parents.end(); ++j) {
-                        if (flag.find(*j) == flag.end()) {
-                            Q.push_back(*j);
-                            flag[*j] = 1;
-                        }
-                    }
-                }
-            }
-
-            _component.push_back(elements);
-        }
-    }
-    
-    LOG4CXX_DEBUG(logger, boost::format("#### postion=[%d] componets=[%d] flag[%d],_nodelist[%d]") % _position_tbl.size() % _component.size() % flag.size() % _nodelist.size());
-	
-	for (int i = 0; i < _component.size(); i++) {
-		sort(_component[i].begin(), _component[i].end(), cmp);
-	}
-
-	LOG4CXX_DEBUG(logger, boost::format("\tscaffolds number = %d") % _component.size());
-
 }
 
 int UniqEdgeGraph::EdgeScorePlus(int l, const EdgeInfo& r) const {
@@ -500,88 +357,6 @@ UniqEdgeGraph::EdgeInfo UniqEdgeGraph::getMinEdge(size_t index) const {
     edgeinfo.from = -1;
     edgeinfo.to = -1;
     return edgeinfo;
-}
-
-void UniqEdgeGraph::remove_arc_con_edge_from_overlap_pair() {
-    typedef boost::tuple< size_t, size_t > OverlapItem;
-    typedef std::vector< OverlapItem > OverlapList;
-    OverlapList overlaplist;
-
-    size_t conflict_scaf = 0;
-
-	for (size_t index = 0; index < _component.size(); ++index) {
-        bool find_cft = false;
-
-		for (size_t i = 0; i < _component[index].size() - 1; ++i) {
-			for(size_t j = i + 1; j < _component[index].size(); ++j) {
-				if (_component[index][i].pos + _component[index][i].len > _component[index][j].pos && 
-                        !hasEdge(_component[index][i].id, _component[index][j].id) && 
-                        !hasEdge(_component[index][j].id, _component[index][i].id)) {
-					if (_component[index][i].pos + _component[index][i].len < _component[index][j].pos + _component[index][j].len ) {
-						if (_max_overlap <= _component[index][i].pos + _component[index][i].len	- _component[index][j].pos) {
-							overlaplist.push_back(boost::make_tuple(_component[index][i].id, _component[index][j].id));
-                            find_cft = true;
-						}
-					} else if (_max_overlap <= _component[index][j].len) {
-                        overlaplist.push_back(boost::make_tuple(_component[index][i].id, _component[index][j].id));
-                        find_cft = true;
-					}
-				} else {
-					break;
-				}
-			}
-		}
-
-        if (find_cft) {
-            conflict_scaf ++;
-        }
-	}
-
-    LOG4CXX_DEBUG(logger, boost::format("\tscaffolds containing conflicts = %d") % conflict_scaf);
-	LOG4CXX_DEBUG(logger, boost::format("\tconflict overlap contigs pair number = %d") % overlaplist.size());
-
-    BOOST_FOREACH(const OverlapItem& overlap, overlaplist) {
-		if (hasEdge(overlap.get< 0 >(), overlap.get< 1 >()) || hasEdge(overlap.get< 1 >(), overlap.get< 0 >())) {
-			continue;
-		}
-
-		int temp1 = getAncestor(overlap.get< 0 >(), overlap.get< 1 >());	
-		while (temp1 >= 0) {
-			EdgeInfo edgeinfo = getMinEdge(temp1);
-			if (edgeinfo.from >= 0) {
-				removeEdge(edgeinfo.from, edgeinfo.to);
-				LOG4CXX_DEBUG(logger, boost::format("#%d backward chimeric link %d,%d") % _iteration % edgeinfo.from % edgeinfo.to); 
-			} else {
-				break;
-			}
-			temp1 = getAncestor(overlap.get< 0 >(), overlap.get< 1 >());
-		}
-		
-		while (temp1 >= 0) {
-			LOG4CXX_DEBUG(logger,  boost::format("#%d %d\tancestor of\t(%d,%d)") % _iteration % temp1 % overlap.get< 0 >() % overlap.get< 1 >()); 
-			removeNode(temp1);
-			temp1 = getAncestor(overlap.get< 0 >(), overlap.get< 1 >());	
-		}
-		
-		int temp2 = getDescendant(overlap.get< 0 >(), overlap.get< 1 >());
-		while (temp2 >= 0) {
-			EdgeInfo edgeinfo = getMinEdge(temp2);
-			if (edgeinfo.from >= 0) {
-				//cout << "del " << edgeinfo.from << "\t" << edgeinfo.to << endl;
-				removeEdge(edgeinfo.from, edgeinfo.to);
-				LOG4CXX_DEBUG(logger, boost::format("#%d forward chimeric link %d,%d") % _iteration % edgeinfo.from % edgeinfo.to); 
-			} else {
-				break;
-			}
-			temp2 = getDescendant(overlap.get< 0 >(), overlap.get< 1 >());
-		}
-
-		while (temp2 >= 0) {
-			LOG4CXX_DEBUG(logger, boost::format("#%d %d\tdescendant of\t(%d,%d)") % _iteration % temp2 % overlap.get< 0 >() % overlap.get< 1 >()); 
-			removeNode(temp2);
-			temp2 = getDescendant(overlap.get< 0 >(), overlap.get< 1 >());
-		}
-	}
 }
 
 int UniqEdgeGraph::getAncestor(size_t x, size_t y) const {

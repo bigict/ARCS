@@ -8,16 +8,6 @@
 
 #include "component.h"
 
-struct Edge_Seq_Element {
-    Edge_Seq_Element() {
-    }
-    Edge_Seq_Element(size_t id, int position, int length) : id(id), pos(position), len(length) {
-    }
-	size_t id;
-	int pos;
-	int len;
-};
-
 class UniqEdgeGraph {
 public:
     UniqEdgeGraph(size_t K, size_t edge_num, size_t max_overlap, size_t iteration)
@@ -34,15 +24,11 @@ public:
 	bool input_edge_position();
 	bool input_edge_length();
 	bool input_edge_link(const std::string& edge_link_file);
-	bool input_inner_component();
+	bool input_component();
 
 	void linearize();
 	void output_graph(const std::string& file) const;
 	
-	void initialize_component(const std::string& filename);
-	void remove_arc_con_edge_from_overlap_pair();
-	void tran_to_line();
-
 private:
     friend class ConflictResolver;
     struct Edge {
@@ -85,8 +71,6 @@ private:
     typedef std::vector< Component > ComponentList;
     ComponentList _component_tbl;
 
-    std::vector<std::vector<Edge_Seq_Element> > _component;
-	
     size_t _K;
     size_t _edge_num;
     size_t _max_overlap;

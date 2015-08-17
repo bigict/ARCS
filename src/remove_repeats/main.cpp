@@ -32,7 +32,7 @@ public:
 
         UniqEdgeGraph graph(options.get< size_t >("K"), EDGE_NUM, options.get< size_t >("MAX_OVERLAP"), options.get< size_t >("ITERATION"));
         
-        if (!graph.input_edge_length() || !graph.input_edge_position() || !graph.input_edge_link("contig_arc_graph_after_remove_ambigous_arcs") || !graph.input_inner_component()) {
+        if (!graph.input_edge_length() || !graph.input_edge_position() || !graph.input_edge_link("contig_arc_graph_after_remove_ambigous_arcs") || !graph.input_component()) {
             LOG4CXX_ERROR(logger, boost::format("load data failed."));
             return 2;
         }
