@@ -8,8 +8,6 @@
 
 #include "component.h"
 
-using namespace std;
-
 struct Edge_Seq_Element {
     Edge_Seq_Element() {
     }
@@ -19,13 +17,6 @@ struct Edge_Seq_Element {
 	int pos;
 	int len;
 };
-
-struct Ed {
-	int from;
-	int to;
-	int score;
-};
-
 
 class UniqEdgeGraph {
 public:
@@ -48,7 +39,6 @@ public:
 	void linearize();
 	void output_graph(const std::string& file) const;
 	
-	Ed get_min_ed(int);
 	void initialize_component(const std::string& filename);
 	void remove_arc_con_edge_from_overlap_pair();
 	void tran_to_line();
@@ -76,6 +66,16 @@ private:
     int getDistance(size_t i, size_t j) const;
 	int getAncestor(size_t i, size_t j) const;
 	int getDescendant(size_t i, size_t j) const;
+    struct EdgeInfo {
+        int from;
+        int to;
+        Edge edge;
+        bool operator < (const EdgeInfo& o) const {
+            return edge.score < o.edge.score;
+        }
+    };
+    int EdgeScorePlus(int l, const EdgeInfo& info) const;
+	EdgeInfo getMinEdge(size_t i) const;
 
     NodeList _nodelist;
     typedef std::vector< size_t > PositionList;
@@ -85,8 +85,7 @@ private:
     typedef std::vector< Component > ComponentList;
     ComponentList _component_tbl;
 
-    std::vector<vector<Edge_Seq_Element> > _component;
-	vector<vector<Edge_Seq_Element> > line_component;
+    std::vector<std::vector<Edge_Seq_Element> > _component;
 	
     size_t _K;
     size_t _edge_num;
