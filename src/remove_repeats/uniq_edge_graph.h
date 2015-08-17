@@ -49,27 +49,12 @@ public:
 	void output_graph(const std::string& file) const;
 	
 	Ed get_min_ed(int);
-	void initialize_component(string);
+	void initialize_component(const std::string& filename);
 	void remove_arc_con_edge_from_overlap_pair();
 	void tran_to_line();
 
 private:
-    struct ConflictResolver {
-        ConflictResolver(UniqEdgeGraph* graph) : _graph(graph) {
-        }
-    private:
-        struct Node {
-            size_t id;
-            int position;
-            int length;
-        };
-        typedef std::vector< Node > NodeList;
-        typedef std::vector< NodeList > ComponentList;
-
-        ComponentList _components;
-        UniqEdgeGraph* _graph;
-    };
-
+    friend class ConflictResolver;
     struct Edge {
         Edge(int distance = 0, int count = 0, int score = 0) : distance(distance), count(count), score(score) {
         }
@@ -103,9 +88,6 @@ private:
     std::vector<vector<Edge_Seq_Element> > _component;
 	vector<vector<Edge_Seq_Element> > line_component;
 	
-	vector<pair<int, int> > overlap_pair;
-	vector<int> overlap_com_id;
-
     size_t _K;
     size_t _edge_num;
     size_t _max_overlap;

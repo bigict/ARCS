@@ -8,10 +8,196 @@
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #include <log4cxx/logger.h>
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("remove_repeats.uniq_edge_graph"));
+
+class ConflictResolver {
+public:
+    ConflictResolver(UniqEdgeGraph* graph) : _graph(graph) {
+    }
+
+    void init();
+    void resolve();
+private:
+    struct Node {
+        Node(size_t id, int position, int length) : id(id), position(position), length(length) {
+        }
+        bool operator < (const Node& o) const {
+            return position < o.position;
+        }
+        size_t id;
+        int position;
+        int length;
+    };
+    typedef std::vector< Node > NodeList;
+    typedef std::vector< NodeList > ScaffoldList;
+
+    ScaffoldList _scaffolds;
+    UniqEdgeGraph* _graph;
+
+    friend std::ostream& operator << (std::ostream& os, const ConflictResolver& resoler);
+};
+
+std::ostream& operator << (std::ostream& os, const ConflictResolver& resoler) {
+    /*
+	for (size_t i = 0; i < resoler._scaffolds.size(); ++i) {
+		os << boost::format(">component %d") % i << std::endl;
+		
+		for (size_t j = 1; j < resoler._scaffolds[i].size(); ++j) {
+			os << resoler._scaffolds[i][j].id << " ";
+		}	
+		os << std::endl;
+		for (size_t j = 1; j < resoler._scaffolds[i].size(); ++j) {
+			os << (resoler._scaffolds[i][j].position - resoler._scaffolds[i][j - 1].position - resoler._graph->_length_tbl[resoler._scaffolds[i][j - 1].id] + resoler._graph->_K ) << " ";
+		}
+		os << std::endl;
+	}
+    */
+    return os;
+}
+
+void ConflictResolver::init() {
+    LOG4CXX_DEBUG(logger, boost::format("initialize scaffolds"));
+	
+	_scaffolds.clear();
+
+    // BFS
+    std::map< size_t, size_t > flag;
+    //for (NodeList::const_iterator i = _nodelist.begin(); i != _nodelist.end(); ++i) {
+    for (size_t i = 0; i < _graph->_position_tbl.size(); ++i) {
+        if (flag.find(i) == flag.end()) {
+            std::vector< Node > component;
+
+            std::deque< size_t > Q = boost::assign::list_of(i);
+            while (!Q.empty()) {
+                size_t node = Q.front();
+                Q.pop_front();
+                flag[node] = 2;
+
+                Node ele(node, _graph->_position_tbl[node], _graph->_length_tbl[node]);
+                component.push_back(ele);
+
+                UniqEdgeGraph::NodeList::const_iterator k = _graph->_nodelist.find(node);
+                if (k != _graph->_nodelist.end()) {
+                    for (UniqEdgeGraph::Children::const_iterator j = k->second.children.begin(); j != k->second.children.end(); ++j) {
+                        if (flag.find(j->first) == flag.end()) {
+                            Q.push_back(j->first);
+                            flag[j->first] = 1;
+                        }
+                    }
+                    for (UniqEdgeGraph::Parents::const_iterator j = k->second.parents.begin(); j != k->second.parents.end(); ++j) {
+                        if (flag.find(*j) == flag.end()) {
+                            Q.push_back(*j);
+                            flag[*j] = 1;
+                        }
+                    }
+                }
+            }
+
+            _scaffolds.push_back(component);
+        }
+    }
+    
+    LOG4CXX_DEBUG(logger, boost::format("#### postion=[%d] scaffolds=[%d] flag[%d],_nodelist[%d]") % _graph->_position_tbl.size() % _scaffolds.size() % flag.size() % _graph->_nodelist.size());
+	
+    BOOST_FOREACH(NodeList& component, _scaffolds) {
+        std::sort(component.begin(), component.end());
+    }
+}
+
+void ConflictResolver::resolve() {
+    typedef boost::tuple< size_t, size_t, size_t > ConflictItem;
+    typedef std::vector< ConflictItem > ConflictList;
+    ConflictList overlaplist;
+
+    // Find overlaps
+    //
+    {
+        int conflict_scaf = 0;
+
+        for (size_t k = 0; k < _scaffolds.size(); ++k) {
+            if (!_scaffolds.empty()) {
+                bool find_cft = false;
+
+                for (size_t i = 0; i < _scaffolds[k].size() - 1; ++i) {
+                    for(size_t j = i + 1; j < _scaffolds[k].size(); ++j) {
+                        if (_scaffolds[k][i].position + _scaffolds[k][i].length > _scaffolds[k][j].position && 
+                                !_graph->hasEdge(_scaffolds[k][i].id, _scaffolds[k][j].id) &&
+                                !_graph->hasEdge(_scaffolds[k][j].id, _scaffolds[k][i].id)) {
+                            if (_scaffolds[k][i].position + _scaffolds[k][i].length < _scaffolds[k][j].position + _scaffolds[k][j].length) { // overlap
+                                if (_graph->_max_overlap <= _scaffolds[k][i].position + _scaffolds[k][i].length  - _scaffolds[k][j].position) {
+                                    overlaplist.push_back(boost::make_tuple(k, _scaffolds[k][i].id, _scaffolds[k][j].id));
+                                    find_cft = true;
+                                }
+
+                            } else if (_graph->_max_overlap <= _scaffolds[k][j].length) {
+                                overlaplist.push_back(boost::make_tuple(k, _scaffolds[k][i].id, _scaffolds[k][j].id));
+                                find_cft = true;
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                }
+
+                if (find_cft) {
+                    conflict_scaf ++;
+                }
+            }
+        }
+
+        LOG4CXX_DEBUG(logger, boost::format("scaffolds containing conflicts = %d") % conflict_scaf);
+        LOG4CXX_DEBUG(logger, boost::format("conflict overlap contigs pair number = %d") % overlaplist.size());
+    }
+
+    // Resolve
+    BOOST_FOREACH(const ConflictItem& overlap, overlaplist) {
+		if (_graph->hasEdge(overlap.get< 1 >(), overlap.get< 2 >()) || _graph->hasEdge(overlap.get< 2 >(), overlap.get< 1 >())) {
+			continue;
+		}
+
+		int temp1 = _graph->getAncestor(overlap.get< 1 >(), overlap.get< 2 >());	
+		while (temp1 >= 0) {
+			Ed tmp_ed = _graph->get_min_ed(temp1);
+			if (tmp_ed.from >= 0) {
+				_graph->removeEdge(tmp_ed.from, tmp_ed.to);
+                LOG4CXX_DEBUG(logger, boost::format("backward chimeric link %d,%d") % tmp_ed.from % tmp_ed.to); 
+			} else {
+				break;
+			}
+			temp1 = _graph->getAncestor(overlap.get< 1 >(), overlap.get< 2 >());
+		}
+		
+		while (temp1 >= 0) {
+			LOG4CXX_DEBUG(logger, boost::format("%d\tancestor of\t(%d,%d)") % temp1 % overlap.get< 1 >() % overlap.get< 2 >()); 
+			_graph->removeNode(temp1);
+
+			temp1 = _graph->getAncestor(overlap.get< 1 >(), overlap.get< 2 >());
+		}
+		
+		int temp2 = _graph->getDescendant(overlap.get< 1 >(), overlap.get< 2 >());
+		while (temp2 >= 0) {
+			Ed tmp_ed = _graph->get_min_ed(temp2);
+			if (tmp_ed.from >= 0) {
+				_graph->removeEdge(tmp_ed.from, tmp_ed.to);
+				LOG4CXX_DEBUG(logger, boost::format("forward chimeric link %d,%d") % tmp_ed.from % tmp_ed.to); 
+			} else {
+				break;
+			}
+			temp2 = _graph->getDescendant(overlap.get< 1 >(), overlap.get< 2 >());
+		}
+
+		while (temp2 >= 0) {
+			LOG4CXX_DEBUG(logger, boost::format("%d\tdescendant of\t(%d,%d)") % temp2 % overlap.get< 1 >() % overlap.get< 2 >()); 
+			_graph->removeNode(temp2);
+
+			temp2 = _graph->getDescendant(overlap.get< 1 >(), overlap.get< 2 >());
+		}
+	}
+}
 
 bool UniqEdgeGraph::input_inner_component() {
     
@@ -84,46 +270,25 @@ bool UniqEdgeGraph::input_edge_link(const std::string& name) {
 }
 
 void UniqEdgeGraph::linearize() {
+    //ConflictResolver resovler(this);
+    //resovler.init();
+
+    //resovler.resolve();
 	initialize_component("new_component");
 	remove_arc_con_edge_from_overlap_pair();	
 	
+    //resovler.init();
 	initialize_component("new_component");
 
 	output_graph("contig_arc_graph_after_repeats_removing");	
 	tran_to_line();
 }
 
-void UniqEdgeGraph::tran_to_line()
-{
+void UniqEdgeGraph::tran_to_line() {
 	//cout << "begin transform to line" << endl;
 
 	line_component = _component;
 	
-    std::vector< int > flag(_position_tbl.size(), 0);
-
-	for (int i = 0; i < line_component.size(); i ++)
-	{
-		for (int j = 0; j < line_component[i].size(); j ++)
-		{
-			flag[line_component[i][j].id] = 2;
-		}
-	}
-	int count = 0;
-	for (int i = 0; i < flag.size(); i++)
-	{
-		if(flag[i] == 0)
-		{
-			count ++;
-			removeNode(i);
-		}
-	}
-	//cout << "\ttran to line delete " << count << " contigs " << endl;
-	//fout.close();
-	
-	//cout << "output line component" << endl;
-	//cout << "inner component size : " << inner_component.size() << endl;
-	//cout << "line component size : " << line_component.size() << endl;
-
     std::string file = boost::str(boost::format("component_%ld") % (_iteration + 1));
     ofstream out(file.c_str());
 
@@ -198,7 +363,7 @@ int cmp( Edge_Seq_Element es1, Edge_Seq_Element es2)
 	return es1.pos < es2.pos;
 }
 
-void UniqEdgeGraph::initialize_component(string cmp_name) {
+void UniqEdgeGraph::initialize_component(const std::string& cmp_name) {
 	cout << "initialize scaffolds" << endl;
 	
 	_component.clear();
@@ -240,84 +405,13 @@ void UniqEdgeGraph::initialize_component(string cmp_name) {
         }
     }
     
-    std::cout << boost::format("#### postion=[%d] componets=[%d] flag[%d],_nodelist[%d]") % _position_tbl.size() % _component.size() % flag.size() % _nodelist.size() << std::endl;
+    LOG4CXX_DEBUG(logger, boost::format("#### postion=[%d] componets=[%d] flag[%d],_nodelist[%d]") % _position_tbl.size() % _component.size() % flag.size() % _nodelist.size());
 	
-	for (int i = 0; i < _component.size(); i++)
-	{
+	for (int i = 0; i < _component.size(); i++) {
 		sort(_component[i].begin(), _component[i].end(), cmp);
 	}
 
-	cout << "\tscaffolds number = "<< _component.size() << endl;
-
-	ofstream out(cmp_name.c_str());
-	
-	for(int i = 0; i < _component.size(); i ++)
-	{
-		out << ">component " << i << endl;
-		
-		for (int j = 0; j < _component[i].size(); j ++)
-		{
-			out << _component[i][j].id << " ";
-		}	
-		out << endl;
-		for (int j = 1; j < _component[i].size(); j ++)
-		{
-			out << (_component[i][j].pos - _component[i][j - 1].pos - _length_tbl[_component[i][j - 1].id] + _K ) << " ";
-		}
-		out << endl;
-	}
-	out.close();
-
-    int conflict_scaf = 0;
-    bool find_cft = false;
-
-	for (int index = 0; index < _component.size(); index ++)
-	{
-
-        find_cft = false;
-
-		for (int i = 0; i < _component[index].size() - 1; i ++)
-		{
-			for(int j = i + 1; j < _component[index].size(); j ++)
-			{
-				if (_component[index][i].pos + _component[index][i].len > _component[index][j].pos&& !hasEdge(_component[index][i].id, _component[index][j].id) &&
-				!hasEdge(_component[index][j].id, _component[index][i].id))
-				{
-					if (_component[index][i].pos + _component[index][i].len < _component[index][j].pos + _component[index][j].len )
-					{
-						if (_max_overlap <= _component[index][i].pos + _component[index][i].len 
-								- _component[index][j].pos)
-						{
-							overlap_pair.push_back(make_pair(_component[index][i].id, _component[index][j].id));
-							overlap_com_id.push_back(index);
-                            find_cft = true;
-						}
-
-					}else
-					{
-						if (_max_overlap <= _component[index][j].len)
-						{
-							overlap_pair.push_back(make_pair(_component[index][i].id, _component[index][j].id));
-							overlap_com_id.push_back(index);
-                            find_cft = true;
-
-						}
-					}
-				}else
-				{
-					break;
-				}
-			}
-		}
-
-        if (find_cft == true)
-        {
-            conflict_scaf ++;
-        }
-
-	}
-    cout << "\tscaffolds containing conflicts = " << conflict_scaf << endl;
-	cout << "\tconflict overlap contigs pair number = " << overlap_pair.size() << endl;
+	LOG4CXX_DEBUG(logger, boost::format("\tscaffolds number = %d") % _component.size());
 
 }
 
@@ -399,82 +493,86 @@ Ed UniqEdgeGraph::get_min_ed(int index) {
 	}
 }
 
-void UniqEdgeGraph::remove_arc_con_edge_from_overlap_pair()
-{
-	int temp1, temp2;
-	Ed tmp_ed;
+void UniqEdgeGraph::remove_arc_con_edge_from_overlap_pair() {
+    typedef boost::tuple< size_t, size_t > OverlapItem;
+    typedef std::vector< OverlapItem > OverlapList;
+    OverlapList overlaplist;
 
-	//ofstream fout("contig_removed");
-	
-    std::string file = boost::str(boost::format("chimeric_link_repeat_removed_log_%ld") % _iteration);
-	ofstream fout(file.c_str());
+    size_t conflict_scaf = 0;
 
-	for (int i = 0; i < overlap_pair.size(); i++)
-	{
-		//while (temp1 >= 0 && temp1 != overlap_pair[i].first && temp1 != overlap_pair[i].second && !hasEdge(temp1, overlap_pair[i].first) && !hasEdge(temp1, overlap_pair[i].second))
-		if ((hasEdge(overlap_pair[i].first, overlap_pair[i].second)) 
-				|| 
-				(hasEdge(overlap_pair[i].second, overlap_pair[i].first)) )
-		{
+	for (size_t index = 0; index < _component.size(); ++index) {
+        bool find_cft = false;
+
+		for (size_t i = 0; i < _component[index].size() - 1; ++i) {
+			for(size_t j = i + 1; j < _component[index].size(); ++j) {
+				if (_component[index][i].pos + _component[index][i].len > _component[index][j].pos && 
+                        !hasEdge(_component[index][i].id, _component[index][j].id) && 
+                        !hasEdge(_component[index][j].id, _component[index][i].id)) {
+					if (_component[index][i].pos + _component[index][i].len < _component[index][j].pos + _component[index][j].len ) {
+						if (_max_overlap <= _component[index][i].pos + _component[index][i].len	- _component[index][j].pos) {
+							overlaplist.push_back(boost::make_tuple(_component[index][i].id, _component[index][j].id));
+                            find_cft = true;
+						}
+					} else if (_max_overlap <= _component[index][j].len) {
+                        overlaplist.push_back(boost::make_tuple(_component[index][i].id, _component[index][j].id));
+                        find_cft = true;
+					}
+				} else {
+					break;
+				}
+			}
+		}
+
+        if (find_cft) {
+            conflict_scaf ++;
+        }
+	}
+
+    LOG4CXX_DEBUG(logger, boost::format("\tscaffolds containing conflicts = %d") % conflict_scaf);
+	LOG4CXX_DEBUG(logger, boost::format("\tconflict overlap contigs pair number = %d") % overlaplist.size());
+
+    BOOST_FOREACH(const OverlapItem& overlap, overlaplist) {
+		if (hasEdge(overlap.get< 0 >(), overlap.get< 1 >()) || hasEdge(overlap.get< 1 >(), overlap.get< 0 >())) {
 			continue;
 		}
 
-		temp1 = getAncestor(overlap_pair[i].first, overlap_pair[i].second);	
-		while (temp1 >= 0)
-		{
-			tmp_ed = get_min_ed(temp1);
-			if (tmp_ed.from >= 0)
-			{
-				//fout << "del " << tmp_ed.from << "\t" << tmp_ed.to << endl;
+		int temp1 = getAncestor(overlap.get< 0 >(), overlap.get< 1 >());	
+		while (temp1 >= 0) {
+			Ed tmp_ed = get_min_ed(temp1);
+			if (tmp_ed.from >= 0) {
 				removeEdge(tmp_ed.from, tmp_ed.to);
-				fout <<  "backward chimeric link " << tmp_ed.from << "," << tmp_ed.to << endl; 
-			}else
-			{
+				LOG4CXX_DEBUG(logger, boost::format("#%d backward chimeric link %d,%d") % _iteration % tmp_ed.from % tmp_ed.to); 
+			} else {
 				break;
 			}
-			temp1 = getAncestor(overlap_pair[i].first, overlap_pair[i].second);
+			temp1 = getAncestor(overlap.get< 0 >(), overlap.get< 1 >());
 		}
 		
-		while (temp1 >= 0) 
-		{
-			fout << temp1 << "\tancestor of\t(" << overlap_pair[i].first << "," << overlap_pair[i].second << ")" << endl; 
+		while (temp1 >= 0) {
+			LOG4CXX_DEBUG(logger,  boost::format("#%d %d\tancestor of\t(%d,%d)") % _iteration % temp1 % overlap.get< 0 >() % overlap.get< 1 >()); 
 			removeNode(temp1);
-
-			temp1 = getAncestor(overlap_pair[i].first, overlap_pair[i].second);	
+			temp1 = getAncestor(overlap.get< 0 >(), overlap.get< 1 >());	
 		}
-		//while (temp2 >= 0 && temp2 != overlap_pair[i].first && temp2 != overlap_pair[i].second && !hasEdge( overlap_pair[i].first, temp2) && !hasEdge( overlap_pair[i].second, temp2)) 
 		
-		temp2 = getDescendant(overlap_pair[i].first, overlap_pair[i].second);
-		while (temp2 >= 0)
-		{
-			tmp_ed = get_min_ed(temp2);
-			if (tmp_ed.from >= 0)
-			{
+		int temp2 = getDescendant(overlap.get< 0 >(), overlap.get< 1 >());
+		while (temp2 >= 0) {
+			Ed tmp_ed = get_min_ed(temp2);
+			if (tmp_ed.from >= 0) {
 				//cout << "del " << tmp_ed.from << "\t" << tmp_ed.to << endl;
 				removeEdge(tmp_ed.from, tmp_ed.to);
-				fout <<  "forward chimeric link " << tmp_ed.from << "," << tmp_ed.to << endl; 
-			}else
-			{
+				LOG4CXX_DEBUG(logger, boost::format("#%d forward chimeric link %d,%d") % _iteration % tmp_ed.from % tmp_ed.to); 
+			} else {
 				break;
 			}
-			temp2 = getDescendant(overlap_pair[i].first, overlap_pair[i].second);
+			temp2 = getDescendant(overlap.get< 0 >(), overlap.get< 1 >());
 		}
 
-		while (temp2 >= 0) 
-		{
-			fout << temp2 << "\tdescendant of\t(" << overlap_pair[i].first << "," << overlap_pair[i].second << ")" << endl; 
+		while (temp2 >= 0) {
+			LOG4CXX_DEBUG(logger, boost::format("#%d %d\tdescendant of\t(%d,%d)") % _iteration % temp2 % overlap.get< 0 >() % overlap.get< 1 >()); 
 			removeNode(temp2);
-
-			temp2 = getDescendant(overlap_pair[i].first, overlap_pair[i].second);
+			temp2 = getDescendant(overlap.get< 0 >(), overlap.get< 1 >());
 		}
-		
 	}
-	fout.close();
-//	cout << "overlap pair num = " << overlap_pair.size() << endl;
-	overlap_pair.clear();
-	overlap_com_id.clear();
-//	cout << "overlap pair num = " << overlap_pair.size() << endl;
-
 }
 
 int UniqEdgeGraph::getAncestor(size_t x, size_t y) const {

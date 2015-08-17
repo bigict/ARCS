@@ -15,10 +15,13 @@ struct Component {
     typedef std::vector< size_t > ContigList;
     typedef std::vector< int > GapList;
 
-    void init(const ContigList& contigs, const GapList& gaps);
+    void init(size_t id, const ContigList& contigs, const GapList& gaps);
 
+    size_t id;
     typedef std::vector< Item > ItemList;
     ItemList items;
+
+    friend std::ostream& operator << (std::ostream& os, const Component& component);
 };
 
 class ComponentReader {
