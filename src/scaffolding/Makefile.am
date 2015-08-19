@@ -15,4 +15,5 @@ scaffolding_SOURCES=main.cpp \
 			kseq.h	\
             kseq.cpp	\
 scaffolding_CXXFLAGS=${LOG4CXX_CFLAGS}
-scaffolding_LDFLAGS=${LOG4CXX_LIBS}
+scaffolding_LDFLAGS=${LOG4CXX_LIBS} \
+					-lboost_regex

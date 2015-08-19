@@ -11,11 +11,6 @@ Kmer::Kmer(const std::string& seq) : _data(0), _length(0) {
     sequence(seq);
 }
 
-/*Kmer::Kmer(std::vector< std::int > code)
-{
-	;
-}*/
-
 Kmer::Kmer(const Kmer& o) {
     _data = o._data;
     _length = o._length;
@@ -124,25 +119,22 @@ Kmer& Kmer::operator = (const Kmer& o) {
     return *this;
 }
 
-Kmer Kmer::operator + (const char c) {
+Kmer Kmer::operator + (const char c) const {
     Kmer kmer = *this;
     kmer += c;
     return kmer;
 }
 
-Kmer Kmer::operator + (const std::string& seq) {
+Kmer Kmer::operator + (const std::string& seq) const {
     Kmer kmer = *this;
-
     BOOST_FOREACH(const char c, seq) {
         kmer += c;
     }
-
     return kmer;
 }
 
-Kmer Kmer::operator + (const Kmer& o) {
+Kmer Kmer::operator + (const Kmer& o) const {
     Kmer kmer = *this;
-
     kmer._data <<= (o._length * 2);
     kmer._data += o._data;
     kmer._length += o._length;
