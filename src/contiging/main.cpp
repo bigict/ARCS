@@ -109,7 +109,7 @@ public:
             avg_quality = statistics.threshold(filelist, &min_quality);
             percent = 0.95;
         }
-        LOG4CXX_INFO(logger, boost::format("avg_quality=%lf min_quality=%lf") % avg_quality % min_quality);
+        LOG4CXX_INFO(logger, boost::format("K=%d,avg_quality=%lf,min_quality=%lf") % K % avg_quality % min_quality);
 
         KmerTable tbl(K, avg_quality, min_quality, percent, options.get< size_t >("READ_LENGTH_CUTOFF", 100), options.find("S") == options.not_found());
 
@@ -119,7 +119,7 @@ public:
         }
 
         DeBruijnGraph graph(tbl);
-        graph.compact();
+        //graph.compact();
         // edge
         {
             boost::filesystem::ofstream stream(workdir / boost::filesystem::path("condensed_de_bruijn_graph_before_trimming.data"));
@@ -129,11 +129,18 @@ public:
         graph.removeNoise();
         graph.removeNoise();
 
-        graph.compact();
+        //graph.compact();
         // edge
         {
             boost::filesystem::ofstream stream(workdir / boost::filesystem::path("condensed_de_bruijn_graph_after_trimming.data"));
             stream << graph;
+        }
+
+        // parameter
+        {
+            boost::filesystem::ofstream stream(workdir / boost::filesystem::path("contig_parameter"));
+            stream << boost::format("K=%f") % K << std::endl;
+            stream << boost::format("lambda=%f") % graph.average() << std::endl;
         }
 
         return 0;

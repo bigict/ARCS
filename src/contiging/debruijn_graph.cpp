@@ -237,33 +237,20 @@ struct KmerRemover {
     KmerRemover(DeBruijnGraph::NodeList* nodelist) : _nodelist(nodelist) {
     } 
 
-    void transaction_begin() {
-        //LOG4CXX_TRACE(logger, boost::format("KmerRemover: transaction_begin"));
-        //_translist.clear();
-    }
-    void transaction_add(const Kmer& kmer) {
-        LOG4CXX_DEBUG(logger, boost::format("KmerRemover: transaction_add, kmer=[%s]") % kmer);
+    void add(const Kmer& kmer) {
+        LOG4CXX_TRACE(logger, boost::format("KmerRemover: add_node, kmer=[%s]") % kmer);
         _noiselist.push_back(kmer);
-        //_translist.push_back(kmer);
     }
-    void transaction_add_edge(const Kmer& from, const Kmer& to) {
+    void add(const Kmer& from, const Kmer& to) {
+        LOG4CXX_TRACE(logger, boost::format("KmerRemover: add_edge, from=[%s],to=[%s]") % from % to);
         _edgelist.push_back(std::make_pair(from, to));
-        //LOG4CXX_DEBUG(logger, boost::format("KmerRemover: transaction_add_edge, from=[%s],to=[%s]/edgelist=[%d]") % from % to % _edgelist.size());
     }
-    void transaction_end() {
-        //std::for_each(_translist.begin(), _translist.end(), boost::bind(&KmerRemover::unlink, this, _1));
-        //LOG4CXX_TRACE(logger, boost::format("KmerRemover: transaction_end, nodes=[%d]") % _translist.size());
-    }
-    
     void remove() {
-        /*
-        BOOST_FOREACH(const Kmer& kmer, _noiselist) {
-            unlink(kmer);
+        BOOST_FOREACH(const Kmer& node, _noiselist) {
+            unlink(node);
         }
-        */
-        std::for_each(_noiselist.begin(), _noiselist.end(), boost::bind(&KmerRemover::unlink, this, _1));
-        for (NoiseEdgeList::const_iterator i = _edgelist.begin(); i != _edgelist.end(); ++i) {
-            unlink(i->first, i->second);
+        BOOST_FOREACH(const NoiseEdge& edge, _edgelist) {
+            unlink(edge);
         }
     }
     size_t size() const {
@@ -271,6 +258,10 @@ struct KmerRemover {
     }
 
 private:
+    typedef std::list< Kmer > NoiseNodeList;
+    typedef std::pair< Kmer, Kmer > NoiseEdge;
+    typedef std::vector< NoiseEdge > NoiseEdgeList;
+
     void unlink(const Kmer& kmer) {
         DeBruijnGraph::NodeList::iterator k = _nodelist->find(kmer);
         if (k != _nodelist->end()) {
@@ -291,15 +282,15 @@ private:
                 }
             }
             k->second.parents.clear();
-            
-            // Add it to noise node list
-            // _noiselist.push_back(kmer);
         }
         _nodelist->erase(kmer);
     }
 
+    void unlink(const NoiseEdge& edge) {
+        unlink(edge.first, edge.second);
+    }
+
     void unlink(const Kmer& from, const Kmer& to) {
-        LOG4CXX_DEBUG(logger, boost::format("Remove: remove edge(%s,%s)") % from % to);
         // Children
         {
             DeBruijnGraph::NodeList::iterator i = _nodelist->find(from);
@@ -325,23 +316,18 @@ private:
             DeBruijnGraph::NodeList::iterator i = _nodelist->find(from);
             if (i != _nodelist->end() && !i->second) {
                 _nodelist->erase(i);
-                LOG4CXX_DEBUG(logger, boost::format("Remover: remove kmer=[%s]") % i->first);
             }
             DeBruijnGraph::NodeList::iterator j = _nodelist->find(to);
             if (j != _nodelist->end() && !j->second) {
                 _nodelist->erase(j);
-                LOG4CXX_DEBUG(logger, boost::format("Remover: remove kmer=[%s]") % j->first);
             }
         }
     }
 
-    typedef std::list< Kmer > NoiseNodeList;
     NoiseNodeList _noiselist;
-//    NoiseList _translist;
-    DeBruijnGraph::NodeList* _nodelist;
-    typedef std::pair< Kmer, Kmer > NoiseEdge;
-    typedef std::vector< NoiseEdge > NoiseEdgeList;
     NoiseEdgeList _edgelist;
+
+    DeBruijnGraph::NodeList* _nodelist;
 };
 
 
@@ -361,8 +347,6 @@ void DeBruijnGraph::removeNoise() {
 
         EdgeList children = i->second.children; // copy
         for (EdgeList::const_iterator j = children.begin(); j != children.end(); ++j) {
-            remover.transaction_begin();
-
             std::list< Kmer > group;
             // Look forward
             for (NodeList::const_iterator k = _nodelist.find(j->first); k != _nodelist.end() && k->second.indegree() == 1 && k->second.outdegree() == 1 && k->first != i->first; k = _nodelist.find(k->second.children.begin()->first)) {
@@ -375,29 +359,28 @@ void DeBruijnGraph::removeNoise() {
             // length && coverage
             size_t length = KmerLengthPlus::length(_K, front->first) + std::accumulate(group.begin(), group.end(), 0, KmerLengthPlus(_K)) + KmerLengthPlus::length(_K, back->first);
             double coverage = (KmerCoveragePlus::coverage(_K, i->first, j->second) + std::accumulate(group.begin(), group.end(), 0, KmerCoveragePlus(&_nodelist, _K))) / (length-1); 
-            LOG4CXX_DEBUG(logger, boost::format("removeNoise: front=[%s],length=[%d],coverage=[%f],group=[%d],front=[indegree(%d),outdegree(%d)],back=[indegree(%d),outdegree(%d)]") % front->first % length % coverage % group.size() % front->second.indegree() % front->second.outdegree() % back->second.indegree() % back->second.outdegree());
+            LOG4CXX_TRACE(logger, boost::format("removeNoise: front=[%s],length=[%d],coverage=[%f],group=[%d],front=[indegree(%d),outdegree(%d)],back=[indegree(%d),outdegree(%d)]") % front->first % length % coverage % group.size() % front->second.indegree() % front->second.outdegree() % back->second.indegree() % back->second.outdegree());
 
             // rules
             if ((front->second.indegree() == 0 && front->second.outdegree() == 1) || (back->second.indegree() == 1 && back->second.outdegree() == 0)) { // tips
                 if (_K + length - 1 < 2 * _K || coverage < _average / 5.0) {
                     if (front->second.indegree() == 0 && front->second.outdegree() == 1) {
-                        remover.transaction_add(front->first);
+                        remover.add(front->first);
                     }
                     if (back->second.indegree() == 1 && back->second.outdegree() == 0) {
-                        remover.transaction_add(back->first);
+                        remover.add(back->first);
                     }
-                    std::for_each(group.begin(), group.end(), boost::bind(&KmerRemover::transaction_add, &remover, _1));
+                    std::for_each(group.begin(), group.end(), boost::bind(&KmerRemover::add, &remover, _1));
                     if (group.empty()) {
-                        remover.transaction_add_edge(front->first, back->first);
+                        remover.add(front->first, back->first);
                     }
                 }
             } else if ((_K + length - 1 < 2 * _K && coverage < _average / 5.0) || (coverage <= 3.0) || (coverage < _average / 10.0)) { // buble or link ?????????
-                std::for_each(group.begin(), group.end(), boost::bind(&KmerRemover::transaction_add, &remover, _1));
+                std::for_each(group.begin(), group.end(), boost::bind(&KmerRemover::add, &remover, _1));
                 if (group.empty()) {
-                    remover.transaction_add_edge(front->first, back->first);
+                    remover.add(front->first, back->first);
                 }
             }
-            remover.transaction_end();
         }
     }
     
@@ -441,24 +424,18 @@ std::ostream& operator << (std::ostream& os, const DeBruijnGraph& graph) {
             size_t length = KmerLengthPlus::length(graph._K, i->first);
             double coverage = KmerCoveragePlus::coverage(graph._K, i->first, j->second);
 
-            std::vector< double > X = boost::assign::list_of(j->second);
-
             DeBruijnGraph::NodeList::const_iterator k = graph._nodelist.find(j->first);
             while (k != graph._nodelist.end() && k->second.indegree() == 1 && k->second.outdegree() == 1) {
                 length += KmerLengthPlus::length(graph._K, k->first);
                 coverage += KmerCoveragePlus::coverage(graph._K, k->first, k->second.children.begin()->second);
-                X.push_back(KmerCoveragePlus::coverage(graph._K, k->first, k->second.children.begin()->second));
                 k = graph._nodelist.find(k->second.children.begin()->first);
                 if (k != graph._nodelist.end()) {
                     edge += k->first.subKmer(graph._K - 2);
                 }
             }
 
-            os << boost::format("%d\t%d\t%s\t%f\t%f\t%d\t%d") % indexer[i->first] % indexer[j->first] % edge % (coverage / length) % coverage % length % i->second.indegree() << std::endl;
-            BOOST_FOREACH(double x, X) {
-                os << x << " ";
-            }
-            os << std::endl;
+            os << boost::format("%d\t%d\t%s\t%f\t%d\t%d\t%d") % indexer[i->first] % indexer[j->first] % edge % coverage % length % i->second.indegree() % i->second.outdegree() << std::endl;
+            os << (coverage / length) << std::endl;
         }
     }
 
