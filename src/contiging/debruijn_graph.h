@@ -1,7 +1,6 @@
 #ifndef debruijn_graph_h_
 #define debruijn_graph_h_
 
-#include "utils.h"
 #include "kmer.h"
 
 #include <iostream>
