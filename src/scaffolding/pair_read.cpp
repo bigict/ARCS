@@ -167,7 +167,7 @@ void PairReadSet::findLink(const std::string& read1, const std::string& read2, G
             LOG4CXX_TRACE(logger, boost::format("pair kmre2=%s %d %d") % kmer2 % right.first % right.second);
         
             long len_tmp = INSERT_SIZE + left.second - right.second;
-            long left_len = components[left.first].getLen();
+            long left_len = components[left.first].length();
             long overlap = left_len - len_tmp - _k + 1;
             if (overlap > 0) {
                 if (overlap > INSERT_SIZE)

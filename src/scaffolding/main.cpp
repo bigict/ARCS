@@ -57,7 +57,7 @@ public:
         size_t count = 0;
         BOOST_FOREACH(Component& component, components) {
             LOG4CXX_TRACE(logger, boost::format("Component No = %d, size = %d, length = %d") % count % component._contig_id.size() %  contigs.contigs[component._contig_id[0]].contig.length());
-            if (component._contig_id.size() == 0 || (component.getLen() < 2 * INSERT_SIZE)) {
+            if (component._contig_id.size() == 0 || (component.length() < 2 * INSERT_SIZE)) {
                 count ++;
                 continue;
             }
@@ -72,7 +72,7 @@ public:
         count = 0;
         BOOST_FOREACH(Component& component, components) {
             if (component._contig_id.size() == 0 || (component._contig_id.size() == 1  && contigs.contigs[component._contig_id[0]].contig.length() < EDGE_CUTOFF)) {
-            //if (component._contig_id.size() == 0 || (component.getLen() < EDGE_CUTOFF)) {
+            //if (component._contig_id.size() == 0 || (component.length() < EDGE_CUTOFF)) {
                 count ++;
                 continue;
             }

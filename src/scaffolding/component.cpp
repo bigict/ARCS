@@ -1,7 +1,7 @@
 #include "component.h"
 
 #include <numeric>
-#include <iostream>
+#include <fstream>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/assign.hpp>
@@ -20,8 +20,8 @@ size_t Component::produceKmerForInsertSize(const ContigSet& c, KmerTable& tbl, s
     size_t tbl_size = 0; 
     for (size_t j=0; j<_contig_id.size(); j++) {
         size_t con_id = _contig_id[j];
-        for (size_t i = 0; i < c.contigs[con_id].contig.length() - _k + 1; i++) {
-            Kmer kmer(c.contigs[con_id].contig, i, i + _k);
+        for (size_t i = 0; i < c.contigs[con_id].contig.length() - _K + 1; i++) {
+            Kmer kmer(c.contigs[con_id].contig, i, i + _K);
             tbl.addKmer(kmer, std::make_pair(component_no, index)); 
             index ++;
             tbl_size ++;
@@ -37,9 +37,9 @@ size_t Component::produceKmerForPairRead(const ContigSet& c, KmerTable& tbl, siz
     int cutoff = 2*INSERT_SIZE;
     if (_contig_id.size() == 1) {
         size_t con_id = _contig_id[0];
-        for (size_t i = 0; i < c.contigs[con_id].contig.length() - _k + 1; i++) {
-            if (index <= cutoff || index >= _len - 1 - _k + 1 - cutoff) {
-                Kmer kmer(c.contigs[con_id].contig, i, i + _k);
+        for (size_t i = 0; i < c.contigs[con_id].contig.length() - _K + 1; i++) {
+            if (index <= cutoff || index >= _length - 1 - _K + 1 - cutoff) {
+                Kmer kmer(c.contigs[con_id].contig, i, i + _K);
                 tbl.addKmer(kmer, std::make_pair(component_no, index)); 
                 tbl_size ++; 
             }
@@ -48,9 +48,9 @@ size_t Component::produceKmerForPairRead(const ContigSet& c, KmerTable& tbl, siz
     } else {
         for (size_t j=0; j<_contig_id.size(); j++) {
             size_t con_id = _contig_id[j];
-            for (size_t i = 0; i < c.contigs[con_id].contig.length() - _k + 1; i++) {
-                if (index <= cutoff || index >= _len - 1 - cutoff) {
-                    Kmer kmer(c.contigs[con_id].contig, i, i + _k);
+            for (size_t i = 0; i < c.contigs[con_id].contig.length() - _K + 1; i++) {
+                if (index <= cutoff || index >= _length - 1 - cutoff) {
+                    Kmer kmer(c.contigs[con_id].contig, i, i + _K);
                     tbl.addKmer(kmer, std::make_pair(component_no, index)); 
                     tbl_size ++;
                     std::cerr << component_no <<" "<< index << std::endl;
@@ -65,16 +65,15 @@ size_t Component::produceKmerForPairRead(const ContigSet& c, KmerTable& tbl, siz
 
 void Component::initializeLen(const ContigSet& c) {
     if (_contig_id.size() == 0) {
-        _len = 0;
+        _length = 0;
         return;
     }
-    _len = c.contigs[_contig_id[0]].contig.length() + 1;
+    _length = c.contigs[_contig_id[0]].contig.length() + 1;
     for (int i=1; i<_contig_id.size(); i++) {
-        _len += _gap[i-1];
-        BOOST_ASSERT(c.contigs[_contig_id[i]].contig.size() >= _k-1);
-        _len += c.contigs[_contig_id[i]].contig.size() - _k + 1;
+        _length += _gap[i-1];
+        BOOST_ASSERT(c.contigs[_contig_id[i]].contig.size() >= _K-1);
+        _length += c.contigs[_contig_id[i]].contig.size() - _K + 1;
     }
-    return;
 }
 
 bool ComponentReader::read(Component& component) {
@@ -130,7 +129,7 @@ bool ComponentReader::read(Component& component) {
 }
 
 std::ostream& operator<<(std::ostream& os, const Component& component) {
-    os << "len:" << component._len << std::endl;
+    os << "len:" << component._length << std::endl;
     for (size_t i=0; i<component._contig_id.size(); ++i) {
         os << component._contig_id[i] << "\t";
     }
@@ -139,5 +138,24 @@ std::ostream& operator<<(std::ostream& os, const Component& component) {
         os << component._gap[i] << "\t";
     }
     return os;
+}
+
+bool ReadComponents(std::istream& stream, ComponentList& components) {
+    LOG4CXX_DEBUG(logger, boost::format("read component file begin"));
+
+    ComponentReader reader(stream);
+    Component component(15);
+    while (reader.read(component)) {
+        components.push_back(component);
+    }
+
+    LOG4CXX_DEBUG(logger, boost::format("read component file end"));
+
+    return true;
+}
+
+bool ReadComponents(const std::string& filename, ComponentList& components) {
+    std::ifstream stream(filename.c_str());
+    return ReadComponents(stream, components);
 }
 

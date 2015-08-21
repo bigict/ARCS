@@ -674,7 +674,8 @@ void DeBruijnGraph::trim_bubble_tip()
 					}
 				}
 
-				if(in_degree[node_index.front()] == 0 || out_degree[graph[node_index.back()].next[node_next_index.back()]] == 0 )
+				//if(in_degree[node_index.front()] == 0 || out_degree[graph[node_index.back()].next[node_next_index.back()]] == 0 )
+				if((in_degree[node_index.front()] == 0 && out_degree[node_index.front] == 1) || (in_degree[graph[node_index.back().next[node_next_index.back()]]] == 1 && out_degree[graph[node_index.back()].next[node_next_index.back()]] == 0 ))
 				{
 					if(node_index.size()+K-1 < 2*K)
 					{

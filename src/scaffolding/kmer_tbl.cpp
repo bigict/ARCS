@@ -14,7 +14,7 @@ void KmerTable::filter(size_t INSERT_SIZE, const std::vector<Component>& compone
     for(KmerList::iterator it=_kmerlist.begin(); it!=_kmerlist.end(); ++it) {
         size_t com_num = it->second.first;
         size_t index = it->second.second;
-        size_t len = components[com_num].getLen();
+        size_t len = components[com_num].length();
         if (index <= 2 * INSERT_SIZE || index >= len - _k + 1 - 2 * INSERT_SIZE){
             continue;
         }

@@ -4,6 +4,8 @@
 #include <vector>
 
 #include <boost/assign.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/property_tree/ini_parser.hpp>
@@ -14,6 +16,7 @@
 #include <log4cxx/propertyconfigurator.h>
 
 #include "debruijn_graph.h"
+#include "kmer.h"
 #include "kmer_tbl.h"
 #include "kseq.h"
 
@@ -91,6 +94,13 @@ public:
             return 1;
         }
 
+        boost::filesystem::path workdir(options.get< std::string >("d"));
+        if (!boost::filesystem::exists(workdir) && !boost::filesystem::create_directory(workdir)) {
+            LOG4CXX_ERROR(logger, boost::format("failed to create directory: %s") % workdir);
+            return 1;
+        }
+
+        size_t K = options.get< size_t >("K");
         std::vector< std::string > filelist = boost::assign::list_of(options.get< std::string >("q1"))(options.get< std::string >("q2"));
 
         double avg_quality = 0, min_quality = 0, percent = 1.0;
@@ -101,7 +111,7 @@ public:
         }
         LOG4CXX_INFO(logger, boost::format("avg_quality=%lf min_quality=%lf") % avg_quality % min_quality);
 
-        KmerTable tbl(options.get< size_t >("K"), avg_quality, min_quality, percent, options.get< size_t >("READ_LENGTH_CUTOFF"), options.find("S") == options.not_found());
+        KmerTable tbl(K, avg_quality, min_quality, percent, options.get< size_t >("READ_LENGTH_CUTOFF", 100), options.find("S") == options.not_found());
 
         if (!tbl.read(filelist)) {
             LOG4CXX_ERROR(logger, boost::format("faild to open file: %s") % options.get< std::string >("q1"));
@@ -109,12 +119,22 @@ public:
         }
 
         DeBruijnGraph graph(tbl);
-
         graph.compact();
+        // edge
+        {
+            boost::filesystem::ofstream stream(workdir / boost::filesystem::path("condensed_de_bruijn_graph_before_trimming.data"));
+            stream << graph;
+        }
+
         graph.removeNoise();
-        graph.compact();
+        graph.removeNoise();
 
-        std::cerr << graph << std::endl;
+        graph.compact();
+        // edge
+        {
+            boost::filesystem::ofstream stream(workdir / boost::filesystem::path("condensed_de_bruijn_graph_after_trimming.data"));
+            stream << graph;
+        }
 
         return 0;
     }
@@ -139,7 +159,9 @@ int Contiging::checkOptions(const Properties& options) {
     std::vector< std::string > intopt = boost::assign::list_of("K")("READ_LENGTH_CUTOFF");
     BOOST_FOREACH(const std::string& c, intopt) {
         try {
-            size_t K = options.get< size_t >(c);
+            if (options.find(c) != options.not_found()) {
+                size_t K = options.get< size_t >(c);
+            }
         } catch (std::exception& e) {
             std::cerr << boost::format("The argument -%s should be a integer. type -h for more help") % c << std::endl;
             return 1;
@@ -187,7 +209,6 @@ int main(int argc, char* argv[]) {
         } else {
             log4cxx::BasicConfigurator::configure();
         }
-
         
         // load ini options
         if (cmd.find("s") != cmd.not_found()) {

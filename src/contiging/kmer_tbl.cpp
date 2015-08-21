@@ -28,7 +28,7 @@ bool KmerTable::read(std::istream& stream) {
         return false;
     }
 
-    LOG4CXX_DEBUG(logger, boost::format("construct kmer table begin"));
+    LOG4CXX_DEBUG(logger, boost::format("construct kmer table from stream begin"));
 
     DNASeqReader reader(stream, _percent, _read_cutoff);
     DNASeq read;
@@ -46,7 +46,7 @@ bool KmerTable::read(std::istream& stream) {
         }
     }
 
-    LOG4CXX_DEBUG(logger, boost::format("construct kmer table end"));
+    LOG4CXX_DEBUG(logger, boost::format("construct kmer table from stream end"));
 
     return true;
 }
@@ -131,7 +131,7 @@ struct Statistics {
     void run(const std::pair< Kmer, size_t >& item) {
         if (item.second >= _min_threshold) {
             sigma += item.second;
-            delta += item.second * item.second;
+            delta += std::pow(item.second, 2);
             ++count;
         }
     }
@@ -154,6 +154,7 @@ void KmerTable::statistics(double* average, double* variance) const {
             *average = helper.sigma / helper.count;
         }
         if (variance != NULL) {
+            *variance = std::sqrt(helper.delta / helper.count - std::pow(helper.sigma / helper.count, 2));
         }
     }
 }

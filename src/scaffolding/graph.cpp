@@ -49,8 +49,8 @@ void Graph::scoreAndRemoveNoise(const std::vector<Component>& com) {
                 continue;
             }
             j->dis /= j->kmer_cov;
-            size_t leni = com[count].getLen();
-            size_t lenj =com[j->component_id].getLen();
+            size_t leni = com[count].length();
+            size_t lenj =com[j->component_id].length();
             j->score = score(leni, lenj, j->dis - leni + _k, j->kmer_cov);
             s.push_back(j->score);
             ++j;

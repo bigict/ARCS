@@ -15,7 +15,7 @@ class KmerTable;
 //
 class DeBruijnGraph {
 public:
-    typedef std::tr1::unordered_map< Kmer, size_t, KmerHasher > EdgeList;
+    typedef std::tr1::unordered_map< Kmer, double, KmerHasher > EdgeList;
 
     class Node {
     public:
@@ -54,16 +54,12 @@ public:
     // Remove suspicious nodes
     void removeNoise();
 
-    struct NodeKey {
-        NodeKey(size_t K) : _K(K) {}
-        Kmer operator()(const Kmer& kmer) const {
-            size_t k = std::min(kmer.length(), _K);
-            return kmer.subKmer(kmer.length() -  k);
-        }
-    private:
-        size_t _K;
-    };
-
+    const NodeList& nodelist() const {
+        return _nodelist;
+    }
+    double average() const {
+        return _average;
+    }
 private:
     friend std::ostream& operator << (std::ostream& os, const DeBruijnGraph& graph);
 
