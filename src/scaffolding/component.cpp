@@ -76,6 +76,15 @@ void Component::initializeLen(const ContigSet& c) {
     }
 }
 
+size_t Component::length(size_t K, const ContigSet& contigset, const Component& component) {
+    size_t length = 0;
+    for (size_t i = 0; i < component._contig_id.size(); ++i) {
+        BOOST_ASSERT(contigset.contigs[component._contig_id[i]].contig.length() >= K - 1);
+        length += contigset.contigs[component._contig_id[i]].contig.length() + component._gap[i];
+    }
+    return length;
+}
+
 bool ComponentReader::read(Component& component) {
     enum {
         eStart,

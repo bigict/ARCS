@@ -1,8 +1,8 @@
 #ifndef contigs_h_
 #define contigs_h_
 
-#include <string>
 #include <iostream>
+#include <string>
 #include <vector>
 
 struct Contig {
@@ -15,10 +15,12 @@ struct Contig {
 
 class ContigSet {
 public:
+    typedef std::vector< Contig > ContigList;
+
     ContigSet(std::istream& stream, size_t K); 
     ContigSet(const std::string& filename, size_t K); 
 
-    std::vector< Contig > contigs;
+    ContigList contigs;
     size_t GENOME_LEN;
 
 private:

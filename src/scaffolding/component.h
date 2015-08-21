@@ -29,6 +29,7 @@ public:
     std::vector< size_t > _contig_id;
     std::vector< long > _gap;
 
+    static size_t length(size_t K, const ContigSet& contigs, const Component& component);
 private:
     friend std::ostream& operator<<(std::ostream& os, const Component& component) ;
     friend class ComponentReader;

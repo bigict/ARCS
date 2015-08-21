@@ -4,16 +4,18 @@ scaffolding_SOURCES=main.cpp \
             contigs.h	\
             component.cpp	\
             conponent.h	\
-            kmer.h	\
+            graph.cpp \
+            graph.h \
             kmer.cpp	\
-            kmer_tbl.h	\
+            kmer.h	\
             kmer_tbl.cpp	\
-	        pair_read.h	\
-            pair_read.cpp	\
-            graph.h	\
-            graph.cpp	\
+            kmer_tbl.h	\
+            kseq.cpp \
 			kseq.h	\
-            kseq.cpp	\
+            pair_read.cpp	\
+	        pair_read.h
 scaffolding_CXXFLAGS=${LOG4CXX_CFLAGS}
 scaffolding_LDFLAGS=${LOG4CXX_LIBS} \
-					-lboost_regex
+					-lboost_filesystem \
+					-lboost_regex \
+				    -lboost_system

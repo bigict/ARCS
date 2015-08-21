@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <boost/assign.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/property_tree/ini_parser.hpp>
@@ -25,6 +26,12 @@ class Scaffoding {
 public:
     int run(const Properties& options) {
         if (checkOptions(options) != 0) {
+            return 1;
+        }
+
+        boost::filesystem::path workdir(options.get< std::string >("d"));
+        if (!boost::filesystem::exists(workdir) && !boost::filesystem::create_directory(workdir)) {
+            LOG4CXX_ERROR(logger, boost::format("failed to create directory: %s") % workdir);
             return 1;
         }
 
