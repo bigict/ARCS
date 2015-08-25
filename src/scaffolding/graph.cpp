@@ -21,36 +21,36 @@ void Graph::setPairKmerNumAndInsertSizeAndDelta(size_t pair_kmer_num, size_t ins
 
 void Graph::addEdge(size_t from, size_t to, long dis, bool isread) {
 	
-    for(GraphEdge::iterator it=_graph[from].begin(); it!=_graph[from].end(); ++it) {
+    for (GraphEdge::iterator it=_graph[from].begin(); it!=_graph[from].end(); ++it) {
         if (it->component_id == to) {
             it->dis += dis;
             ++it->kmer_cov;
             if (isread) {
                 ++it->read_cov;
             }
-            return ;
+            return;
         }
     }
-    Edge e(to, dis, 1, (isread?1:0), 0);
+    Edge e(to, dis, 1, (isread ? 1 : 0), 0);
     _graph[from].push_back(e);
 }
 
-void Graph::scoreAndRemoveNoise(const std::vector<Component>& com) {
+void Graph::scoreAndRemoveNoise(const ContigSet& contigset, const std::vector<Component>& components) {
 
     size_t graph_size = 0;
 	initialize_gaussian();
 	std::vector<double> s;
     size_t count = 0;
     for(GraphNode::iterator i=_graph.begin(); i!=_graph.end(); ++i, ++count) {
-        GraphEdge::iterator j=i->begin();
+        GraphEdge::iterator j = i->begin();
         while(j!=i->end()) {
             if (j->kmer_cov < _pair_kmer_cutoff || j->read_cov < _pair_read_cutoff){
                 j = i->erase(j);
                 continue;
             }
             j->dis /= j->kmer_cov;
-            size_t leni = com[count].length();
-            size_t lenj =com[j->component_id].length();
+            size_t leni = Component::length(_k, contigset, components[count]);
+            size_t lenj = Component::length(_k, contigset, components[j->component_id]);
             j->score = score(leni, lenj, j->dis - leni + _k, j->kmer_cov);
             s.push_back(j->score);
             ++j;
@@ -61,7 +61,7 @@ void Graph::scoreAndRemoveNoise(const std::vector<Component>& com) {
     LOG4CXX_INFO(logger, boost::format("befor remove nosize graph_size=%d") % graph_size);
     
     sort(s.begin(), s.end());
-    double threshold = s[(int)(s.size() * _percent)];
+    double threshold = !s.empty() ? s[(int)(s.size() * _percent)] : .0;
     
     graph_size = 0;
     LOG4CXX_INFO(logger, boost::format("removeNoise threshold=%f") % threshold);

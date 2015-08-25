@@ -15,72 +15,61 @@
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("scanfording.component"));
 
-size_t Component::produceKmerForInsertSize(const ContigSet& c, KmerTable& tbl, size_t component_no) {
+size_t Component::produceKmerForInsertSize(size_t K, const ContigSet& c, KmerTable& tbl, size_t component_no) {
     long index = 0;
     size_t tbl_size = 0; 
-    for (size_t j=0; j<_contig_id.size(); j++) {
-        size_t con_id = _contig_id[j];
-        for (size_t i = 0; i < c.contigs[con_id].contig.length() - _K + 1; i++) {
-            Kmer kmer(c.contigs[con_id].contig, i, i + _K);
+    for (size_t k = 0; k < _contig_id.size(); ++k) {
+        size_t contig_id = _contig_id[k];
+        for (size_t i = 0, j = K; j < c.contigs[contig_id].contig.length(); ++i, ++j) {
+            Kmer kmer(c.contigs[contig_id].contig, i, j);
             tbl.addKmer(kmer, std::make_pair(component_no, index)); 
             index ++;
             tbl_size ++;
         }
-        index += _gap[j]; 
+        index += _gap[k]; 
     }
     return tbl_size;
 }
 
-size_t Component::produceKmerForPairRead(const ContigSet& c, KmerTable& tbl, size_t component_no, size_t INSERT_SIZE) {
+size_t Component::produceKmerForPairRead(size_t K, const ContigSet& c, KmerTable& tbl, size_t component_no, size_t INSERT_SIZE) {
     long index = 0; 
     size_t tbl_size = 0;
     int cutoff = 2*INSERT_SIZE;
     if (_contig_id.size() == 1) {
         size_t con_id = _contig_id[0];
-        for (size_t i = 0; i < c.contigs[con_id].contig.length() - _K + 1; i++) {
-            if (index <= cutoff || index >= _length - 1 - _K + 1 - cutoff) {
-                Kmer kmer(c.contigs[con_id].contig, i, i + _K);
+        for (size_t i = 0; i < c.contigs[con_id].contig.length() - K + 1; i++) {
+            if (index <= cutoff || index >= Component::length(K, c, *this) - 1 - K + 1 - cutoff) {
+                Kmer kmer(c.contigs[con_id].contig, i, i + K);
                 tbl.addKmer(kmer, std::make_pair(component_no, index)); 
                 tbl_size ++; 
             }
             index ++;
         }
     } else {
-        for (size_t j=0; j<_contig_id.size(); j++) {
-            size_t con_id = _contig_id[j];
-            for (size_t i = 0; i < c.contigs[con_id].contig.length() - _K + 1; i++) {
-                if (index <= cutoff || index >= _length - 1 - cutoff) {
-                    Kmer kmer(c.contigs[con_id].contig, i, i + _K);
+        for (size_t k = 0; k < _contig_id.size(); ++k) {
+            size_t con_id = _contig_id[k];
+            for (size_t i = 0, j = K; j < c.contigs[con_id].contig.length(); ++i, ++j) {
+                if (index <= cutoff || index >= Component::length(K, c, *this) - 1 - cutoff) {
+                    Kmer kmer(c.contigs[con_id].contig, i, j);
                     tbl.addKmer(kmer, std::make_pair(component_no, index)); 
                     tbl_size ++;
                     std::cerr << component_no <<" "<< index << std::endl;
                 }
                 index ++;
             }
-            index += _gap[j]; 
+            index += _gap[k]; 
         }
     }
     return tbl_size;
 }
 
-void Component::initializeLen(const ContigSet& c) {
-    if (_contig_id.size() == 0) {
-        _length = 0;
-        return;
-    }
-    _length = c.contigs[_contig_id[0]].contig.length() + 1;
-    for (int i=1; i<_contig_id.size(); i++) {
-        _length += _gap[i-1];
-        BOOST_ASSERT(c.contigs[_contig_id[i]].contig.size() >= _K-1);
-        _length += c.contigs[_contig_id[i]].contig.size() - _K + 1;
-    }
-}
-
 size_t Component::length(size_t K, const ContigSet& contigset, const Component& component) {
-    size_t length = 0;
-    for (size_t i = 0; i < component._contig_id.size(); ++i) {
+    if (component._contig_id.empty()) return 0;
+
+    size_t length = contigset.contigs[component._contig_id[0]].contig.length() + 1;
+    for (size_t i = 1; i < component._contig_id.size(); ++i) {
         BOOST_ASSERT(contigset.contigs[component._contig_id[i]].contig.length() >= K - 1);
-        length += contigset.contigs[component._contig_id[i]].contig.length() + component._gap[i];
+        length += component._gap[i - 1] + contigset.contigs[component._contig_id[i]].contig.length() + K - 1;
     }
     return length;
 }
@@ -92,7 +81,7 @@ bool ComponentReader::read(Component& component) {
         eGap,
     };
 
-    static boost::regex reg(">component (\\d+)");
+    static boost::regex reg(">component[ \t]+(\\d+)");
 
     if (_stream) {
         component.reset();
@@ -138,7 +127,7 @@ bool ComponentReader::read(Component& component) {
 }
 
 std::ostream& operator<<(std::ostream& os, const Component& component) {
-    os << "len:" << component._length << std::endl;
+    //os << "len:" << component._length << std::endl;
     for (size_t i=0; i<component._contig_id.size(); ++i) {
         os << component._contig_id[i] << "\t";
     }
@@ -150,15 +139,15 @@ std::ostream& operator<<(std::ostream& os, const Component& component) {
 }
 
 bool ReadComponents(std::istream& stream, ComponentList& components) {
-    LOG4CXX_DEBUG(logger, boost::format("read component file begin"));
+    LOG4CXX_DEBUG(logger, boost::format("read component from stream begin"));
 
     ComponentReader reader(stream);
-    Component component(15);
+    Component component;
     while (reader.read(component)) {
         components.push_back(component);
     }
 
-    LOG4CXX_DEBUG(logger, boost::format("read component file end"));
+    LOG4CXX_DEBUG(logger, boost::format("read component from stream end"));
 
     return true;
 }

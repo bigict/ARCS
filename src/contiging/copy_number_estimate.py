@@ -46,6 +46,8 @@ def Worker_run(config, contig, component):
     print '\tNumber of Contigs = %d' % (contig_index)
     print '\tNumber of Uniques = %d' % (component_index)
 
+USAGE = '%s -p [contig_parameter_file] [output_fasta_file] [component0]'
+
 if __name__ == '__main__':
     import getopt
 
@@ -53,7 +55,7 @@ if __name__ == '__main__':
     opts, args = getopt.getopt(sys.argv[1:], "p:h")
     for o, a in opts:
         if o == '-h':
-            print 'help'
+            print USAGE % (sys.argv[0])
             sys.exit(1)
         elif o == '-p':
             with file(a) as f:
@@ -64,4 +66,4 @@ if __name__ == '__main__':
     if len(args) == 2:
         Worker_run(config, *args)
     else:
-        print 'help'
+        print USAGE % (sys.argv[0])

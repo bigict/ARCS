@@ -28,7 +28,7 @@ public:
 
     void setPairKmerNumAndInsertSizeAndDelta(size_t pair_kmer_num, size_t insert_size, double delta) ;
     void addEdge(size_t from, size_t to, long dis, bool isread) ;
-    void scoreAndRemoveNoise(const std::vector<Component>& com) ;
+    void scoreAndRemoveNoise(const ContigSet& contigset, const std::vector<Component>& com) ;
     void outputLP(std::ostream& os) ;
     friend std::ostream& operator<<(std::ostream& os, const Graph& g) ;
 

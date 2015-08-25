@@ -267,23 +267,25 @@ void UniqEdgeGraph::linearize() {
     std::ofstream out(file.c_str());
 
 	for (size_t i = 0; i < scaffolds.size(); ++i) {
-		out << ">component " << i << std::endl;
+		out << boost::format(">component %d") % i << std::endl;
 
+        // contig
 		for (size_t j = 0; j < scaffolds[i].size(); ++j) {
 			//cout << "line component : " <<  _component[i][j].id << endl;
 			for (size_t k = 0; k < _component_tbl[scaffolds[i][j].id].items.size(); ++k) {
 				out << _component_tbl[scaffolds[i][j].id].items[k].contig << " ";
-			}		
+			}
 		}
 		out << std::endl;
+        // gap
 		for (size_t k = 0; k < _component_tbl[scaffolds[i][0].id].items.size(); ++k) {
 			out << _component_tbl[scaffolds[i][0].id].items[k].gap << " ";
 		}
 		for (size_t j = 1; j < scaffolds[i].size(); ++j) {	
 			//out << _position_tbl[_component[i][j].id] - _position_tbl[_component[i][j-1].id] - _length_tbl[_component[i][j-1].id] + K << " " ;
-			int tmp_dis = getDistance(scaffolds[i][j-1].id, scaffolds[i][j].id);
-			if (tmp_dis >= 0) {
-				out << tmp_dis - scaffolds[i][j-1].length + _K  << " " ;
+			int distance = getDistance(scaffolds[i][j - 1].id, scaffolds[i][j].id);
+			if (distance >= 0) {
+				out << distance - scaffolds[i][j-1].length + _K  << " " ;
 			} else {
 				out << _position_tbl[scaffolds[i][j].id] - _position_tbl[scaffolds[i][j-1].id] - _length_tbl[scaffolds[i][j-1].id] + _K << " " ;
 			}

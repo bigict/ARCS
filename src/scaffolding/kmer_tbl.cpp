@@ -10,11 +10,11 @@ void KmerTable::addKmer( const Kmer& o, std::pair<size_t, long> pos) {
     _kmerlist.insert(std::make_pair( o, pos ));
 }
 
-void KmerTable::filter(size_t INSERT_SIZE, const std::vector<Component>& components) {
+void KmerTable::filter(size_t INSERT_SIZE, const ContigSet& contigset, const std::vector<Component>& components) {
     for(KmerList::iterator it=_kmerlist.begin(); it!=_kmerlist.end(); ++it) {
         size_t com_num = it->second.first;
         size_t index = it->second.second;
-        size_t len = components[com_num].length();
+        size_t len = Component::length(_k, contigset, components[com_num]);
         if (index <= 2 * INSERT_SIZE || index >= len - _k + 1 - 2 * INSERT_SIZE){
             continue;
         }

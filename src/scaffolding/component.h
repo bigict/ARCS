@@ -11,16 +11,14 @@ class KmerTable;
 
 class Component {
 public:
-    Component(size_t K) : _K(K) {
+    Component() {
     }
     virtual ~Component() {
     }
 //  size_t produceKmer(const ContigSet& c, KmerTable& tbl, size_t component_no);
-    size_t produceKmerForInsertSize(const ContigSet& c, KmerTable& tbl, size_t component_no); 
-    size_t produceKmerForPairRead(const ContigSet& c, KmerTable& tbl, size_t component_no, size_t INSERT_SIZE);
+    size_t produceKmerForInsertSize(size_t K, const ContigSet& c, KmerTable& tbl, size_t component_no); 
+    size_t produceKmerForPairRead(size_t K, const ContigSet& c, KmerTable& tbl, size_t component_no, size_t INSERT_SIZE);
 
-    size_t length() const { return _length; } 
-    void initializeLen(const ContigSet& c);
     void reset() {
         _contig_id.clear();
         _gap.clear();
@@ -33,9 +31,6 @@ public:
 private:
     friend std::ostream& operator<<(std::ostream& os, const Component& component) ;
     friend class ComponentReader;
-
-    size_t _length;
-    size_t _K;
 };
 
 class ComponentReader {

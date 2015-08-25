@@ -25,7 +25,7 @@ public:
     typedef std::tr1::unordered_multimap< Kmer, std::pair<size_t, size_t>, KmerHasher> KmerList;
 */
     void addKmer(const Kmer& o, std::pair<size_t, long> pos) ;
-    void filter(size_t INSERT_SIZE, const std::vector<Component>& components) ;
+    void filter(size_t INSERT_SIZE, const ContigSet& contigset, const std::vector<Component>& components) ;
 	std::pair<size_t, long> findPos(const Kmer& o) const;
 
 	friend std::ostream& operator<<(std::ostream& os, const KmerTable& tbl) ;
