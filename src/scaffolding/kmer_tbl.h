@@ -1,5 +1,5 @@
-#ifndef kmer_tbl_h_
-#define kmer_tbl_h_
+#ifndef kmer_tbl_h__
+#define kmer_tbl_h__
 
 #include "kmer.h"
 #include "component.h"
@@ -11,8 +11,6 @@ class Component;
 
 class KmerTable {
 public:
-    typedef std::tr1::unordered_multimap< Kmer, std::pair< size_t, long >, KmerHasher> KmerList;
-
     KmerTable(size_t K) ;
 	virtual ~KmerTable() ;
 
@@ -25,8 +23,9 @@ public:
     typedef std::tr1::unordered_multimap< Kmer, std::pair<size_t, size_t>, KmerHasher> KmerList;
 */
     void addKmer(const Kmer& o, std::pair<size_t, long> pos) ;
-    void filter(size_t INSERT_SIZE, const ContigSet& contigset, const std::vector<Component>& components) ;
+    void filter(size_t INSERT_SIZE, const std::vector<Component>& components) ;
 	std::pair<size_t, long> findPos(const Kmer& o) const;
+    typedef std::tr1::unordered_multimap< Kmer, std::pair<size_t, long>, KmerHasher> KmerList;
 
 	friend std::ostream& operator<<(std::ostream& os, const KmerTable& tbl) ;
 private:

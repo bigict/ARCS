@@ -53,7 +53,7 @@ bool ComponentReader::read(Component& component) {
         eGap,
     };
 
-    static boost::regex reg(">component (\\d+)");
+    static boost::regex reg(">component[ \t]+(\\d+)");
 
     if (_stream) {
         int state = eStart;

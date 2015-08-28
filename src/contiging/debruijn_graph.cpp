@@ -18,7 +18,17 @@
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("contiging.debruijn"));
 
 DeBruijnGraph::DeBruijnGraph(const KmerTable& tbl) : _K(tbl.K()), _average(0) {
-    LOG4CXX_DEBUG(logger, boost::format("build debruijn graph from kmer hash table with K=[%d]") % _K);
+    construct(tbl);
+}
+
+DeBruijnGraph::DeBruijnGraph(size_t K) : _K(K), _average(0) {
+}
+
+DeBruijnGraph::~DeBruijnGraph() {
+}
+
+bool DeBruijnGraph::construct(const KmerTable& tbl) {
+    _K = tbl.K();
 
     double delta;
     tbl.statistics(&_average, &delta);
@@ -26,9 +36,6 @@ DeBruijnGraph::DeBruijnGraph(const KmerTable& tbl) : _K(tbl.K()), _average(0) {
     LOG4CXX_DEBUG(logger, boost::format("average coverage=[%f],delta=[%f]") % _average % delta);
 
     tbl.buildDeBruijn(this);
-}
-
-DeBruijnGraph::~DeBruijnGraph() {
 }
 
 void DeBruijnGraph::addKmer(const Kmer& kmer, size_t weight) {

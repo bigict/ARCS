@@ -111,14 +111,17 @@ public:
         }
         LOG4CXX_INFO(logger, boost::format("K=%d,avg_quality=%lf,min_quality=%lf") % K % avg_quality % min_quality);
 
-        KmerTable tbl(K, avg_quality, min_quality, percent, options.get< size_t >("READ_LENGTH_CUTOFF", 100), options.find("S") == options.not_found());
+        DeBruijnGraph graph(K);
+        // load
+        {
+            KmerTable tbl(K, avg_quality, min_quality, percent, options.get< size_t >("READ_LENGTH_CUTOFF", 100), options.find("S") == options.not_found());
 
-        if (!tbl.read(filelist)) {
-            LOG4CXX_ERROR(logger, boost::format("faild to open file: %s") % options.get< std::string >("q1"));
-            return -1;
+            if (!tbl.read(filelist)) {
+                LOG4CXX_ERROR(logger, boost::format("faild to open file: %s") % options.get< std::string >("q1"));
+                return -1;
+            }
+            graph.construct(tbl);
         }
-
-        DeBruijnGraph graph(tbl);
         //graph.compact();
         // edge
         {

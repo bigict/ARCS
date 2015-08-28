@@ -42,7 +42,10 @@ public:
     typedef std::tr1::unordered_map< Kmer, Node, KmerHasher > NodeList;
 
     DeBruijnGraph(const KmerTable& tbl);
+    DeBruijnGraph(size_t K);
     virtual ~DeBruijnGraph();
+
+    bool construct(const KmerTable& tbl);
 
     void addKmer(const Kmer& kmer, size_t weight = 1);
     void removeKmer(const Kmer& kmer);

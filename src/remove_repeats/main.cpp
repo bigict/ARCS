@@ -5,10 +5,13 @@
 #include <vector>
 
 #include <boost/assign.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #include <log4cxx/logger.h>
 #include <log4cxx/basicconfigurator.h>
@@ -25,19 +28,47 @@ public:
             return 1;
         }
 
-	    size_t EDGE_NUM = options.get< size_t >("EDGE_CLUSTER_NUM");
-
-        LOG4CXX_INFO(logger, boost::format("remove repeats begin"));
-        LOG4CXX_INFO(logger, boost::format("Edge num=%d") % EDGE_NUM);
-
-        UniqEdgeGraph graph(options.get< size_t >("K"), EDGE_NUM, options.get< size_t >("MAX_OVERLAP"), options.get< size_t >("ITERATION"));
-        
-        if (!graph.input_edge_length() || !graph.input_edge_position() || !graph.input_edge_link("contig_arc_graph_after_remove_ambigous_arcs") || !graph.input_component()) {
-            LOG4CXX_ERROR(logger, boost::format("load data failed."));
-            return 2;
+        boost::filesystem::path workdir(options.get< std::string >("d"));
+        if (!boost::filesystem::exists(workdir) && !boost::filesystem::create_directory(workdir)) {
+            LOG4CXX_ERROR(logger, boost::format("failed to create directory: %s") % workdir);
+            return 1;
         }
-    
-        graph.linearize();
+
+
+        size_t K = options.get< size_t >("K");
+        size_t ITERATION = options.get< size_t >("ITERATION");
+        size_t MAX_OVERLAP = options.get< size_t >("MAX_OVERLAP");
+
+        UniqEdgeGraph graph(K, MAX_OVERLAP, ITERATION);
+        
+        LOG4CXX_INFO(logger, boost::format("remove repeats begin. K=[%d],ITERATION=[%d],MAX_OVERLAP=[%d]") % K % ITERATION % MAX_OVERLAP);
+        // load data
+        {
+            typedef bool(UniqEdgeGraph::*LoadDataPtr)(std::istream&);
+            typedef boost::tuple< std::string, LoadDataPtr> File2FuncPtr;
+            std::vector< File2FuncPtr > file2func_list = boost::assign::tuple_list_of
+                ("edge_cluster_len_%ld", &UniqEdgeGraph::input_edge_length)
+                ("edge_cluster_pos_%ld", &UniqEdgeGraph::input_edge_position)
+                ("contig_arc_graph_after_remove_ambigous_arcs_%ld", &UniqEdgeGraph::input_edge_link)
+                ("component_%ld", &UniqEdgeGraph::input_component)
+                ;
+
+            BOOST_FOREACH(const File2FuncPtr& file2func, file2func_list) {
+                std::string file = boost::str(boost::format(file2func.get< 0 >()) % ITERATION);
+                boost::filesystem::ifstream stream(workdir / file);
+                if (!boost::bind(file2func.get< 1 >(), &graph, _1)(stream)) {
+                    LOG4CXX_ERROR(logger, boost::format("failed to load %s") % file);
+                    return 2;
+                }
+            }
+        }
+        // resolve conflicts && output
+        {
+            boost::filesystem::ofstream stream(workdir / boost::filesystem::path(
+                        boost::str(boost::format("component_%ld") % (ITERATION + 1))
+                ));
+            graph.linearize(stream);
+        }
         
         LOG4CXX_INFO(logger, boost::format("remove repeats end"));
 
@@ -54,7 +85,7 @@ int RepeatRemover::checkOptions(const Properties& options) {
         return printHelps();
     }
 
-    std::vector< std::string > necessary = boost::assign::list_of("K")("MAX_OVERLAP");
+    std::vector< std::string > necessary = boost::assign::list_of("K")("MAX_OVERLAP")("d");
     BOOST_FOREACH(const std::string& c, necessary) {
         if (options.find(c) == options.not_found()) {
             std::cerr << boost::format("The argument -%s is necessary! type -h for more help") % c << std::endl;

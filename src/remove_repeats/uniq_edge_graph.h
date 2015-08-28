@@ -1,6 +1,7 @@
 #ifndef uniq_edge_graph_h_
 #define uniq_edge_graph_h_
 
+#include <iostream>
 #include <map>
 #include <string>
 #include <vector>
@@ -10,8 +11,8 @@
 
 class UniqEdgeGraph {
 public:
-    UniqEdgeGraph(size_t K, size_t edge_num, size_t max_overlap, size_t iteration)
-        : _K(K), _edge_num(edge_num), _max_overlap(max_overlap), _iteration(iteration) {
+    UniqEdgeGraph(size_t K, size_t max_overlap, size_t iteration)
+        : _K(K), _max_overlap(max_overlap), _iteration(iteration) {
     }
     virtual ~UniqEdgeGraph() {
     }
@@ -21,12 +22,12 @@ public:
     void removeNode(size_t i);
     bool hasEdge(size_t i, size_t j) const;
 
-	bool input_edge_position();
-	bool input_edge_length();
-	bool input_edge_link(const std::string& edge_link_file);
-	bool input_component();
+	bool input_edge_position(std::istream& stream);
+	bool input_edge_length(std::istream& stream);
+	bool input_edge_link(std::istream& stream);
+	bool input_component(std::istream& stream);
 
-	void linearize();
+	void linearize(std::ostream& stream);
 	void output_graph(const std::string& file) const;
 	
 private:
@@ -64,15 +65,14 @@ private:
 	EdgeInfo getMinEdge(size_t i) const;
 
     NodeList _nodelist;
-    typedef std::vector< size_t > PositionList;
+    typedef std::vector< int > PositionList;
     PositionList _position_tbl;
-    typedef std::vector< size_t > LengthList;
+    typedef std::vector< int > LengthList;
     LengthList _length_tbl;
     typedef std::vector< Component > ComponentList;
     ComponentList _component_tbl;
 
     size_t _K;
-    size_t _edge_num;
     size_t _max_overlap;
     size_t _iteration;
 };

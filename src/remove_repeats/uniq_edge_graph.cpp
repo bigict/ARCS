@@ -141,11 +141,14 @@ void ConflictResolver::resolve() {
 
     // Resolve
     BOOST_FOREACH(const ConflictItem& overlap, overlaplist) {
+        LOG4CXX_DEBUG(logger, boost::format("overlap\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >());
+
 		if (_graph->hasEdge(overlap.get< 1 >(), overlap.get< 2 >()) || _graph->hasEdge(overlap.get< 2 >(), overlap.get< 1 >())) {
 			continue;
 		}
 
 		int temp1 = _graph->getAncestor(overlap.get< 1 >(), overlap.get< 2 >());	
+        LOG4CXX_DEBUG(logger, boost::format("getAncestor1\t%d\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >() % temp1);
 		while (temp1 >= 0) {
             UniqEdgeGraph::EdgeInfo edgeinfo = _graph->getMinEdge(temp1);
 			if (edgeinfo.from >= 0) {
@@ -155,16 +158,19 @@ void ConflictResolver::resolve() {
 				break;
 			}
 			temp1 = _graph->getAncestor(overlap.get< 1 >(), overlap.get< 2 >());
+            LOG4CXX_DEBUG(logger, boost::format("getAncestor1\t%d\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >() % temp1);
 		}
 		
 		while (temp1 >= 0) {
-			LOG4CXX_DEBUG(logger, boost::format("%d\tancestor of\t(%d,%d)") % temp1 % overlap.get< 1 >() % overlap.get< 2 >()); 
+			//LOG4CXX_DEBUG(logger, boost::format("%d\tancestor of\t(%d,%d)") % temp1 % overlap.get< 1 >() % overlap.get< 2 >()); 
 			_graph->removeNode(temp1);
 
 			temp1 = _graph->getAncestor(overlap.get< 1 >(), overlap.get< 2 >());
+            LOG4CXX_DEBUG(logger, boost::format("getAncestor2\t%d\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >() % temp1);
 		}
 		
 		int temp2 = _graph->getDescendant(overlap.get< 1 >(), overlap.get< 2 >());
+        LOG4CXX_DEBUG(logger, boost::format("getDescendant1\t%d\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >() % temp2);
 		while (temp2 >= 0) {
             UniqEdgeGraph::EdgeInfo edgeinfo = _graph->getMinEdge(temp2);
 			if (edgeinfo.from >= 0) {
@@ -174,24 +180,22 @@ void ConflictResolver::resolve() {
 				break;
 			}
 			temp2 = _graph->getDescendant(overlap.get< 1 >(), overlap.get< 2 >());
+            LOG4CXX_DEBUG(logger, boost::format("getDescendant1\t%d\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >() % temp2);
 		}
 
 		while (temp2 >= 0) {
-			LOG4CXX_DEBUG(logger, boost::format("%d\tdescendant of\t(%d,%d)") % temp2 % overlap.get< 1 >() % overlap.get< 2 >()); 
+			//LOG4CXX_DEBUG(logger, boost::format("%d\tdescendant of\t(%d,%d)") % temp2 % overlap.get< 1 >() % overlap.get< 2 >()); 
 			_graph->removeNode(temp2);
 
 			temp2 = _graph->getDescendant(overlap.get< 1 >(), overlap.get< 2 >());
+            LOG4CXX_DEBUG(logger, boost::format("getDescendant2\t%d\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >() % temp2);
 		}
 	}
 }
 
-bool UniqEdgeGraph::input_component() {
-    
-    std::string file = boost::str(boost::format("component_%ld") % _iteration);
-    std::ifstream stream(file.c_str());
-	
+bool UniqEdgeGraph::input_component(std::istream& stream) {
 	if (!stream) {
-        LOG4CXX_ERROR(logger, boost::format("%s open failed") % file);
+        LOG4CXX_ERROR(logger, boost::format("open stream failed"));
         return false;
 	}
 
@@ -204,44 +208,35 @@ bool UniqEdgeGraph::input_component() {
     return true;
 }
 
-bool UniqEdgeGraph::input_edge_position() {
-
-    std::string file = boost::str(boost::format("edge_cluster_pos_%ld") % _iteration);
-    std::ifstream stream(file.c_str());
+bool UniqEdgeGraph::input_edge_position(std::istream& stream) {
 	if (!stream) {
-        LOG4CXX_ERROR(logger, boost::format("%s open failed") % file);
+        LOG4CXX_ERROR(logger, boost::format("open stream failed"));
         return false;
 	}
 	
     std::string line;
 	while (std::getline(stream, line)) {
-        _position_tbl.push_back(boost::lexical_cast< size_t >(line));
+        _position_tbl.push_back(boost::lexical_cast< int >(line));
 	}
     return true;
 }
 
-bool UniqEdgeGraph::input_edge_length() {
-
-    std::string file = boost::str(boost::format("edge_cluster_len_%ld") % _iteration);
-    std::ifstream stream(file.c_str());
+bool UniqEdgeGraph::input_edge_length(std::istream& stream) {
 	if (!stream) {
-        LOG4CXX_ERROR(logger, boost::format("%s open failed") % file);
+        LOG4CXX_ERROR(logger, boost::format("open stream failed"));
         return false;
 	}
 
     std::string line;
 	while (std::getline(stream, line)) {	
-        _length_tbl.push_back(boost::lexical_cast< size_t >(line));
+        _length_tbl.push_back(boost::lexical_cast< int >(line));
 	}
     return true;
 }
 
-bool UniqEdgeGraph::input_edge_link(const std::string& name) {
-    std::string file = boost::str(boost::format("%s_%ld") % name % _iteration);
-    std::ifstream stream(file.c_str());
-	
+bool UniqEdgeGraph::input_edge_link(std::istream& stream) {
 	if (!stream) {
-        LOG4CXX_ERROR(logger, boost::format("%s open failed") % file);
+        LOG4CXX_ERROR(logger, boost::format("open stream failed"));
         return false;
 	}
 
@@ -255,7 +250,7 @@ bool UniqEdgeGraph::input_edge_link(const std::string& name) {
     return true;
 }
 
-void UniqEdgeGraph::linearize() {
+void UniqEdgeGraph::linearize(std::ostream& out) {
     ConflictResolver resovler(this);
 
     resovler.resolve();
@@ -263,8 +258,10 @@ void UniqEdgeGraph::linearize() {
     ConflictResolver::ScaffoldList scaffolds;
     resovler.scaffolds(scaffolds);
 
+    /*
     std::string file = boost::str(boost::format("component_%ld") % (_iteration + 1));
     std::ofstream out(file.c_str());
+    */
 
 	for (size_t i = 0; i < scaffolds.size(); ++i) {
 		out << boost::format(">component %d") % i << std::endl;
@@ -278,20 +275,20 @@ void UniqEdgeGraph::linearize() {
 		}
 		out << std::endl;
         // gap
-		for (size_t k = 0; k < _component_tbl[scaffolds[i][0].id].items.size(); ++k) {
-			out << _component_tbl[scaffolds[i][0].id].items[k].gap << " ";
+		for (size_t k = 1; k < _component_tbl[scaffolds[i][0].id].items.size(); ++k) {
+			out << _component_tbl[scaffolds[i][0].id].items[k - 1].gap << " ";
 		}
 		for (size_t j = 1; j < scaffolds[i].size(); ++j) {	
 			//out << _position_tbl[_component[i][j].id] - _position_tbl[_component[i][j-1].id] - _length_tbl[_component[i][j-1].id] + K << " " ;
 			int distance = getDistance(scaffolds[i][j - 1].id, scaffolds[i][j].id);
 			if (distance >= 0) {
-				out << distance - scaffolds[i][j-1].length + _K  << " " ;
+				out << (int)(distance - scaffolds[i][j-1].length + _K)  << " " ;
 			} else {
-				out << _position_tbl[scaffolds[i][j].id] - _position_tbl[scaffolds[i][j-1].id] - _length_tbl[scaffolds[i][j-1].id] + _K << " " ;
+				out << (int)(_position_tbl[scaffolds[i][j].id] - _position_tbl[scaffolds[i][j-1].id] - _length_tbl[scaffolds[i][j-1].id] + _K) << " " ;
 			}
 
-			for (size_t k = 0; k < _component_tbl[scaffolds[i][j].id].items.size(); ++k) {
-				out << _component_tbl[scaffolds[i][j].id].items[k].gap << " ";
+			for (size_t k = 1; k < _component_tbl[scaffolds[i][j].id].items.size(); ++k) {
+				out << _component_tbl[scaffolds[i][j].id].items[k - 1].gap << " ";
 			}
 		}
 		out << std::endl;
@@ -445,12 +442,12 @@ int UniqEdgeGraph::getDescendant(size_t x, size_t y) const {
         while (!Q.empty()) {
             size_t node = Q.front();
             Q.pop_front();
-            flag[node] = 2;
+            flag[node] = depth;
 
             NodeList::const_iterator k = _nodelist.find(node);
             if (k != _nodelist.end()) {
                 for (Children::const_iterator i = k->second.children.begin(); i != k->second.children.end(); ++i) {
-                    if(flag[i->first] == 0) {
+                    if(flag.find(i->first) == flag.end()) {
                         flag[i->first] = 1;
                         Q.push_back(i->first);
                         width++;
@@ -460,6 +457,7 @@ int UniqEdgeGraph::getDescendant(size_t x, size_t y) const {
 
             if (--count == 0) {
                 count = width;
+                width = 0;
                 depth++;
             }
         }
@@ -469,26 +467,26 @@ int UniqEdgeGraph::getDescendant(size_t x, size_t y) const {
         int depth = -1, width = 0, count = 1;
         std::deque< size_t > Q = boost::assign::list_of(y);
         size_t id = 0;
-        int min = 0;
+        int min_depth = 0;
         while (!Q.empty()) {
             size_t node = Q.front();
             Q.pop_front();
-            if (flag[node] >= 2) {
+            if (flag.find(node) != flag.end() && flag[node] >= 2) {
                 return node;
             }
-            flag[node] = 3;
+            flag[node] = depth;
 
             NodeList::const_iterator k = _nodelist.find(node);
             if (k != _nodelist.end()) {
-                for (Children::const_reverse_iterator i = k->second.children.rbegin(); i != k->second.children.rend(); ++i) {
-                    if (flag[i->first] == 0) {
+                for (Children::const_iterator i = k->second.children.begin(); i != k->second.children.end(); ++i) {
+                    if (flag.find(i->first) == flag.end()) {
                         flag[i->first] = 1;
                         Q.push_back(i->first);
                         width++;
                     } else if (flag[i->first] >= 2) {
-                        if (id == 0 || flag[i->first] > min) {
+                        if (id == 0 || flag[i->first] > min_depth) {
                             id = i->first;
-                            min = flag[id];
+                            min_depth = flag[id];
                         }
                     }
                 }
@@ -498,7 +496,8 @@ int UniqEdgeGraph::getDescendant(size_t x, size_t y) const {
                 if (id != 0)
                     return id;
                 count = width;
-                depth--;
+                width = 0;
+                --depth;
             }
         }
     }
@@ -631,3 +630,4 @@ int UniqEdgeGraph::getDistance(size_t from, size_t to) const {
     }
     return -1;
 }
+

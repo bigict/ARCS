@@ -28,7 +28,7 @@ public:
 
     void setPairKmerNumAndInsertSizeAndDelta(size_t pair_kmer_num, size_t insert_size, double delta) ;
     void addEdge(size_t from, size_t to, long dis, bool isread) ;
-    void scoreAndRemoveNoise(const ContigSet& contigset, const std::vector<Component>& com) ;
+    void scoreAndRemoveNoise(const std::vector<Component>& com) ;
     void outputLP(std::ostream& os) ;
     friend std::ostream& operator<<(std::ostream& os, const Graph& g) ;
 
@@ -41,16 +41,17 @@ private:
 public:
     typedef std::list<Edge> GraphEdge;
     typedef std::vector< GraphEdge > GraphNode;
+
+    size_t PAIR_KMER_NUM;
+    size_t GENOME_LEN;
+    size_t INSERT_SIZE;
+    double DELTA;
 private:
     GraphNode _graph;
     size_t _k;
     double _percent;
     size_t _pair_read_cutoff;
     size_t _pair_kmer_cutoff;
-    size_t PAIR_KMER_NUM;
-    size_t GENOME_LEN;
-    size_t INSERT_SIZE;
-    double DELTA;
     std::vector<double> Gaussian;
 };
 
