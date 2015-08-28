@@ -31,16 +31,64 @@ public:
     typedef std::vector< Node > Scaffold;
     typedef std::vector< Scaffold > ScaffoldList;
 
-    ConflictResolver(UniqEdgeGraph* graph) : _graph(graph) {
+    ConflictResolver(UniqEdgeGraph* graph) : _graph(graph), _K(_graph->_K) {
     }
 
     void resolve();
     void scaffolds(ScaffoldList& scaffoldlist) const;
 private:
     UniqEdgeGraph* _graph;
+    size_t _K;
 
-    friend std::ostream& operator << (std::ostream& os, const ConflictResolver& resoler);
+    friend std::ostream& operator << (std::ostream& os, const ConflictResolver& resovler);
 };
+
+std::ostream& operator << (std::ostream& out, const ConflictResolver& resovler) {
+    ConflictResolver::ScaffoldList scaffolds;
+    resovler.scaffolds(scaffolds);
+
+    /*
+    std::string file = boost::str(boost::format("component_%ld") % (_iteration + 1));
+    std::ofstream out(file.c_str());
+    */
+
+	for (size_t i = 0; i < scaffolds.size(); ++i) {
+		out << boost::format(">component %d") % i << std::endl;
+
+        // contig
+		for (size_t j = 0; j < scaffolds[i].size(); ++j) {
+            const Component& component = resovler._graph->getComponent(scaffolds[i][j].id);
+			//cout << "line component : " <<  _component[i][j].id << endl;
+			for (size_t k = 0; k < component.items.size(); ++k) {
+				out << component.items[k].contig << " ";
+			}
+		}
+		out << std::endl;
+        // gap
+        {
+            const Component& component = resovler._graph->getComponent(scaffolds[i][0].id);
+            for (size_t k = 1; k < component.items.size(); ++k) {
+                out << component.items[k - 1].gap << " ";
+            }
+        }
+		for (size_t j = 1; j < scaffolds[i].size(); ++j) {	
+            const Component& component = resovler._graph->getComponent(scaffolds[i][j].id);
+
+			int distance = resovler._graph->getDistance(scaffolds[i][j - 1].id, scaffolds[i][j].id);
+			if (distance >= 0) {
+				out << (int)(distance - scaffolds[i][j-1].length + resovler._K)  << " " ;
+			} else {
+				out << (int)(resovler._graph->getPosition(scaffolds[i][j].id) - resovler._graph->getPosition(scaffolds[i][j-1].id) - resovler._graph->getLength(scaffolds[i][j-1].id) + resovler._K) << " " ;
+			}
+
+			for (size_t k = 1; k < component.items.size(); ++k) {
+				out << component.items[k - 1].gap << " ";
+			}
+		}
+		out << std::endl;
+	}
+    return out;
+}
 
 void ConflictResolver::scaffolds(ScaffoldList& scaffolds) const {
     LOG4CXX_DEBUG(logger, boost::format("initialize scaffolds"));

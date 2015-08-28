@@ -142,7 +142,8 @@ std::ostream& operator<<(std::ostream& os, const Graph& g) {
     for(Graph::GraphNode::const_iterator i=g._graph.begin(); i!=g._graph.end(); ++i, ++index) {
         for(Graph::GraphEdge::const_iterator j=i->begin(); j!=i->end(); ++j){
             if (j->dis > 0) {
-                os << index << "|" << j->component_id << "|" << j->dis << "|" << j->kmer_cov << "|" << j->score << std::endl; 
+                os << boost::format("%d\t%d\t%d\t%d\t%f") % index % j->component_id % j->dis % j->kmer_cov % j->score << std::endl;
+                //os << index << "|" << j->component_id << "|" << j->dis << "|" << j->kmer_cov << "|" << j->score << std::endl; 
             }
         }
     }

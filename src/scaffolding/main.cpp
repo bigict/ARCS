@@ -133,6 +133,7 @@ public:
         pair_read.buildConnectGraph(g, table_for_pair_read, components);
         g.setPairKmerNumAndInsertSizeAndDelta(pair_read.PAIR_KMER_NUM, pair_read.INSERT_SIZE, pair_read.DELTA);
 
+        // graph
         {
             boost::filesystem::ofstream stream(workdir / boost::filesystem::path(
                         boost::str(boost::format("contig_arc_graph_before_remove_ambigous_arcs_%d") % ITERATION)
@@ -143,6 +144,7 @@ public:
         LOG4CXX_INFO(logger, boost::format("pair_kmer_num=%d") % pair_read.PAIR_KMER_NUM);
         g.scoreAndRemoveNoise(components);
 
+        // graph
         {
             boost::filesystem::ofstream stream(workdir / boost::filesystem::path(
                         boost::str(boost::format("contig_arc_graph_after_remove_ambigous_arcs_%d") % ITERATION)
@@ -156,6 +158,7 @@ public:
                         boost::str(boost::format("scaffold_parameter_%d") % ITERATION)
                 ));
             stream << boost::format("K=%d") % K << std::endl;
+            stream << boost::format("EDGE_CLUSTER_NUM=%d") % components.size() << std::endl;
             stream << boost::format("GENOME_LEN=%d") % g.GENOME_LEN << std::endl;
             stream << boost::format("INSERT_SIZE=%d") % g.INSERT_SIZE << std::endl;
             stream << boost::format("DELTA=%d") % g.DELTA << std::endl;
@@ -167,7 +170,18 @@ public:
                 ));
             g.outputLP(stream);
         }
+        // components
+        {
+            boost::filesystem::ofstream stream(workdir / boost::filesystem::path(
+                        boost::str(boost::format("edge_cluster_len_%d") % ITERATION)
+                ));
+            BOOST_FOREACH(Component& component, components) {
+                stream << component.getLen() << std::endl;
+            }
+        }
         LOG4CXX_INFO(logger, boost::format("build graph end"));
+
+        return 0;
     }
     private:
         int checkOptions(const Properties& options);

@@ -22,6 +22,20 @@ public:
     void removeNode(size_t i);
     bool hasEdge(size_t i, size_t j) const;
 
+    int getDistance(size_t i, size_t j) const;
+	int getAncestor(size_t i, size_t j) const;
+	int getDescendant(size_t i, size_t j) const;
+
+    const Component& getComponent(size_t i) const {
+        return _component_tbl[i];
+    }
+    int getPosition(size_t i) const {
+        return _position_tbl[i];
+    }
+    int getLength(size_t i) const {
+        return _length_tbl[i];
+    }
+
 	bool input_edge_position(std::istream& stream);
 	bool input_edge_length(std::istream& stream);
 	bool input_edge_link(std::istream& stream);
@@ -50,9 +64,6 @@ private:
     };
     typedef std::map< size_t, Node > NodeList;
 
-    int getDistance(size_t i, size_t j) const;
-	int getAncestor(size_t i, size_t j) const;
-	int getDescendant(size_t i, size_t j) const;
     struct EdgeInfo {
         int from;
         int to;
