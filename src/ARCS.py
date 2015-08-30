@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import time
-import datetime
+from datetime import datetime
 import os
 import commands
 import sys
@@ -16,29 +16,30 @@ print "        Copyright(c) 2014, Renyu Zhang, Qing Xu, Dongbo Bu. All Rights Re
 print ""
 print "======================================================================================"
 print ""
-print time.strftime('%Y-%m-%d',time.localtime(time.time()))
+print datetime.now()
 print ""
 
-result = commands.getstatusoutput("glpsol")
+result = commands.getstatusoutput("glpsol --help")
 
-if result[0] == 32512:
+if result[0] != 0:
     print "glpk has not been installed"
     print "please install glpk and run again"
     print "for ubuntu, just sudo apt-get install glpk"
-    os._exit(0)
+    sys.exit(1)
 
-USAGE = "USAGE: ARCS.py [options]\n" + \
- "DESCRIPTION:\n" + \
- "OPTIONS:\n" + \
- "\t-s --configure_file       configure file\n" + \
- "\t-d --workspace            workspace\n" + \
- "\t-K --kmer_size            kmer size\n" + \
- "\t-e --edge_length_cutoff   edge length cutoff\n" + \
- "\t-O --max_overlap          max overlap to detect conflict\n" + \
- "\t-h --help                 help information\n" + \
- "\t-v --version              software version\n" + \
- "\t-E --kmer_filter          filter low quality kmers\n" + \
- "\t-p --CPU                  CPU number to be used"
+USAGE = """"USAGE: ARCS.py [options]
+ DESCRIPTION:
+ OPTIONS:
+    -s --configure_file       configure file
+    -d --workspace            workspace
+    -K --kmer_size            kmer size
+    -e --edge_length_cutoff   edge length cutoff
+    -O --max_overlap          max overlap to detect conflict
+    -h --help                 help information
+    -v --version              software version
+    -E --kmer_filter          filter low quality kmers
+    -p --CPU                  CPU number to be used
+"""
 
 if len(sys.argv) == 1:
     print USAGE
@@ -116,7 +117,7 @@ if workspace[len(workspace) - 1] == '/':
 workspace = os.path.abspath(workspace)
 print "path : " + workspace
 
-start = datetime.datetime.now()
+start = datetime.now()
 
 fin = open(configure_file, 'r')
 array = []
@@ -262,6 +263,6 @@ print '-------------------------------------'
 #if os.system(gap_filling_cmd) != 0:
 #    os._exit(1)
 
-end = datetime.datetime.now()
+end = datetime.now()
 print 'total running time is ' +  str((end - start).seconds) + ' seconds'
 

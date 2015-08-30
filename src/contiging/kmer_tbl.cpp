@@ -5,6 +5,8 @@
 #include <fstream>
 #include <numeric>
 
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
@@ -111,7 +113,7 @@ bool KmerTable::isValid(const DNASeq& read, size_t i, size_t j) const {
 }
 
 void KmerTable::buildDeBruijn(DeBruijnGraph* graph) const {
-    LOG4CXX_DEBUG(logger, boost::format("construct de bruijn graph begin"));
+    LOG4CXX_DEBUG(logger, boost::format("construct de bruijn graph from kmer_tbl begin"));
 
     BOOST_ASSERT(graph != NULL);
 
@@ -121,40 +123,35 @@ void KmerTable::buildDeBruijn(DeBruijnGraph* graph) const {
         }
     }
 
-    LOG4CXX_DEBUG(logger, boost::format("construct de bruijn graph end"));
+    LOG4CXX_DEBUG(logger, boost::format("construct de bruijn graph kmer_tbl end"));
 }
 
+typedef boost::accumulators::accumulator_set< size_t, boost::accumulators::stats< boost::accumulators::tag::count, boost::accumulators::tag::mean, boost::accumulators::tag::moment< 2 > > > Accumulator;
 struct Statistics {
-    Statistics(size_t min_threshold) : _min_threshold(min_threshold), sigma(0), delta(0), count(0) {
+    Statistics(size_t min_threshold, Accumulator& acc) : _min_threshold(min_threshold), _acc(acc) {
     }
-
-    void run(const std::pair< Kmer, size_t >& item) {
+    void operator()(const std::pair< Kmer, size_t >& item) const {
         if (item.second >= _min_threshold) {
-            sigma += item.second;
-            delta += std::pow(item.second, 2);
-            ++count;
+            _acc(item.second);
         }
     }
-
-    double sigma;
-    double delta;
-    size_t count;
 private:
+    Accumulator& _acc;
 	size_t _min_threshold;
 };
 
 void KmerTable::statistics(double* average, double* variance) const {
     if (_hash_tbl.size() > 0) {
-        Statistics helper(4);
-        std::for_each(_hash_tbl.begin(), _hash_tbl.end(), boost::bind(&Statistics::run, &helper, _1));
+        Accumulator acc;
+        std::for_each(_hash_tbl.begin(), _hash_tbl.end(), Statistics(4, acc));
 
-        LOG4CXX_DEBUG(logger, boost::format("statistics: count=[%d], sigma=[%f], delta=[%f],count=[%d]") % _hash_tbl.size() % helper.sigma % helper.delta % helper.count);
+        LOG4CXX_DEBUG(logger, boost::format("statistics: tbl_size=[%d], mean=[%f], moment<2>=[%f],count=[%d]") % _hash_tbl.size() % boost::accumulators::mean(acc) % boost::accumulators::moment< 2 >(acc) % boost::accumulators::count(acc));
 
-        if (average != NULL && helper.count > 0) {
-            *average = helper.sigma / helper.count;
+        if (average != NULL) {
+            *average = boost::accumulators::mean(acc);
         }
         if (variance != NULL) {
-            *variance = std::sqrt(helper.delta / helper.count - std::pow(helper.sigma / helper.count, 2));
+            *variance = std::sqrt(boost::accumulators::moment< 2 >(acc) - std::pow(boost::accumulators::mean(acc), 2));
         }
     }
 }
