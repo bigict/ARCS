@@ -21,7 +21,7 @@
 
 typedef boost::property_tree::ptree Properties;
 
-static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("Contiging.main"));
+static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("scaffolding.main"));
 
 
 class Scaffoding {
@@ -37,63 +37,40 @@ public:
             return 1;
         }
 
-        // read contig file
-        LOG4CXX_INFO(logger, boost::format("read contig file begin"));
-        std::string contig_file_name = options.get<std::string>("C");
         size_t K = options.get< size_t >("K");
         size_t ITERATION = options.get< size_t >("i");
-        LOG4CXX_INFO(logger, boost::format("Kmer size:K =  %d") % K);
-        std::ifstream contig_in(contig_file_name.c_str());
-        ContigSet contigs(contig_in, K);
-        LOG4CXX_INFO(logger, boost::format("all contig length GENOME_LEN: %d") % contigs.GENOME_LEN);
-        LOG4CXX_INFO(logger, boost::format("read contig file end"));
+
+        LOG4CXX_INFO(logger, boost::format("K=%d") % K);
+
+        // read contig file
+        ContigList contigs;
+        if (!ReadContigs(options.get< std::string >("C"), contigs)) {
+            LOG4CXX_ERROR(logger, boost::format("faild to read contigs from file: %s") % options.get< std::string >("C"));
+            return 1;
+        }
+        size_t GENOME_LEN = GenomeLength(contigs, K);
+        LOG4CXX_INFO(logger, boost::format("GENOME_LEN=%d") % GENOME_LEN);
 
         // read component file
-        LOG4CXX_INFO(logger, boost::format("read component file begin"));
-        std::vector< Component > components;
-        std::string component_file_name = options.get<std::string>("f");
-        std::ifstream component_in(component_file_name.c_str());
-        ComponentReader reader(component_in);
-        Component component(K);
-        while(reader.read(component)){
-            component.initializeLen(contigs);
-            components.push_back(component);
+        ComponentList components;
+        if (!ReadComponents(options.get< std::string >("f"), contigs, K, components)) {
+            LOG4CXX_ERROR(logger, boost::format("faild to read components from file: %s") % options.get< std::string >("f"));
+            return 1;
         }
-        LOG4CXX_INFO(logger, boost::format("Components size : %d") % components.size());
-        LOG4CXX_INFO(logger, boost::format("read component file end"));
+        LOG4CXX_INFO(logger, boost::format("Components size=%d") % components.size());
+
+        size_t INSERT_SIZE = options.get< size_t >("L", 180);;
+        double DELTA = 0;
+        size_t EDGE_CUTOFF = options.get< size_t >("e", K);
 
         // build kmer table
-        LOG4CXX_INFO(logger, boost::format("build kmer table for insert size begin"));
-        size_t INSERT_SIZE = 180;
-        if (options.find("L") != options.not_found()) {
-            INSERT_SIZE = options.get<size_t>("L");
-        }
-        size_t EDGE_CUTOFF = K;
-        if (options.find("e") != options.not_found()) {
-            EDGE_CUTOFF = options.get<size_t>("e");
-        }
-        KmerTable table_for_insert_size(K);
-        size_t count = 0;
-        BOOST_FOREACH(Component& component, components) {
-            LOG4CXX_TRACE(logger, boost::format("Component No = %d, size = %d, length = %d") % count 
-                    % component._contig_id.size() %  contigs._contigs[component._contig_id[0]].contig.length());
-            if (component._contig_id.size() == 0 || (component.getLen() < 2 * INSERT_SIZE)) {
-                count ++;
-                continue;
-            }
-            component.produceKmerForInsertSize(contigs, table_for_insert_size, count);
-            count ++;
-        }
-        LOG4CXX_INFO(logger, boost::format("FOR INSERT SIZE kmer number = %d, EDGE_CUTOFF = %d") % table_for_insert_size.size() % EDGE_CUTOFF);
-        LOG4CXX_INFO(logger, boost::format("build kmer table for insert size end"));
-
         LOG4CXX_INFO(logger, boost::format("build kmer table for pair read begin"));
         KmerTable table_for_pair_read(K);
-        count = 0;
+        size_t count = 0;
         BOOST_FOREACH(Component& component, components) {
             if (component._contig_id.size() == 0 || (component._contig_id.size() == 1  
-                                                      && contigs._contigs[component._contig_id[0]].contig.length() < EDGE_CUTOFF)) {
-            //if (component._contig_id.size() == 0 || (component.getLen() < EDGE_CUTOFF)) {
+                                                      && contigs[component._contig_id[0]].seq.length() < EDGE_CUTOFF)) {
+            //if (component._contig_id.size() == 0 || (component.length() < EDGE_CUTOFF)) {
                 count ++;
                 continue;
             }
@@ -103,35 +80,39 @@ public:
         LOG4CXX_INFO(logger, boost::format("FOR PAIR READ kmer number = %d, EDGE_CUTOFF = %d") % table_for_pair_read.size() % EDGE_CUTOFF);
         LOG4CXX_INFO(logger, boost::format("build kmer table for pair read end"));
 
+        // read pair reads file
+        PairReadList pair_reads;
+        if (!ReadPairReads(options.get< std::string >("1"), options.get< std::string >("2"), pair_reads)) {
+            LOG4CXX_ERROR(logger, boost::format("faild to read components from file: <%s,%s>") % options.get< std::string >("1") % options.get< std::string >("2"));
+            return 1;
+        }
+        LOG4CXX_INFO(logger, boost::format("pair read num = %d") % pair_reads.size());
 
-        LOG4CXX_INFO(logger, boost::format("read pair read begin"));
-        std::string read_file1 = options.get<std::string>("1");
-        std::string read_file2 = options.get<std::string>("2");
-        std::ifstream r1(read_file1.c_str());
-        std::ifstream r2(read_file2.c_str());
+        // estimate insert size
+        {
+            KmerList hash_tbl;
+            BuildKmerTable(K, INSERT_SIZE, contigs, components, hash_tbl);
 
-        PairReadSet pair_read(r1, r2, K, INSERT_SIZE);
-        LOG4CXX_INFO(logger, boost::format("pair read num = %d") % pair_read.size());
-        LOG4CXX_INFO(logger, boost::format("read pair read end"));
+            InsertSizeEstimater estimater(K, INSERT_SIZE, pair_reads, hash_tbl);
+            estimater.estimate(&INSERT_SIZE, &DELTA);
+        }
+        LOG4CXX_INFO(logger, boost::format("INSERT_SIZE=[%d], DELTA=[%f]") % INSERT_SIZE % DELTA);
 
         //build graph
-        LOG4CXX_INFO(logger, boost::format("build graph begin"));
-        size_t pair_kmer_cutoff = 0;
-        size_t pair_read_cutoff = 0;
-        double percent = 0.0;
-        if (options.find("r") != options.not_found()) {
-            pair_kmer_cutoff = options.get<size_t>("r");
+        size_t pair_kmer_cutoff = options.get< size_t >("r", 0);
+        size_t pair_read_cutoff = options.get< size_t >("R", 0);;
+        double percent = options.get< double >("P", 0.0);
+
+        Graph g(K, pair_kmer_cutoff, pair_read_cutoff, percent, components.size(), GENOME_LEN);
+
+        // build
+        {
+            ConnectGraphBuilder builder(K, INSERT_SIZE, pair_reads, table_for_pair_read, components);
+            size_t PAIR_KMER_NUM = builder.build(&g);
+            LOG4CXX_INFO(logger, boost::format("pair_kmer_num=%d") % PAIR_KMER_NUM);
+
+            g.setPairKmerNumAndInsertSizeAndDelta(PAIR_KMER_NUM, INSERT_SIZE, DELTA);
         }
-        if (options.find("R") != options.not_found()) {
-            pair_read_cutoff = options.get<size_t>("R");
-        }
-        if (options.find("P") != options.not_found()) {
-            percent = options.get<double>("P");
-        }
-        pair_read.estimateInsertSize(table_for_insert_size);
-        Graph g(K, pair_kmer_cutoff, pair_read_cutoff, percent, components.size(), contigs.GENOME_LEN);
-        pair_read.buildConnectGraph(g, table_for_pair_read, components);
-        g.setPairKmerNumAndInsertSizeAndDelta(pair_read.PAIR_KMER_NUM, pair_read.INSERT_SIZE, pair_read.DELTA);
 
         // graph
         {
@@ -141,7 +122,6 @@ public:
             stream << g;
         }
 
-        LOG4CXX_INFO(logger, boost::format("pair_kmer_num=%d") % pair_read.PAIR_KMER_NUM);
         g.scoreAndRemoveNoise(components);
 
         // graph
@@ -176,10 +156,9 @@ public:
                         boost::str(boost::format("edge_cluster_len_%d") % ITERATION)
                 ));
             BOOST_FOREACH(Component& component, components) {
-                stream << component.getLen() << std::endl;
+                stream << component.length() << std::endl;
             }
         }
-        LOG4CXX_INFO(logger, boost::format("build graph end"));
 
         return 0;
     }
@@ -201,12 +180,24 @@ int Scaffoding::checkOptions(const Properties& options) {
         }
     }
 
-    std::vector< std::string > intopt = boost::assign::list_of("K");
+    std::vector< std::string > intopt = boost::assign::list_of("KrReL");
     BOOST_FOREACH(const std::string& c, intopt) {
+        if (options.find(c) == options.not_found()) continue;
         try {
-            size_t K = options.get< size_t >(c);
+            options.get< size_t >(c);
         } catch (std::exception& e) {
             std::cerr << boost::format("The argument -%s should be a integer. type -h for more help") % c << std::endl;
+            return 1;
+        }
+    }
+
+    std::vector< std::string > doubleopt = boost::assign::list_of("P");
+    BOOST_FOREACH(const std::string& c, doubleopt) {
+        if (options.find(c) == options.not_found()) continue;
+        try {
+            options.get< double >(c);
+        } catch (std::exception& e) {
+            std::cerr << boost::format("The argument -%s should be a double. type -h for more help") % c << std::endl;
             return 1;
         }
     }

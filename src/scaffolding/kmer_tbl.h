@@ -1,8 +1,9 @@
-#ifndef kmer_tbl_h__
-#define kmer_tbl_h__
+#ifndef kmer_tbl_h_
+#define kmer_tbl_h_
 
-#include "kmer.h"
 #include "component.h"
+#include "contigs.h"
+#include "kmer.h"
 
 #include <iostream>
 #include <tr1/unordered_map>
@@ -11,28 +12,32 @@ class Component;
 
 class KmerTable {
 public:
-    KmerTable(size_t K) ;
-	virtual ~KmerTable() ;
+    KmerTable(size_t K) : _K(K) {
+    }
+	virtual ~KmerTable() {
+    }
 
-	inline size_t size() {
+	size_t size() const {
 		return _kmerlist.size();
 	}
-    /*void addKmer(const Kmer& o, std::pair<size_t, size_t> pos) ;
-    void filter(size_t INSERT_SIZE, const std::vector<Component>& components) ;
-	std::pair<size_t, size_t> findPos(const Kmer& o) const;
-    typedef std::tr1::unordered_multimap< Kmer, std::pair<size_t, size_t>, KmerHasher> KmerList;
-*/
-    void addKmer(const Kmer& o, std::pair<size_t, long> pos) ;
-    void filter(size_t INSERT_SIZE, const std::vector<Component>& components) ;
-	std::pair<size_t, long> findPos(const Kmer& o) const;
-    typedef std::tr1::unordered_multimap< Kmer, std::pair<size_t, long>, KmerHasher> KmerList;
 
-	friend std::ostream& operator<<(std::ostream& os, const KmerTable& tbl) ;
+    void addKmer(const Kmer& o, std::pair<size_t, long> pos) ;
+	std::pair<size_t, long> findPos(const Kmer& o) const;
+
 private:
+	friend std::ostream& operator<<(std::ostream& os, const KmerTable& tbl) ;
+
+    typedef std::tr1::unordered_multimap< Kmer, std::pair<size_t, long>, KmerHasher> KmerList;
     KmerList _kmerlist;
 
 private:
-	size_t _k;
+	size_t _K;
 };
 
-#endif
+typedef std::pair< size_t, long > KmerPosition;
+typedef std::tr1::unordered_multimap< Kmer, KmerPosition, KmerHasher > KmerList;
+
+size_t BuildKmerTable(size_t K, size_t insert_size, const ContigList& contigs, const ComponentList& components, KmerList& tbl);
+
+#endif // kmer_tbl_h_
+

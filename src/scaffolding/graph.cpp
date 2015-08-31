@@ -3,7 +3,7 @@
 #include <cmath>
 #include <boost/format.hpp>
 
-static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("Contiging.main"));
+static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("scaffolding.graph"));
 
 Graph::Graph(size_t k, size_t pair_kmer_cutoff, size_t pair_read_cutoff, double percent, size_t size, size_t genome_len): _k(k), _pair_kmer_cutoff(pair_kmer_cutoff), _pair_read_cutoff(pair_read_cutoff), _percent(percent), PAIR_KMER_NUM(0), GENOME_LEN(genome_len), INSERT_SIZE(0), DELTA(0.0) {
     BOOST_ASSERT(percent>=0.0 && percent<=1.0);
@@ -49,8 +49,8 @@ void Graph::scoreAndRemoveNoise(const std::vector<Component>& com) {
                 continue;
             }
             j->dis /= j->kmer_cov;
-            size_t leni = com[count].getLen();
-            size_t lenj =com[j->component_id].getLen();
+            size_t leni = com[count].length();
+            size_t lenj =com[j->component_id].length();
             j->score = score(leni, lenj, j->dis - leni + _k, j->kmer_cov);
             s.push_back(j->score);
             ++j;

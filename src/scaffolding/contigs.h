@@ -1,31 +1,22 @@
 #ifndef contigs_h_
 #define contigs_h_
 
-#include <string>
 #include <iostream>
+#include <string>
 #include <vector>
 
 struct Contig {
-    std::string contig;
-    size_t copy_num;
-    Contig(const std::string contig="", size_t copy_num=0) : contig(contig), copy_num(copy_num) {
+    Contig(const std::string& seq="", size_t copy_num=0) : seq(seq), copy_num(copy_num) {
     }
+    std::string seq;
+    size_t copy_num;
 };
 
-class ContigSet {
-public:
-    ContigSet(std::istream& stream, size_t K); 
-    bool read(Contig& contig);
-    friend std::ostream& operator<<(std::ostream& os, const ContigSet& contigs);
+typedef std::vector< Contig > ContigList;
 
-    std::vector< Contig > _contigs;
-    size_t GENOME_LEN;
-
-private:
-    std::istream& _stream;
-    size_t _k;
-};
-
+bool ReadContigs(std::istream& stream, ContigList& contigs);
+bool ReadContigs(const std::string& file, ContigList& contigs);
+size_t GenomeLength(const ContigList& contigs, size_t K);
 
 // FA(contig file) Format Specification: file_name(.fa)
 // Syntax
@@ -34,5 +25,14 @@ private:
 // Requirements
 //    1. The <seqname> appears right after '>', and seqname and copy_num in the small line. 
 
+class ContigReader {
+public:
+    ContigReader(std::istream& stream) : _stream(stream) {
+    }
+    bool read(Contig& contig);
+
+private:
+    std::istream& _stream;
+};
 
 #endif // contigs_h_

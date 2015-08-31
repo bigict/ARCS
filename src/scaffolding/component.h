@@ -1,12 +1,11 @@
-#ifndef component_h__
-#define component_h__
+#ifndef component_h_
+#define component_h_
 
-#include <string>
 #include <iostream>
-
+#include <string>
+#include <vector>
 
 #include "contigs.h"
-#include "kmer_tbl.h"
 
 class KmerTable; 
 
@@ -17,35 +16,33 @@ class KmerTable;
 
 class Component {
 public:
-    explicit Component(size_t K) : _k(K) {
+    explicit Component(size_t K) : _K(K), _length(0) {
+    }
+    virtual ~Component() {
     }
 
-    virtual ~Component() {}
-    //size_t produceKmer(const ContigSet& c, KmerTable& tbl, size_t component_no);
-    size_t produceKmerForInsertSize(const ContigSet& c, KmerTable& tbl, size_t component_no); 
-    size_t produceKmerForPairRead(const ContigSet& c, KmerTable& tbl, size_t component_no, size_t INSERT_SIZE);
-    inline size_t getLen() const { return _len; } 
-    void initializeLen(const ContigSet& c);
-    friend std::ostream& operator<<(std::ostream& os, const Component& component) ;
+    //size_t produceKmer(const ContigList& contigs, KmerTable& tbl, size_t component_no);
+    size_t produceKmerForInsertSize(const ContigList& contigs, KmerTable& tbl, size_t component_no); 
+    size_t produceKmerForPairRead(const ContigList& contigs, KmerTable& tbl, size_t component_no, size_t INSERT_SIZE);
+    size_t length() const {
+        return _length;
+    } 
+    void length(const ContigList& contigs);
     
     std::vector< size_t > _contig_id;
     std::vector< long > _gap;
-    //std::vector< element_component > _component;
 
 private:
-    size_t _len;
-    size_t _k;
     friend class ComponentReader;
+    friend std::ostream& operator<<(std::ostream& os, const Component& component) ;
+
+    size_t _length;
+    size_t _K;
 };
 
-class ComponentReader {
-public:
-    ComponentReader(std::istream& stream);
-    bool read(Component& component);
-
-private:
-    std::istream& _stream;
-};
+typedef std::vector< Component > ComponentList;
+bool ReadComponents(std::istream& stream, const ContigList& contigs, size_t K, ComponentList& components);
+bool ReadComponents(const std::string& file, const ContigList& contigs, size_t K, ComponentList& components);
 
 // component Format Specification : file name :component_iter
 // Syntax
@@ -56,5 +53,14 @@ private:
 //    1. The component id appears right after '>component' 
 //    2. The number of gap must equal the number of cotigs_id minus 1
 
+class ComponentReader {
+public:
+    ComponentReader(std::istream& stream) : _stream(stream) {
+    }
+    bool read(Component& component);
+
+private:
+    std::istream& _stream;
+};
 
 #endif // component_h_
