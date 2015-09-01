@@ -95,20 +95,18 @@ void InsertSizeEstimater::estimate(size_t* insert_size, double* delta) {
 void InsertSizeEstimater::estimateOnePR(const std::string& read1, const std::string& read2, InsertSizeDistr& insert_size_distr) {
     LOG4CXX_TRACE(logger, boost::format("InsertSizeEstimater::estimateOnePR %s %s") % read1 % read2);
 
-    //std::pair< size_t, long > left, right;
     for (size_t i = 0, j = _K; j <= read1.size() && j <= read2.size(); ++i,++j) {
         Kmer kmer1 = read1.substr(i, _K), kmer2 = read2.substr(i, _K);
-
         KmerList::const_iterator left = _hash_tbl.find(kmer1), right = _hash_tbl.find(kmer2);
 
-        //LOG4CXX_TRACE(logger, boost::format("INSERT SIZE pair kmre1=%s %d %d") % kmer1 % left.first % left.second);
-        //LOG4CXX_TRACE(logger, boost::format("INSERT SIZE pair kmre2=%s %d %d") % kmer2 % right.first % right.second);
-
-        //if (left.first != -1  && right.first != -1 && left.first == right.first) {
         if (left != _hash_tbl.end() && right != _hash_tbl.end() && left->second.first == right->second.first) {
+            LOG4CXX_TRACE(logger, boost::format("INSERT SIZE pair kmre1=%s %d %d") % kmer1 % left->second.first % left->second.second);
+            LOG4CXX_TRACE(logger, boost::format("INSERT SIZE pair kmre2=%s %d %d") % kmer2 % right->second.first % right->second.second);
+
             if (right->second.second - left->second.second > _insert_size / 4 
-                    && right->second.second - left->second.second < 2 * _insert_size) 
+                    && right->second.second - left->second.second < 2 * _insert_size) {
                 insert_size_distr.push_back(right->second.second - left->second.second);
+            }
         }
     }
 }
@@ -129,46 +127,43 @@ size_t ConnectGraphBuilder::build(Graph* graph) const {
     return pair_kmer_num;
 }
 
-struct PairCmp{
-    bool operator()(const std::pair<size_t, size_t>& a, const std::pair<size_t, size_t>& b) {
-        if (a.first != b.first) {
-            return a.first < b.first;
+struct PairKmerCmp {
+    bool operator()(const std::pair<size_t, size_t>& l, const std::pair<size_t, size_t>& r) {
+        if (l.first != r.first) {
+            return l.first < r.first;
         }
-        return a.second < b.second;
+        return l.second < r.second;
     }
 };
 
 size_t ConnectGraphBuilder::addEdge(const std::string& read1, const std::string& read2, Graph* graph) const {
     size_t num = 0;
 
-    std::set< std::pair<size_t, size_t>, PairCmp > find_component;
+    std::set< std::pair< size_t, size_t >, PairKmerCmp > find_component;
     for (size_t i = 0, j = _K; j <= read1.size() && j <= read2.size(); ++i,++j) {
         Kmer kmer1 = read1.substr(i, _K), kmer2 = read2.substr(i, _K);
 
-        //std::pair<size_t, long> left = _hash_tbl.findPos(kmer1);
-        //std::pair<size_t, long> right = _hash_tbl.findPos(kmer2);
         KmerList::const_iterator left = _hash_tbl.find(kmer1), right = _hash_tbl.find(kmer2);
         
-        //if (left.first != right.first && left.first != -1 && right.first != -1) {
         if (left != _hash_tbl.end() && right != _hash_tbl.end() && left->second.first != right->second.first) {
             ++num;
 
-            //LOG4CXX_TRACE(logger, boost::format("pair kmre1=%s %d %d") % kmer1 % left.first % left.second);
-            //LOG4CXX_TRACE(logger, boost::format("pair kmre2=%s %d %d") % kmer2 % right.first % right.second);
+            LOG4CXX_TRACE(logger, boost::format("pair kmre1=%s %d %d") % kmer1 % left->second.first % left->second.second);
+            LOG4CXX_TRACE(logger, boost::format("pair kmre2=%s %d %d") % kmer2 % right->second.first % right->second.second);
         
-            long len_tmp = _insert_size + left->second.second - right->second.second;
+            long distance = _insert_size + left->second.second - right->second.second;
             long left_len = _components[left->second.first].length();
-            long overlap = left_len - len_tmp - _K + 1;
+            long overlap = left_len - distance - _K + 1;
             if (overlap > 0) {
                 if (overlap > _insert_size)
                     continue;
-                len_tmp = left_len - _K + 1;
+                distance = left_len - _K + 1; //can change
             }
             if (find_component.find(std::make_pair(left->second.first, right->second.first)) != find_component.end()) {
-                graph->addEdge(left->second.first, right->second.first, len_tmp, false);
+                graph->addEdge(left->second.first, right->second.first, distance, 1, 0);
             } else {
                 find_component.insert( std::make_pair(left->second.first, right->second.first));
-                graph->addEdge(left->second.first, right->second.first, len_tmp, true);
+                graph->addEdge(left->second.first, right->second.first, distance, 1, 1);
             }
         }
     }

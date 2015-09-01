@@ -189,24 +189,24 @@ void ConflictResolver::resolve() {
 
     // Resolve
     BOOST_FOREACH(const ConflictItem& overlap, overlaplist) {
-        LOG4CXX_DEBUG(logger, boost::format("overlap\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >());
+        LOG4CXX_TRACE(logger, boost::format("overlap\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >());
 
 		if (_graph->hasEdge(overlap.get< 1 >(), overlap.get< 2 >()) || _graph->hasEdge(overlap.get< 2 >(), overlap.get< 1 >())) {
 			continue;
 		}
 
 		int temp1 = _graph->getAncestor(overlap.get< 1 >(), overlap.get< 2 >());	
-        LOG4CXX_DEBUG(logger, boost::format("getAncestor1\t%d\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >() % temp1);
+        LOG4CXX_TRACE(logger, boost::format("getAncestor1\t%d\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >() % temp1);
 		while (temp1 >= 0) {
             UniqEdgeGraph::EdgeInfo edgeinfo = _graph->getMinEdge(temp1);
 			if (edgeinfo.from >= 0) {
 				_graph->removeEdge(edgeinfo.from, edgeinfo.to);
-                LOG4CXX_DEBUG(logger, boost::format("backward chimeric link %d,%d") % edgeinfo.from % edgeinfo.to); 
+                LOG4CXX_TRACE(logger, boost::format("backward chimeric link %d,%d") % edgeinfo.from % edgeinfo.to); 
 			} else {
 				break;
 			}
 			temp1 = _graph->getAncestor(overlap.get< 1 >(), overlap.get< 2 >());
-            LOG4CXX_DEBUG(logger, boost::format("getAncestor1\t%d\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >() % temp1);
+            LOG4CXX_TRACE(logger, boost::format("getAncestor1\t%d\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >() % temp1);
 		}
 		
 		while (temp1 >= 0) {
@@ -214,21 +214,21 @@ void ConflictResolver::resolve() {
 			_graph->removeNode(temp1);
 
 			temp1 = _graph->getAncestor(overlap.get< 1 >(), overlap.get< 2 >());
-            LOG4CXX_DEBUG(logger, boost::format("getAncestor2\t%d\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >() % temp1);
+            LOG4CXX_TRACE(logger, boost::format("getAncestor2\t%d\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >() % temp1);
 		}
 		
 		int temp2 = _graph->getDescendant(overlap.get< 1 >(), overlap.get< 2 >());
-        LOG4CXX_DEBUG(logger, boost::format("getDescendant1\t%d\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >() % temp2);
+        LOG4CXX_TRACE(logger, boost::format("getDescendant1\t%d\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >() % temp2);
 		while (temp2 >= 0) {
             UniqEdgeGraph::EdgeInfo edgeinfo = _graph->getMinEdge(temp2);
 			if (edgeinfo.from >= 0) {
 				_graph->removeEdge(edgeinfo.from, edgeinfo.to);
-				LOG4CXX_DEBUG(logger, boost::format("forward chimeric link %d,%d") % edgeinfo.from % edgeinfo.to); 
+				LOG4CXX_TRACE(logger, boost::format("forward chimeric link %d,%d") % edgeinfo.from % edgeinfo.to); 
 			} else {
 				break;
 			}
 			temp2 = _graph->getDescendant(overlap.get< 1 >(), overlap.get< 2 >());
-            LOG4CXX_DEBUG(logger, boost::format("getDescendant1\t%d\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >() % temp2);
+            LOG4CXX_TRACE(logger, boost::format("getDescendant1\t%d\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >() % temp2);
 		}
 
 		while (temp2 >= 0) {
@@ -236,7 +236,7 @@ void ConflictResolver::resolve() {
 			_graph->removeNode(temp2);
 
 			temp2 = _graph->getDescendant(overlap.get< 1 >(), overlap.get< 2 >());
-            LOG4CXX_DEBUG(logger, boost::format("getDescendant2\t%d\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >() % temp2);
+            LOG4CXX_TRACE(logger, boost::format("getDescendant2\t%d\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >() % temp2);
 		}
 	}
 }
