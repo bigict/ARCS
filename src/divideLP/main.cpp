@@ -1,5 +1,6 @@
-//depart mixture LP to many one small LP
-#include <algorithm>
+//
+// depart mixture LP to many one small LP
+//
 #include <deque>
 #include <fstream>
 #include <iostream>

@@ -1,0 +1,8 @@
+1 配置文件封装
+2 FASTQ数据读取封装
+3 log4cxx代替cout
+4 initialize_kmer流程整理。
+5 增加过滤reads机制注释。
+6 Hashing的多线程机制代码整理(生产者／消费者模型)，可以考虑用boost:thread库，提高平台移植性。
+7 Hash改造
+8 32-mer 64-mer 96-mer 合并
