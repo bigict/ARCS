@@ -187,8 +187,7 @@ int main(int argc, char **argv) {
 	}
     log4cxx::BasicConfigurator::configure();
 
-    std::string root(argv[2]);
-    boost::filesystem::path workdir(root);
+    boost::filesystem::path workdir = std::string(argv[2]);
     if (!boost::filesystem::exists(workdir) && !boost::filesystem::create_directory(workdir)) {
         LOG4CXX_ERROR(logger, boost::format("failed to create directory: %s") % workdir);
         return 1;
@@ -196,13 +195,15 @@ int main(int argc, char **argv) {
 
     Graph graph;
 
-	//depart data
+	// read graph data
     if (!Graph_read(graph, argv[1])) {
         LOG4CXX_ERROR(logger, boost::format("failed to read graph from file: %s") % argv[1]);
         return 1;
     }
+    // divide into connected components
     GraphList components;
     Graph_divide(graph, components);
+    // write graph data
     for (size_t i = 0; i < components.size(); ++i) {
         Graph& component = components[i];
         boost::filesystem::ofstream stream(workdir / boost::str(boost::format("lp%d.math") % i));
