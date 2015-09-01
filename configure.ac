@@ -33,9 +33,7 @@ AC_CHECK_FUNCS([memset pow sqrt])
 AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/contiging/Makefile
-                 src/contiging/32-mer/Makefile
-                 src/contiging/64-mer/Makefile
-                 src/contiging/96-mer/Makefile
+                 src/divideLP/Makefile
                  src/gap_filling/Makefile
                  src/remove_repeats/Makefile
                  src/scaffolding/Makefile

@@ -1,1 +1,1 @@
-SUBDIRS=contiging scaffolding remove_repeats scoring gap_filling
+SUBDIRS=contiging scaffolding divideLP remove_repeats scoring gap_filling

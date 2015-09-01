@@ -231,7 +231,7 @@ for i in range(len(lib_list)):
     if os.system(glpsol_cmd) != 0:
         os._exit(1)
 
-    tran_pos_cmd = Path + 'scaffolding/tran_pos_smallLPs.py -d ' + workspace + ' -i ' + str(i) + ' -p ' + os.path.join(workspace, 'scaffold_parameter_%d' % (i))
+    tran_pos_cmd = Path + 'scaffolding/parse_glpk_results.py -d ' + workspace + ' -i ' + str(i) + ' -p ' + os.path.join(workspace, 'scaffold_parameter_%d' % (i))
     print '-------------------------------------'
     print tran_pos_cmd
     print '-------------------------------------'
