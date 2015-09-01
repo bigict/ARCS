@@ -39,7 +39,7 @@ private:
 
 class ConnectGraphBuilder {
 public:
-    ConnectGraphBuilder(size_t K, size_t insert_size, const PairReadList& pair_reads, const KmerTable& hash_tbl, const ComponentList& components) : _K(K), _insert_size(insert_size), _pair_reads(pair_reads), _hash_tbl(hash_tbl), _components(components) {
+    ConnectGraphBuilder(size_t K, size_t insert_size, const PairReadList& pair_reads, const KmerList& hash_tbl, const ComponentList& components) : _K(K), _insert_size(insert_size), _pair_reads(pair_reads), _hash_tbl(hash_tbl), _components(components) {
     }
 
     size_t build(Graph* g) const;
@@ -49,7 +49,7 @@ private:
     size_t _K;
     size_t _insert_size;
     const PairReadList& _pair_reads;
-    const KmerTable& _hash_tbl;
+    const KmerList& _hash_tbl;
     const ComponentList& _components;
 };
 

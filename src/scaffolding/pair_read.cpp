@@ -145,28 +145,30 @@ size_t ConnectGraphBuilder::addEdge(const std::string& read1, const std::string&
     for (size_t i = 0, j = _K; j <= read1.size() && j <= read2.size(); ++i,++j) {
         Kmer kmer1 = read1.substr(i, _K), kmer2 = read2.substr(i, _K);
 
-        std::pair<size_t, long> left = _hash_tbl.findPos(kmer1);
-        std::pair<size_t, long> right = _hash_tbl.findPos(kmer2);
+        //std::pair<size_t, long> left = _hash_tbl.findPos(kmer1);
+        //std::pair<size_t, long> right = _hash_tbl.findPos(kmer2);
+        KmerList::const_iterator left = _hash_tbl.find(kmer1), right = _hash_tbl.find(kmer2);
         
-        if (left.first != right.first && left.first != -1 && right.first != -1) {
+        //if (left.first != right.first && left.first != -1 && right.first != -1) {
+        if (left != _hash_tbl.end() && right != _hash_tbl.end() && left->second.first != right->second.first) {
             ++num;
 
-            LOG4CXX_TRACE(logger, boost::format("pair kmre1=%s %d %d") % kmer1 % left.first % left.second);
-            LOG4CXX_TRACE(logger, boost::format("pair kmre2=%s %d %d") % kmer2 % right.first % right.second);
+            //LOG4CXX_TRACE(logger, boost::format("pair kmre1=%s %d %d") % kmer1 % left.first % left.second);
+            //LOG4CXX_TRACE(logger, boost::format("pair kmre2=%s %d %d") % kmer2 % right.first % right.second);
         
-            long len_tmp = _insert_size + left.second - right.second;
-            long left_len = _components[left.first].length();
+            long len_tmp = _insert_size + left->second.second - right->second.second;
+            long left_len = _components[left->second.first].length();
             long overlap = left_len - len_tmp - _K + 1;
             if (overlap > 0) {
                 if (overlap > _insert_size)
                     continue;
                 len_tmp = left_len - _K + 1;
             }
-            if (find_component.find(std::make_pair(left.first, right.first)) != find_component.end()) {
-                graph->addEdge(left.first, right.first, len_tmp, false);
+            if (find_component.find(std::make_pair(left->second.first, right->second.first)) != find_component.end()) {
+                graph->addEdge(left->second.first, right->second.first, len_tmp, false);
             } else {
-                find_component.insert( std::make_pair(left.first, right.first));
-                graph->addEdge(left.first, right.first, len_tmp, true);
+                find_component.insert( std::make_pair(left->second.first, right->second.first));
+                graph->addEdge(left->second.first, right->second.first, len_tmp, true);
             }
         }
     }

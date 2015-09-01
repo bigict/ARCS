@@ -1,7 +1,10 @@
 #include "graph.h"
 
 #include <cmath>
+
 #include <boost/format.hpp>
+
+#include <log4cxx/logger.h>
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("scaffolding.graph"));
 

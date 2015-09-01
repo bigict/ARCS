@@ -13,54 +13,6 @@
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("scaffolding.component"));
 
-size_t Component::produceKmerForInsertSize(const ContigList& contigs, KmerTable& tbl, size_t component_no) {
-    long index = 0;
-    size_t tbl_size = 0; 
-    for (size_t j=0; j<_contig_id.size(); j++) {
-        size_t con_id = _contig_id[j];
-        for (size_t i = 0; i < contigs[con_id].seq.length() - _K + 1; i++) {
-            Kmer kmer(contigs[con_id].seq, i, i + _K);
-            tbl.addKmer(kmer, std::make_pair(component_no, index)); 
-            index ++;
-            tbl_size ++;
-        }
-        index += _gap[j]; 
-    }
-    return tbl_size;
-}
-
-size_t Component::produceKmerForPairRead(const ContigList& contigs, KmerTable& tbl, size_t component_no, size_t INSERT_SIZE) {
-    long index = 0; 
-    size_t tbl_size = 0;
-    int cutoff = 2*INSERT_SIZE;
-    if (_contig_id.size() == 1) {
-        size_t con_id = _contig_id[0];
-        for (size_t i = 0; i < contigs[con_id].seq.length() - _K + 1; i++) {
-            if (index <= cutoff || index >= _length - 1 - _K + 1 - cutoff) {
-                Kmer kmer(contigs[con_id].seq, i, i + _K);
-                tbl.addKmer(kmer, std::make_pair(component_no, index)); 
-                tbl_size ++; 
-            }
-            index ++;
-        }
-    } else {
-        for (size_t j=0; j<_contig_id.size(); j++) {
-            size_t con_id = _contig_id[j];
-            for (size_t i = 0; i < contigs[con_id].seq.length() - _K + 1; i++) {
-                if (index <= cutoff || index >= _length - 1 - cutoff) {
-                    Kmer kmer(contigs[con_id].seq, i, i + _K);
-                    tbl.addKmer(kmer, std::make_pair(component_no, index)); 
-                    tbl_size ++;
-                    std::cerr << component_no <<" "<< index << std::endl;
-                }
-                index ++;
-            }
-            index += _gap[j]; 
-        }
-    }
-    return tbl_size;
-}
-
 void Component::length(const ContigList& contigs) {
     _length = 0;
     if (!contigs.empty()) {

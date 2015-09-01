@@ -5,12 +5,9 @@
 #include "component.h"
 
 #include <iostream>
-#include <vector>
 #include <list>
+#include <vector>
 
-#include <log4cxx/logger.h>
-#include <log4cxx/basicconfigurator.h>
-#include <log4cxx/propertyconfigurator.h>
 struct Edge {
     size_t component_id;
     long dis;

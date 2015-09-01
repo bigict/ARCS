@@ -7,13 +7,6 @@
 
 #include "contigs.h"
 
-class KmerTable; 
-
-/*struct element_component {
-     size_t contig_id;
-     int gap; 
-};*/
-
 class Component {
 public:
     explicit Component(size_t K) : _K(K), _length(0) {
@@ -21,9 +14,6 @@ public:
     virtual ~Component() {
     }
 
-    //size_t produceKmer(const ContigList& contigs, KmerTable& tbl, size_t component_no);
-    size_t produceKmerForInsertSize(const ContigList& contigs, KmerTable& tbl, size_t component_no); 
-    size_t produceKmerForPairRead(const ContigList& contigs, KmerTable& tbl, size_t component_no, size_t INSERT_SIZE);
     size_t length() const {
         return _length;
     } 

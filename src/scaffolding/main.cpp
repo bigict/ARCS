@@ -62,23 +62,7 @@ public:
         size_t INSERT_SIZE = options.get< size_t >("L", 180);;
         double DELTA = 0;
         size_t EDGE_CUTOFF = options.get< size_t >("e", K);
-
-        // build kmer table
-        LOG4CXX_INFO(logger, boost::format("build kmer table for pair read begin"));
-        KmerTable table_for_pair_read(K);
-        size_t count = 0;
-        BOOST_FOREACH(Component& component, components) {
-            if (component._contig_id.size() == 0 || (component._contig_id.size() == 1  
-                                                      && contigs[component._contig_id[0]].seq.length() < EDGE_CUTOFF)) {
-            //if (component._contig_id.size() == 0 || (component.length() < EDGE_CUTOFF)) {
-                count ++;
-                continue;
-            }
-            component.produceKmerForPairRead(contigs, table_for_pair_read, count, INSERT_SIZE);
-            count ++;
-        }
-        LOG4CXX_INFO(logger, boost::format("FOR PAIR READ kmer number = %d, EDGE_CUTOFF = %d") % table_for_pair_read.size() % EDGE_CUTOFF);
-        LOG4CXX_INFO(logger, boost::format("build kmer table for pair read end"));
+        size_t PAIR_KMER_NUM = 0;
 
         // read pair reads file
         PairReadList pair_reads;
@@ -91,7 +75,7 @@ public:
         // estimate insert size
         {
             KmerList hash_tbl;
-            BuildKmerTable(K, INSERT_SIZE, contigs, components, hash_tbl);
+            BuildKmerTable_insertsize(K, INSERT_SIZE, contigs, components, hash_tbl);
 
             InsertSizeEstimater estimater(K, INSERT_SIZE, pair_reads, hash_tbl);
             estimater.estimate(&INSERT_SIZE, &DELTA);
@@ -107,12 +91,15 @@ public:
 
         // build
         {
-            ConnectGraphBuilder builder(K, INSERT_SIZE, pair_reads, table_for_pair_read, components);
-            size_t PAIR_KMER_NUM = builder.build(&g);
-            LOG4CXX_INFO(logger, boost::format("pair_kmer_num=%d") % PAIR_KMER_NUM);
+            KmerList hash_tbl;
+            BuildKmerTable_pairends(K, options.get< size_t >("L", 180), EDGE_CUTOFF, contigs, components, hash_tbl);
 
-            g.setPairKmerNumAndInsertSizeAndDelta(PAIR_KMER_NUM, INSERT_SIZE, DELTA);
+            ConnectGraphBuilder builder(K, INSERT_SIZE, pair_reads, hash_tbl, components);
+            PAIR_KMER_NUM = builder.build(&g);
         }
+        LOG4CXX_INFO(logger, boost::format("pair_kmer_num=%d") % PAIR_KMER_NUM);
+
+        g.setPairKmerNumAndInsertSizeAndDelta(PAIR_KMER_NUM, INSERT_SIZE, DELTA);
 
         // graph
         {
