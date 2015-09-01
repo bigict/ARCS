@@ -181,7 +181,7 @@ void Graph_divide(Graph& graph, GraphList& components) {
  
 int main(int argc, char **argv) {
 	if (argc != 3) {
-        std::cerr << "Usage: " << argv[0] << " bigLPFile outSmallLPPath" << std::endl;
+        std::cerr << boost::format("Usage: %s [big_lp_file] [small_lp_dir]") % argv[0] << std::endl;
         return 1;
 	}
     log4cxx::BasicConfigurator::configure();
