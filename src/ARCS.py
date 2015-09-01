@@ -224,7 +224,7 @@ for i in range(len(lib_list)):
         os._exit(1)
 
     #change lp to smallLPs by wangbing   
-    glpsol_cmd = Path + 'devideLP/runLP.sh ' +  workspace + '/position_lp_' + str(i) + '.math ' + workspace + '/smallLPs/ ' + workspace + '/smallLPResults/'
+    glpsol_cmd = Path + 'divideLP/runLP.sh ' +  workspace + '/position_lp_' + str(i) + '.math ' + workspace + '/smallLPs/ ' + workspace + '/smallLPResults/'
     print '-------------------------------------'
     print glpsol_cmd
     print '-------------------------------------'

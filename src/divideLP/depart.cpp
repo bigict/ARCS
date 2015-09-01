@@ -1,268 +1,215 @@
 //depart mixture LP to many one small LP
-#include<iostream>
-#include<sstream>
-#include<cstdio>
-#include<fstream>
-#include<cmath>
-#include<string>
-#include<cstring>
-#include<algorithm>
-#include<iterator>
-#include<map>
-#include<set>
-#include<queue>
-#include<vector>
-using namespace std;
-#define M 999999
+#include <algorithm>
+#include <deque>
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <set>
+#include <string>
+#include <vector>
 
-int edge=0; //count the number of edges
-const int STD = 10;
+#include <boost/algorithm/string.hpp>
+#include <boost/assign.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
+#include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/regex.hpp>
 
-set<int> z_mp;
+#include <log4cxx/logger.h>
+#include <log4cxx/basicconfigurator.h>
+#include <log4cxx/propertyconfigurator.h>
 
-vector<string> data_file;
+static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("dividelP.main"));
 
-vector<vector<pair<int,int> > > z_s;
-vector<vector<int > > z_ss;
-map<int, vector<pair<int,int> > > dis;
-	// set<int> s[M];
-set<int>::iterator is;
-//get pair<x,d> related to x[i]
-// struct node
-// {
-// 	vector<pair<int,int> >vxd;
-// }vx[M];
-map<int, vector<int> > z_vx;
-int maxI = 0;
+typedef std::map< size_t, int > Children;
+typedef std::set< size_t > Parents;
+struct Node {
+    Children children;
+    Parents parents;
+};
+typedef std::map< size_t, Node > Graph;
+typedef std::vector< Graph > GraphList;
 
-int x[M];
-int result[M];
+void Graph_addEdge(Graph& graph, size_t xi, size_t xj, long val) {
+    // xi
+    {
+        Graph::iterator i = graph.find(xi);
+        if (i == graph.end()) {
+            graph[xi] = Node();
+        }
+    }
+    // xj
+    {
+        Graph::iterator j = graph.find(xj);
+        if (j == graph.end()) {
+            graph[xj] = Node();
+        }
+    }
+    // children
+    {
+        Graph::iterator i = graph.find(xi);
+        BOOST_ASSERT(i != graph.end());
+        i->second.children[xj] = val;
+    }
+    // parents
+    {
+        Graph::iterator j = graph.find(xj);
+        BOOST_ASSERT(j != graph.end());
+        j->second.parents.insert(xi);
+    }
+}
 
-void read(string file_path)
-{
-	ifstream input;
-	string data_in_file;
-	input.open(file_path.c_str());
-	while(!input.eof())
-	{
-		getline(input,data_in_file);
-		data_file.push_back(data_in_file);
-	}
-	vector<string>::iterator i;
-	string sr;
-	
-	for(i=data_file.begin();i!=data_file.end();i++)
-	{
-		sr=(*i);
-		int p=sr.find(" : x_");
-		if(p>0)
-		{
-			edge++;
-			int p1=p+5;
-			int p2=sr.find("- x_")+4;
-			int p3=sr.find(" = ")+3;
-			int tem1=0;
-			while(sr[p1]>='0'&&sr[p1]<='9')
-			{
-				tem1=tem1*10+(sr[p1]-'0');
-				p1++;
-			}
-			int tem2=0;
-			while(sr[p2]>='0'&&sr[p2]<='9')
-			{
-				tem2=tem2*10+(sr[p2]-'0');
-				p2++;
-			}
-			z_mp.insert(tem1);
-			z_mp.insert(tem2);
-			int tem3=0;
-			int flag = 0;
-			if(sr[p3] == '-')
-				flag = 1;
-			else
-				tem3 = sr[p3] - '0';
-			while(sr[++p3]>='0'&&sr[p3]<='9')
-			{
-				tem3=tem3*10+(sr[p3]-'0');
-				// p3++;
-			}
-			if(flag)
-				tem3 = -tem3;
-			if(dis.find(tem2) == dis.end())
-				dis[tem2] = vector<pair<int, int> >();
-			dis[tem2].push_back(make_pair(tem1,tem3));
-   			//mp.insert(pair<int,int>(tem1,1));
-			// mp.insert(pair<int,int>(tem2,1));
-			
-			if( z_vx.find(tem1) == z_vx.end() ) {
-				z_vx[tem1] = vector<int>();
-			}
-			z_vx[tem1].push_back(tem2);
-			if( z_vx.find(tem2) == z_vx.end() ) {
-				z_vx[tem2] = vector<int>();
-			}
-			z_vx[tem2].push_back(tem1);
+bool Graph_read(Graph& graph, std::istream& stream) {
+    if (!stream) {
+        return false;
+    }
 
-			int tmp = tem1 > tem2 ? tem1 : tem2;
-			maxI = maxI > tmp ? maxI : tmp;
-			// vx[tem1].vxd.push_back(pair<int,int>(tem2,1));
-			// vx[tem2].vxd.push_back(pair<int,int>(tem1,1));
+    // s.t. con3122 : x_2250 - x_2866 + e_2866_2250 = 190;
+    static boost::regex reg("s\\.t\\. con(\\d+)\\s*:\\s*x_(\\d+)\\s*-\\s*x_(\\d+)\\s*\\+\\s*e_(\\d+)_(\\d+)\\s*=\\s*((\\+|-)?\\d+)\\s*;");
+
+    std::string line;
+	while (std::getline(stream, line)) {
+        boost::algorithm::trim(line);
+        boost::smatch what;
+        if (boost::regex_match(line, what, reg)) {
+            size_t xj = boost::lexical_cast< size_t >(what[2]);
+            size_t xi = boost::lexical_cast< size_t >(what[3]);
+            int err = boost::lexical_cast< int >(what[6]);
+
+            LOG4CXX_TRACE(logger, boost::format("regex: %d %d %d %s") % xi % xj % err % line);
+
+            Graph_addEdge(graph, xi, xj, err);
 		}	
 	}
+
+    return true;
 }
 
-//init x[]
-int ct=0; //count the num of LP to be solved
-void init()
-{
-	queue<int> q;
-	unsigned int cnt=z_mp.size();
-	vector<bool> visited(maxI+1, false);
-	// z_s.resize(maxI+1);
-	// memset(visited,0,sizeof(visited));
-	set<int>::iterator it = z_mp.begin();
-	//int num = maxI;
-	unsigned int count = 0;
-	unsigned int maxNum = 0;
-	cout << cnt << endl;
-	while(count < cnt)
-	{
-		// vector<pair<int,int> > tmp;
-		vector<int> tmp1;
-		for(;it!=z_mp.end();it++)
-		{	
-			if(visited[*it]==0)
-			{
-				q.push(*it);
-				visited[*it] = 1;  //define the first vertex's position is 1
-				// z_s[ct].insert(*it);
-				tmp1.push_back(*it);
-				// cnt--;
-				count ++;
-				break;
-			}
-		}
-		while(!q.empty())
-		{
-			unsigned int t=q.front();
-			q.pop();
-			for(unsigned int i=0;i<z_vx[t].size();i++)
-			{
-				int j = z_vx[t][i];
-				if(visited[j]==0)
-				{
-					// tmp.push_back(make_pair(t, j));
-					tmp1.push_back(j);
-					q.push(j);
-					visited[j]=1;
-					count ++;
-				}	
-			}
-		}
-		// cnt -= tmp.size();
-		// z_s.push_back(tmp);
-		z_ss.push_back(tmp1);
-		if(tmp1.size() > 1)
-			ct++;
-		maxNum = maxNum > tmp1.size()? maxNum : tmp1.size();
-	}
-	cout<<"[info] LP number is:"<< ct <<endl;
-	cout<<"[info] Max nodes :"<< maxNum <<endl;
+bool Graph_read(Graph& graph, const std::string& file) {
+    std::ifstream stream(file.c_str());
+    return Graph_read(graph, stream);
 }
 
+bool Graph_write(Graph& graph, std::ostream& stream) {
+    if (!stream) {
+        return false;
+    }
 
-string intTostr(int k)
-{
-	string s;
-	stringstream ss;
-	ss<<k;
-	s=ss.str();
-	return s;
-}
-void output_lp(string out_path)
-{
-	cout << "output linear programing mod" << endl;
-	//char buff[100];
+    for (Graph::const_iterator i = graph.begin(); i != graph.end(); ++i) {
+        stream << boost::format("var x_%d;") % i->first << std::endl;
+    }
+    for (Graph::const_iterator i = graph.begin(); i != graph.end(); ++i) {
+        for (Children::const_iterator j = i->second.children.begin(); j != i->second.children.end(); ++j) {
+            stream << boost::format("var e_%d_%d;") % i->first % j->first << std::endl;
+            stream << boost::format("var E_%d_%d;") % i->first % j->first << std::endl;
+        }
+    }
 
-	string ss;
-	for(int k=0; k<ct; k++) {
-		if(z_ss[k].size() <= 1)
-			continue;
-		ss = out_path + "/lp";
-		ss.append(intTostr(k)).append(".math");
-		ofstream fout(ss.c_str());
+    stream << std::endl;
+    stream << "minimize z:   ";
+    size_t count = 0;
+    for (Graph::const_iterator i = graph.begin(); i != graph.end(); ++i) {
+        for (Children::const_iterator j = i->second.children.begin(); j != i->second.children.end(); ++j) {
+            stream << boost::format(" E_%d_%d + ") % i->first % j->first;
+            ++count;
+		    if (count % 10 == 0) {
+                stream << std::endl;
+            }
+        }
+    }
+    stream << "0;" << std::endl << std::endl;
 
-		for (unsigned int i = 0; i < z_ss[k].size(); i++)
-		{
-			fout << "var x_" << z_ss[k][i] << ";" << endl;
-		}
-		int x1,x2;
-		for(unsigned int i = 0; i < z_ss[k].size(); i++)
-		{
-			if(dis.find(z_ss[k][i]) == dis.end())
-				continue;
-			for(unsigned int j=0; j < dis[z_ss[k][i]].size(); j++){
-				x1 = z_ss[k][i];
-				x2 = dis[z_ss[k][i]][j].first;			
-				fout << "var e_" << x1 << "_" << x2  << ";" << endl; 
-				fout << "var E_" << x1 << "_" << x2  << ";" << endl;
-			}
-		}
-		fout << endl;
-		fout << "minimize z:   ";
+    size_t index = 1;
+    for (Graph::const_iterator i = graph.begin(); i != graph.end(); ++i) {
+        for (Children::const_iterator j = i->second.children.begin(); j != i->second.children.end(); ++j) {
+            stream << boost::format("s.t. con%d : x_%d - x_%d + e_%d_%d = %d;") % index++ % j->first % i->first % i->first % j->first % j->second << std::endl;
+            stream << boost::format("s.t. con%d : E_%d_%d + e_%d_%d >= 0;") % index++ % i->first % j->first % i->first % j->first << std::endl;
+            stream << boost::format("s.t. con%d : E_%d_%d - e_%d_%d >= 0;") % index++ % i->first % j->first % i->first % j->first << std::endl;
+        }
+    }
 
-		int count = 0;
-		for(unsigned int i = 0; i < z_ss[k].size(); i++)
-		{
-			if(dis.find(z_ss[k][i]) == dis.end())
-				continue;
-			for(unsigned int j=0; j < dis[z_ss[k][i]].size(); j++){
-				x1 = z_ss[k][i];
-				x2 = dis[z_ss[k][i]][j].first;			
-			
-				fout << " E_" << x1 << "_" << x2  << " + ";
-			    count ++;
-			    if (count % 10 == 0)
-				    fout << endl;
-			}
-		}
-		fout << "0;" << endl << endl;
+    stream << std::endl;
+    stream << "end;";
 
-
-		int index = 1;
-		for(unsigned int i = 0; i < z_ss[k].size(); i++)
-		{
-			if(dis.find(z_ss[k][i]) == dis.end())
-				continue;
-			for(unsigned int j=0; j < dis[z_ss[k][i]].size(); j++){
-				x1 = z_ss[k][i];
-				x2 = dis[z_ss[k][i]][j].first;	
-				
-				fout << "s.t. con" << index ++ << " : x_" << x2 << " - x_" << x1 << " + e_" << x1 << "_" << x2 << " = " << dis[z_ss[k][i]][j].second << ";" << endl;
-				fout << "s.t. con" << index ++ << " : E_" << x1 << "_" << x2 << " + e_" << x1 << "_" << x2 << " >= 0;" << endl;
-				fout << "s.t. con" << index ++ << " : E_" << x1 << "_" << x2 << " - e_" << x1 << "_" << x2 << " >= 0;" << endl;
-			}
-		}
-
-		fout << endl << "end;";
-
-		fout.close();
-	}
+    return true;
 }
 
+bool Graph_write(Graph& graph, const std::string& file) {
+    std::ofstream stream(file.c_str());
+    return Graph_write(graph, stream);
+}
 
+void Graph_divide(Graph& graph, GraphList& components) {
+    typedef std::set< size_t > NodeList;
+    NodeList nodes;
+
+    // nodes
+    for (Graph::const_iterator i = graph.begin(); i != graph.end(); ++i) {
+        nodes.insert(i->first);
+    }
+
+    while (!nodes.empty()) {
+        // BFS
+        Graph component;
+        std::deque< size_t > Q = boost::assign::list_of(*nodes.begin());
+        while (!Q.empty()) {
+            size_t xi = Q.front();
+            Q.pop_front();
+
+            if (nodes.find(xi) == nodes.end()) {
+                continue;
+            }
+
+            nodes.erase(xi);
+
+            Graph::const_iterator i = graph.find(xi);
+            if (i != graph.end()) {
+                for (Children::const_iterator j = i->second.children.begin(); j != i->second.children.end(); ++j) {
+                    Graph_addEdge(component, xi, j->first, j->second);
+                    Q.push_back(j->first);
+                }
+                for (Parents::const_iterator j = i->second.parents.begin(); j != i->second.parents.end(); ++j) {
+                    Q.push_back(*j);
+                }
+            }
+        }
+
+        components.push_back(component);
+    }
+}
  
-int main(int argv, char **args) {
-	if (argv != 3 {
-		cout << "Usage: " << args[0] << " bigLPFile outSmallLPPath" << endl;
-		exit(1); 
+int main(int argc, char **argv) {
+	if (argc != 3) {
+        std::cerr << "Usage: " << argv[0] << " bigLPFile outSmallLPPath" << std::endl;
+        return 1;
 	}
+    log4cxx::BasicConfigurator::configure();
+
+    std::string root(argv[2]);
+    boost::filesystem::path workdir(root);
+    if (!boost::filesystem::exists(workdir) && !boost::filesystem::create_directory(workdir)) {
+        LOG4CXX_ERROR(logger, boost::format("failed to create directory: %s") % workdir);
+        return 1;
+    }
+
+    Graph graph;
+
 	//depart data
-	read(string( args[1] ));
-	//init data
-	init();
-	// pushToVector( string(args[1]) );
-	// newFile( string(args[2]));
-	output_lp( string(args[2]) );
+    if (!Graph_read(graph, argv[1])) {
+        LOG4CXX_ERROR(logger, boost::format("failed to read graph from file: %s") % argv[1]);
+        return 1;
+    }
+    GraphList components;
+    Graph_divide(graph, components);
+    for (size_t i = 0; i < components.size(); ++i) {
+        Graph& component = components[i];
+        boost::filesystem::ofstream stream(workdir / boost::str(boost::format("lp%d.math") % i));
+        if (!Graph_write(component, stream)) {
+            LOG4CXX_ERROR(logger, boost::format("failed to write graph to file: lp%d.math") % i);
+            return 1;
+        }
+    }
+
 	return 0;
 }
