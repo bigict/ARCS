@@ -3,7 +3,7 @@ scaffolding_SOURCES=main.cpp \
             contigs.cpp	\
             contigs.h	\
             component.cpp	\
-            conponent.h	\
+            component.h	\
             graph.cpp \
             graph.h \
             kmer.cpp	\
@@ -19,3 +19,4 @@ scaffolding_LDFLAGS=${LOG4CXX_LIBS} \
 					-lboost_filesystem \
 					-lboost_regex \
 				    -lboost_system
+EXTRA_DIST=parse_glpk_results.py

@@ -1,1 +1,2 @@
 SUBDIRS=contiging scaffolding divideLP remove_repeats scoring gap_filling
+EXTRA_DIST=ARCS.py

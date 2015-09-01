@@ -184,17 +184,6 @@ print '-------------------------------------'
 if os.system(contiging_cmd) != 0:
     os._exit(1)
 
-'''
-g0lpsol_cmd = 'glpsol --mincost ' + workspace + '/min_cost_flow.DIMACS -o ' + workspace + '/min_cost.out >' + workspace + '/mincost.log'   #> /dev/null'
-if os.system(glpsol_cmd) != 0:
-    os._exit(1)
-
-copy_num_cmd = 'contiging/copy_number_transform.py ' + workspace + '/min_cost.out ' + workspace + '/condensed_de_bruijn_graph_after_trimming.data ' + workspace + '/cdbg_copy_number.fa ' + workspace + '/component_0' 
-
-if os.system(copy_num_cmd) != 0:
-    os._exit(1)
-'''
-
 copy_num_cmd = 'cat ' + workspace + '/condensed_de_bruijn_graph_after_trimming.data | ' + Path + 'contiging/copy_number_estimate.py -p' + workspace + '/contig_parameter ' + workspace + '/cdbg_copy_number.fa ' + workspace + '/component_0' 
 
 print '-------------------------------------'

@@ -13,4 +13,4 @@ contiging_LDFLAGS=${LOG4CXX_LIBS} \
 				  -lboost_filesystem \
 				  -lboost_system
 
-#SUBDIRS=32-mer 64-mer 96-mer
+EXTRA_DIST=copy_number_estimate.py
