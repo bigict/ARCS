@@ -236,7 +236,7 @@ for i in range(len(lib_list)):
         os._exit(1)
         #kmer_size -= 2
 
-reverse_filter_cmd = Path + 'gap_filling/reverseFilter.py ' + workspace + ' ' + workspace + '/cdbg_copy_number.fa ' + workspace + '/component_' + str(len(insert_size))
+reverse_filter_cmd = Path + 'gap_filling/reverse_filter.py ' + workspace + ' ' + workspace + '/cdbg_copy_number.fa ' + workspace + '/component_' + str(len(insert_size))
 print '-------------------------------------'
 print reverse_filter_cmd
 print '-------------------------------------'
