@@ -9,4 +9,4 @@ gap_filling_SOURCES=Constant.h \
 					Scaffold.h \
 					Split_String.cpp \
 					Split_String.h
-EXTRA_DIST=reverseFilter.py
+EXTRA_DIST=reverse_filter.py

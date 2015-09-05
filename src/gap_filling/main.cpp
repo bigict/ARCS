@@ -149,7 +149,7 @@ int main(int argc, char ** argv)
 		if(split==string::npos || line[split] == '#')
 			continue;
 
-		split = line.find_first_of("=:");
+		split = line.find_first_of("=");
 		if(split == string::npos)
 			continue;
 		
@@ -164,7 +164,7 @@ int main(int argc, char ** argv)
 		right = value.find_last_not_of(" \t");
 		value.assign(value.begin()+left, value.begin()+right+1);
 
-		if(key.substr(0,string("INSERT_SIZE").size()) == "INSERT_SIZE")
+		if (key.substr(0,string("INSERT_SIZE").size()) == "INSERT_SIZE")
 		{
 			if(!is_number(value)) 
 			{

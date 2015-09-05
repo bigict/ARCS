@@ -247,10 +247,6 @@ gap_filling_cmd = Path + 'gap_filling/gap_filling -s scaffold_parameter_0 -K ' +
 print '-------------------------------------'
 print gap_filling_cmd
 print '-------------------------------------'
-#gap_filling_cmd = 'gap_filling/gap_filling -s scaffold_parameter_0 -K ' + str(25) + ' -O ' + str(kmer_size - 10) + ' -c cdbg_copy_number.fa -l component_' + str(len(insert_size)) + ' -d ' + workspace + ' -i condensed_de_bruijn_graph_before_trimming.data'
-
-#if os.system(gap_filling_cmd) != 0:
-#    os._exit(1)
 
 end = datetime.now()
 print 'total running time is ' +  str((end - start).seconds) + ' seconds'

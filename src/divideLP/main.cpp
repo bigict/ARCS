@@ -92,7 +92,7 @@ bool Graph_read(Graph& graph, const std::string& file) {
     return Graph_read(graph, stream);
 }
 
-bool Graph_write(Graph& graph, std::ostream& stream) {
+bool Graph_write(const Graph& graph, std::ostream& stream) {
     if (!stream) {
         return false;
     }
@@ -205,7 +205,7 @@ int main(int argc, char **argv) {
     Graph_divide(graph, components);
     // write graph data
     for (size_t i = 0; i < components.size(); ++i) {
-        Graph& component = components[i];
+        const Graph& component = components[i];
         boost::filesystem::ofstream stream(workdir / boost::str(boost::format("lp%d.math") % i));
         if (!Graph_write(component, stream)) {
             LOG4CXX_ERROR(logger, boost::format("failed to write graph to file: lp%d.math") % i);
