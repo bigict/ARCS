@@ -146,8 +146,9 @@ int main(int argc, char **argv) {
         }
 
         // config log4cxx.
-        if (cmd.find("c") != cmd.not_found()) {
-            log4cxx::PropertyConfigurator::configure(options.get< std::string >("c"));
+        std::string log_config = cmd.get< std::string >("c", "log4cxx.properties");
+        if (boost::filesystem::exists(log_config)) {
+            log4cxx::PropertyConfigurator::configure(log_config);
         } else {
             log4cxx::BasicConfigurator::configure();
         }

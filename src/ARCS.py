@@ -49,7 +49,7 @@ try:
     longopts = ["help", "version", "configure_file=", "workspace=", "kmer_size=", "edge_length_cutoff=", "max_overlap", "CPU","kmer_filter"]
 except:
     print "parameter error"
-opts, var = getopt.getopt(sys.argv[1:], "s:d:K:e:hO:vp:E:", longopts)
+opts, var = getopt.getopt(sys.argv[1:], "s:d:K:e:hO:vp:E:c:", longopts)
 
 configure_file = ''
 workspace = ''
