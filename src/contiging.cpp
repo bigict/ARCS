@@ -52,6 +52,14 @@ int _Contiging_run_(size_t L, size_t loops, std::istream& is, const std::string&
         }
         stream << g;
     }
+    // parameters
+    {
+        boost::filesystem::ofstream stream(rootdir / boost::filesystem::path("contig_parameter"));
+        if (!stream) {
+            return 1;
+        }
+        stream << boost::format("lambda=%f") % g.average() << std::endl;
+    }
 
     return 0;
 }

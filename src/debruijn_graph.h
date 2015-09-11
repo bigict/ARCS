@@ -120,6 +120,9 @@ public:
     }
     // Remove suspicious nodes
     void removeNoise();
+    double average() const {
+        return _average;
+    }
 private:
     template< size_t X >
     friend std::ostream& operator << (std::ostream& os, const DeBruijnGraph< X >& graph);
