@@ -1,4 +1,4 @@
-#include "contiging.h"
+#include "remove_repeats.h"
 #include "debruijn_graph.h"
 
 #include <iostream>
@@ -10,11 +10,11 @@
 
 #include <log4cxx/logger.h>
 
-static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.Contiging"));
-Contiging Contiging::_runner;
+static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.RepeatRemover"));
+RepeatRemover RepeatRemover::_runner;
 
 template< size_t K >
-int _Contiging_run_(size_t L, size_t loops, std::istream& is, const std::string& rootdir) {
+int _RepeatRemover_run_(size_t L, size_t loops, std::istream& is, const std::string& rootdir) {
     // check root dir
     boost::filesystem::path root(rootdir);
     if (!boost::filesystem::exists(rootdir) && !boost::filesystem::create_directory(rootdir)) {
@@ -64,14 +64,14 @@ int _Contiging_run_(size_t L, size_t loops, std::istream& is, const std::string&
     return 0;
 }
 
-int Contiging::run(const Properties& options) {
+int RepeatRemover::run(const Properties& options) {
     int r = 0;
 
     if ((r = checkOptions(options)) != 0) {
         return r;
     }
 
-    LOG4CXX_DEBUG(logger, "contiging begin");
+    LOG4CXX_DEBUG(logger, "remove_repeats begin");
 
     size_t K = options.get< size_t >("K", 31);
     size_t loops = options.get< size_t >("l", 2);
@@ -94,17 +94,17 @@ int Contiging::run(const Properties& options) {
     K = K - 1; // (K-1)mer
     // process
     if (0 < K && K <= 32) {
-        r = _Contiging_run_< 32 >(K, loops, *is, rootdir);
+        r = _RepeatRemover_run_< 32 >(K, loops, *is, rootdir);
     } else if (32 < K && K <= 64) {
-        r = _Contiging_run_< 64 >(K, loops, *is, rootdir);
+        r = _RepeatRemover_run_< 64 >(K, loops, *is, rootdir);
     } else if (64 < K && K <= 96) {
-        r = _Contiging_run_< 64 >(K, loops, *is, rootdir);
+        r = _RepeatRemover_run_< 64 >(K, loops, *is, rootdir);
     } else if (96 < K && K <= 128) {
-        r = _Contiging_run_< 128 >(K, loops, *is, rootdir);
+        r = _RepeatRemover_run_< 128 >(K, loops, *is, rootdir);
     } else if (96 < K && K <= 160) {
-        r = _Contiging_run_< 160 >(K, loops, *is, rootdir);
+        r = _RepeatRemover_run_< 160 >(K, loops, *is, rootdir);
     } else if (160 < K && K <= 192) {
-        r = _Contiging_run_< 192 >(K, loops, *is, rootdir);
+        r = _RepeatRemover_run_< 192 >(K, loops, *is, rootdir);
     }
 
     // input & output closed
@@ -112,20 +112,20 @@ int Contiging::run(const Properties& options) {
         delete is;
     }
 
-    LOG4CXX_DEBUG(logger, "contiging end");
+    LOG4CXX_DEBUG(logger, "remove_repeats end");
     return r;
 }
 
-Contiging::Contiging() : Runner("c:s:K:i:d:h") {
-    RUNNER_INSTALL("contiging", this, "contigs");
+RepeatRemover::RepeatRemover() : Runner("c:s:K:i:d:h") {
+    RUNNER_INSTALL("remove_repeats", this, "remove_repeats");
 }
 
-int Contiging::printHelps() const {
-    std::cout << "arcs contiging -K [kmer] -i [input] -d [workdir]" << std::endl;
+int RepeatRemover::printHelps() const {
+    std::cout << "arcs remove_repeats -K [kmer] -i [input] -d [workdir]" << std::endl;
     return 256;
 }
 
-int Contiging::checkOptions(const Properties& options) const {
+int RepeatRemover::checkOptions(const Properties& options) const {
     if (options.find("h") != options.not_found()) {
         return printHelps();
     }
