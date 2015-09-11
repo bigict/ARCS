@@ -3,6 +3,7 @@
 
 #include <iostream>
 
+#include <boost/assign.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/format.hpp>
@@ -13,7 +14,7 @@ static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.Contiging"));
 Contiging Contiging::_runner;
 
 template< size_t K >
-int _Contiging_run_(size_t loops, std::istream& is, const std::string& rootdir) {
+int _Contiging_run_(size_t L, size_t loops, std::istream& is, const std::string& rootdir) {
     // check root dir
     boost::filesystem::path root(rootdir);
     if (!boost::filesystem::exists(rootdir) && !boost::filesystem::create_directory(rootdir)) {
@@ -21,7 +22,8 @@ int _Contiging_run_(size_t loops, std::istream& is, const std::string& rootdir) 
         return 1;
     }
 
-    DeBruijnGraph< K - 1 > g;
+    Kmer< K >::length(L); // IMPORTANT: set kmer length
+    DeBruijnGraph< K > g;
     
     // load
     if (!g.read(is)) {
@@ -75,19 +77,20 @@ int Contiging::run(const Properties& options) {
 
     LOG4CXX_DEBUG(logger, boost::format("parameters: K=[%d],workdir=[%s]") % K % rootdir);
 
+    K = K - 1; // (K-1)mer
     // process
     if (0 < K && K <= 32) {
-        r = _Contiging_run_< 32 >(loops, *is, rootdir);
+        r = _Contiging_run_< 32 >(K, loops, *is, rootdir);
     } else if (32 < K && K <= 64) {
-        r = _Contiging_run_< 64 >(loops, *is, rootdir);
+        r = _Contiging_run_< 64 >(K, loops, *is, rootdir);
     } else if (64 < K && K <= 96) {
-        r = _Contiging_run_< 64 >(loops, *is, rootdir);
+        r = _Contiging_run_< 64 >(K, loops, *is, rootdir);
     } else if (96 < K && K <= 128) {
-        r = _Contiging_run_< 128 >(loops, *is, rootdir);
+        r = _Contiging_run_< 128 >(K, loops, *is, rootdir);
     } else if (96 < K && K <= 160) {
-        r = _Contiging_run_< 160 >(loops, *is, rootdir);
+        r = _Contiging_run_< 160 >(K, loops, *is, rootdir);
     } else if (160 < K && K <= 192) {
-        r = _Contiging_run_< 192 >(loops, *is, rootdir);
+        r = _Contiging_run_< 192 >(K, loops, *is, rootdir);
     }
 
     // input & output closed
@@ -99,14 +102,18 @@ int Contiging::run(const Properties& options) {
     return r;
 }
 
-int Contiging::checkOptions(const Properties& options) const {
-    if (options.find("h") != options.not_found()) {
-        return printHelps();
-    }
-    return 0;
+Contiging::Contiging() : Runner("c:s:K:i:d:h") {
+    RUNNER_INSTALL("contiging", this);
 }
 
 int Contiging::printHelps() const {
     std::cout << "arcs contiging -K [kmer] -i [input] -d [workdir]" << std::endl;
     return 256;
+}
+
+int Contiging::checkOptions(const Properties& options) const {
+    if (options.find("h") != options.not_found()) {
+        return printHelps();
+    }
+    return 0;
 }

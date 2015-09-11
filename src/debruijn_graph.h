@@ -67,8 +67,9 @@ public:
         LOG4CXX_DEBUG(logger, boost::format("average=[%f],nodes=[%d]") % _average % _nodelist.size());
 
         LOG4CXX_DEBUG(logger, "build debruijn graph begin");
+        size_t L = Kmer< K >::length();
         BOOST_FOREACH(const ARFF::Item& item, arff.data) {
-            Kmer< K > prefix(item[0], 0, K), suffix(item[0], 1, K + 1);
+            Kmer< K > prefix(item[0], 0, L), suffix(item[0], 1, L + 1);
 
             addEdge(_indexer.id(prefix), _indexer.id(suffix), boost::lexical_cast< size_t >(item[1]));
         }
@@ -136,11 +137,12 @@ private:
         void init(const ARFF& arff) {
             _data.clear();
 
+            size_t L = Kmer< K >::length();
             BOOST_FOREACH(const ARFF::Item& item, arff.data) {
                 BOOST_ASSERT(item.size() == 2);
-                BOOST_ASSERT(item[0].length() == K + 1);
+                BOOST_ASSERT(item[0].length() == L + 1);
 
-                Kmer< K > prefix(item[0], 0, K), suffix(item[0], 1, K + 1);
+                Kmer< K > prefix(item[0], 0, L), suffix(item[0], 1, L + 1);
                 _data.push_back(prefix);
                 _data.push_back(suffix);
 
@@ -344,6 +346,7 @@ void DeBruijnGraph< K >::removeNoise() {
 
 template< size_t K >
 std::ostream& operator << (std::ostream& os, const DeBruijnGraph< K >& graph) {
+    size_t L = Kmer< K >::length();
     // Merge nodes with indegree == outdegree == 1
     for (size_t i = 0; i < graph._nodelist.size(); ++i) {
         const typename DeBruijnGraph< K >::Node& node = graph._nodelist[i];
@@ -353,7 +356,7 @@ std::ostream& operator << (std::ostream& os, const DeBruijnGraph< K >& graph) {
             continue;
         }
         for (typename DeBruijnGraph< K >::EdgeList::const_iterator j = node.children.begin(); j != node.children.end(); ++j) {
-            std::string edge = graph._indexer.kmer(i).sequence() + graph._indexer.kmer(j->first).nucleotide(K - 1);
+            std::string edge = graph._indexer.kmer(i).sequence() + graph._indexer.kmer(j->first).nucleotide(L - 1);
             size_t length = 1; // first
             double coverage = j->second;
 
@@ -363,7 +366,7 @@ std::ostream& operator << (std::ostream& os, const DeBruijnGraph< K >& graph) {
 
                 length += 1;
                 coverage += x->second;
-                edge += graph._indexer.kmer(x->first).nucleotide(K - 1);
+                edge += graph._indexer.kmer(x->first).nucleotide(L - 1);
 
                 k = x->first;
             }

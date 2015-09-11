@@ -58,8 +58,11 @@ public:
         _data = o._data;
     }
 
-    size_t length() const {
-        return K;
+    static size_t length() {
+        return _K;
+    }
+    static void length(size_t L) {
+        _K = L;
     }
     void sequence(const std::string& seq, size_t i, size_t j) {
         j = (j == std::string::npos || j >= seq.length()) ? seq.length() : j;
@@ -67,7 +70,7 @@ public:
         std::fill(_data.begin(), _data.end(), 0);
 
         size_t k = 0;
-        while (i < j && k < K) {
+        while (i < j && k < Kmer< K >::_K) {
             size_t code = Nucleotide::char2code(seq[i]);
             size_t m = (2 * k) / SIZEOF_BITS(size_t), n = SIZEOF_BITS(size_t) - ((2 * k) % SIZEOF_BITS(size_t)) - 2;
             _data[m] |= (code << n);
@@ -78,7 +81,7 @@ public:
         std::string seq;
 
         size_t k = 0;
-        while (k < K) {
+        while (k < Kmer< K >::_K) {
             size_t m = (2 * k) / SIZEOF_BITS(size_t), n = SIZEOF_BITS(size_t) - ((2 * k) % SIZEOF_BITS(size_t)) - 2;
             size_t code = (_data[m] >> n) & 0x03;
             seq += Nucleotide::code2char(code);
@@ -102,7 +105,7 @@ public:
             _data[i - 1] |= (_data[i] >> (SIZEOF_BITS(size_t) - 2) & 0x03);
         }
         if (!_data.empty()) {
-            size_t k = K - 1;
+            size_t k = Kmer< K >::_K - 1;
             size_t m = (2 * k) / SIZEOF_BITS(size_t), n = SIZEOF_BITS(size_t) - ((2 * k) % SIZEOF_BITS(size_t)) - 2;
             _data[m] <<= 2;
             _data[m] |= (((size_t)nucleotide) << n);
@@ -129,7 +132,12 @@ public:
 
 private:
     std::tr1::array< size_t,  (2 * K + SIZEOF_BITS(size_t) - 1) / SIZEOF_BITS(size_t) > _data;
+
+    static size_t _K;
 };
+
+template< size_t K >
+size_t Kmer< K >::_K = 31;
 
 template< size_t K >
 struct KmerHasher {

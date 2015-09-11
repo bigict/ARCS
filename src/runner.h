@@ -11,8 +11,22 @@ typedef boost::property_tree::ptree Properties;
 
 class Runner {
 public:
-    virtual const std::string& options() const = 0;
+    const std::string& options() const {
+        return _options;
+    }
+    std::string transform(char key) const {
+        std::map< char, std::string >::const_iterator i = _transform.find(key);
+        if (i != _transform.end()) {
+            return i->second;
+        }
+        return std::string(1, key);
+    }
     virtual int run(const Properties& options) = 0;
+protected:
+    Runner(const std::string& options = "", const std::map< char, std::string >& table=std::map< char, std::string >()) : _options(options), _transform(table) {
+    }
+    std::string _options;
+    std::map< char, std::string > _transform;
 };
 
 typedef Runner* RunnerPtr;

@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
         const std::string& opt_string = runner->options();
         int opt = -1;
         while ((opt = getopt(argc - 1, argv + 1, opt_string.c_str())) != -1) {
-            std::string key(1, (char)opt);
+            std::string key = runner->transform((char)opt);
             if (optarg == NULL) {
                 cmd.put(key, NULL);
             } else {

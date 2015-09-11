@@ -25,6 +25,8 @@ public:
         BOOST_ASSERT(K > 0);
         BOOST_ASSERT(K <= _read_cutoff);
         BOOST_ASSERT(0 < _percent && _percent <= 1.0);
+        
+        LOG4CXX_DEBUG(logger, boost::format("buckets=[%d],avg_quality=[%lf],min_quality=[%lf],percent=[%lf],read_cutoff=[%d],do_reversed=[%d]") % n % avg_quality % min_quality % percent % read_cutoff % do_reversed);
     }
 
     bool read(std::istream& stream) {
@@ -41,7 +43,7 @@ public:
         while (reader.read(read)) {
             LOG4CXX_TRACE(logger, boost::format("read: %s") % read.seq);
 
-            if (read.seq.length() >= K) {
+            if (read.seq.length() >= Kmer< K >::length()) {
                 addRead(read);
                 if (_do_reversed) {
                     // pair-end
@@ -90,16 +92,18 @@ public:
 
 private:
     void addRead(const DNASeq& read) {
-        Kmer< K > kmer(read.seq, 0, K);
-        if (isValid(read, 0, K)) {
+        size_t L = Kmer< K >::length();
+
+        Kmer< K > kmer(read.seq, 0, L);
+        if (isValid(read, 0, L)) {
             _hash_tbl[kmer]++;
         }
 
         LOG4CXX_TRACE(logger, boost::format("kmer: %s") % kmer);
 
-        for (size_t i = 1,j = K; j < read.seq.length(); ++i,++j) {
+        for (size_t i = 1,j = L; j < read.seq.length(); ++i,++j) {
             kmer.shift(read.seq[j]);
-            if (isValid(read, i, j)) {
+            if (isValid(read, i, j + 1)) {
                 _hash_tbl[kmer]++;
             }
 

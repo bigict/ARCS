@@ -80,6 +80,8 @@ bool DNASeqReader::read(DNASeq& sequence) {
         std::string buf;
 
         while (std::getline(_stream, buf)) {
+            boost::algorithm::trim(buf);
+            if (buf.empty()) continue;
             if (state == kName) {
                 if (boost::algorithm::starts_with(buf, "@")) {
                     sequence.name = buf.substr(1);
