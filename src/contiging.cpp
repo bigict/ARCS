@@ -71,6 +71,12 @@ int Contiging::run(const Properties& options) {
 
     // input & output opened
     std::istream* is = &std::cin;
+    if (options.find("i") != options.not_found()) {
+        std::string file = options.get< std::string >("i");
+        is = new std::ifstream(file.c_str());
+
+        LOG4CXX_DEBUG(logger, boost::format("input: %s") % file);
+    }
     if (is == &std::cin) {
         std::cin.sync_with_stdio(false);
     }
