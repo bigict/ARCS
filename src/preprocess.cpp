@@ -159,7 +159,7 @@ int Preprocess::run(const Properties& options) {
 }
 
 Preprocess::Preprocess() : Runner("c:s:K:n:i:o:E:h", boost::assign::map_list_of('E', "READ_LENGTH_CUTOFF")) {
-    RUNNER_INSTALL("preprocess", this);
+    RUNNER_INSTALL("preprocess", this, "preprocess");
 }
 
 int Preprocess::printHelps() const {

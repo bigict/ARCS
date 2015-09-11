@@ -14,13 +14,12 @@ static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.main"));
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        return 1;
+        return RunnerManager::get()->help();
     }
 
     RunnerPtr runner = RunnerManager::get()->create(argv[1]);
     if (!runner) {
-        std::cerr << ":-(" << std::endl;
-        return 1;
+        return RunnerManager::get()->help();
     }
 
     Properties options;

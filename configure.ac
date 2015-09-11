@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([ARCS], [0.91], [BUG-REPORT-ADDRESS])
+AC_INIT([arcs], [0.91], [bdb@ict.ac.cn])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([-Wall -Werror])
@@ -34,6 +34,7 @@ AC_FUNC_MALLOC
 AC_CHECK_FUNCS([memset pow sqrt])
 
 AC_CONFIG_FILES([Makefile
+                 m4/Makefile
                  src/Makefile
                  src/contiging/Makefile
                  src/divideLP/Makefile

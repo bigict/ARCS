@@ -117,7 +117,7 @@ int Contiging::run(const Properties& options) {
 }
 
 Contiging::Contiging() : Runner("c:s:K:i:d:h") {
-    RUNNER_INSTALL("contiging", this);
+    RUNNER_INSTALL("contiging", this, "contigs");
 }
 
 int Contiging::printHelps() const {
