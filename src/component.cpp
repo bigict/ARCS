@@ -12,14 +12,14 @@
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("scaffolding.component"));
 
-void Component::length(const ContigList& contigs) {
+void Component::length(size_t K, const ContigList& contig_list) {
     _length = 0;
     if (!contigs.empty()) {
-        _length = contigs[_contig_id[0]].seq.length() + 1;//can change
-        for (size_t i = 1; i < _contig_id.size(); ++i) {
-            _length += _gap[i - 1];
-            BOOST_ASSERT(contigs[_contig_id[i]].seq.size() >= _K - 1);
-            _length += contigs[_contig_id[i]].seq.size() - _K + 1;
+        _length = contig_list[contigs[0]].seq.length() + 1;//can change
+        for (size_t i = 1; i < contig_list.size(); ++i) {
+            _length += gaps[i - 1];
+            BOOST_ASSERT(contig_list[contigs[i]].seq.size() >= K - 1);
+            _length += contig_list[contigs[i]].seq.size() - K + 1;
         }
     }
 }
@@ -34,8 +34,8 @@ bool ComponentReader::read(Component& component) {
     static boost::regex reg(">component[ \t]+(\\d+)");
 
     if (_stream) {
-        component._contig_id.clear();
-        component._gap.clear();
+        component.contigs.clear();
+        component.gaps.clear();
 
         int state = eStart;
         std::string buf;
@@ -54,17 +54,17 @@ bool ComponentReader::read(Component& component) {
             } else if (state == eId) {
                 boost::tokenizer< boost::char_separator< char > > toker(buf, sep);
                 BOOST_FOREACH(const std::string& id, toker)  {
-                    component._contig_id.push_back( boost::lexical_cast< size_t > (id));
+                    component.contigs.push_back( boost::lexical_cast< size_t > (id));
                 }
                 state = eGap;
             } else if (state == eGap) {
                 boost::tokenizer< boost::char_separator< char > > toker(buf, sep);
                 BOOST_FOREACH(const std::string& gap, toker)  {
-                    component._gap.push_back( boost::lexical_cast< long > (gap));
+                    component.gaps.push_back( boost::lexical_cast< long > (gap));
                 }
 
-                component._gap.push_back(0);//finall contige 
-                if (component._contig_id.size() == component._gap.size()) {
+                component.gaps.push_back(0);//finall contige 
+                if (component.contigs.size() == component.gaps.size()) {
                     state = eStart; 
                     return true;
                 } else {
@@ -79,12 +79,12 @@ bool ComponentReader::read(Component& component) {
 
 std::ostream& operator<<(std::ostream& os, const Component& component) {
     os << "len:" << component._length << std::endl;
-    for (size_t i=0; i<component._contig_id.size(); ++i) {
-        os << component._contig_id[i] << "\t";
+    for (size_t i=0; i<component.contigs.size(); ++i) {
+        os << component.contigs[i] << "\t";
     }
     os << std::endl;
-    for (size_t i=0; i<component._gap.size(); ++i) {
-        os << component._gap[i] << "\t";
+    for (size_t i=0; i<component.gaps.size(); ++i) {
+        os << component.gaps[i] << "\t";
     }
     return os;
 }
@@ -93,9 +93,9 @@ bool ReadComponents(std::istream& stream, const ContigList& contigs, size_t K, C
     LOG4CXX_DEBUG(logger, boost::format("read component from stream begin"));
 
     ComponentReader reader(stream);
-    Component component(K);
+    Component component;
     while (reader.read(component)) {
-        component.length(contigs);
+        component.length(K, contigs);
         components.push_back(component);
     }
 

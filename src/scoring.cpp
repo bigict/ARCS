@@ -1,4 +1,4 @@
-#include "remove_repeats.h"
+#include "scoring.h"
 #include "uniq_edge_graph.h"
 
 #include <iostream>
@@ -12,10 +12,10 @@
 
 #include <log4cxx/logger.h>
 
-static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.RepeatRemover"));
-RepeatRemover RepeatRemover::_runner;
+static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.Scoring"));
+Scoring Scoring::_runner;
 
-int RepeatRemover::run(const Properties& options) {
+int Scoring::run(const Properties& options) {
     int r = 0;
 
     if ((r = checkOptions(options)) != 0) {
@@ -28,7 +28,7 @@ int RepeatRemover::run(const Properties& options) {
     }
 
 
-    LOG4CXX_DEBUG(logger, "remove_repeats begin");
+    LOG4CXX_DEBUG(logger, "scoring begin");
 
     size_t K = options.get< size_t >("K");
     size_t ITERATION = options.get< size_t >("ITERATION");
@@ -68,20 +68,20 @@ int RepeatRemover::run(const Properties& options) {
         graph.linearize(stream);
     }
 
-    LOG4CXX_DEBUG(logger, "remove_repeats end");
+    LOG4CXX_DEBUG(logger, "scoring end");
     return 0;
 }
 
-RepeatRemover::RepeatRemover() : Runner("c:s:K:d:O:i:h", boost::assign::map_list_of('O', "MAX_OVERLAP")('i', "ITERATION")) {
-    RUNNER_INSTALL("remove_repeats", this, "remove_repeats");
+Scoring::Scoring() : Runner("c:s:K:d:O:i:h", boost::assign::map_list_of('O', "MAX_OVERLAP")('i', "ITERATION")) {
+    RUNNER_INSTALL("scoring", this, "scoring");
 }
 
-int RepeatRemover::printHelps() const {
-    std::cout << "arcs remove_repeats -K [kmer] -O [max overlap] -i [iteration] -d [workdir]" << std::endl;
+int Scoring::printHelps() const {
+    std::cout << "arcs scoring -K [kmer] -O [max overlap] -i [iteration] -d [workdir]" << std::endl;
     return 256;
 }
 
-int RepeatRemover::checkOptions(const Properties& options) const {
+int Scoring::checkOptions(const Properties& options) const {
     if (options.find("h") != options.not_found()) {
         return printHelps();
     }

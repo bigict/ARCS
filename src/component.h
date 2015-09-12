@@ -9,7 +9,7 @@
 
 class Component {
 public:
-    explicit Component(size_t K) : _K(K), _length(0) {
+    Component() : _length(0) {
     }
     virtual ~Component() {
     }
@@ -17,17 +17,15 @@ public:
     size_t length() const {
         return _length;
     } 
-    void length(const ContigList& contigs);
-    
-    std::vector< size_t > _contig_id;
-    std::vector< long > _gap;
+    void length(size_t K, const ContigList& contigs);
+
+    std::vector< size_t > contigs;
+    std::vector< long > gaps;
 
 private:
-    friend class ComponentReader;
     friend std::ostream& operator<<(std::ostream& os, const Component& component) ;
 
     size_t _length;
-    size_t _K;
 };
 
 typedef std::vector< Component > ComponentList;
