@@ -5,7 +5,7 @@
 
 class RepeatRemover : public Runner {
 public:
-    int run(const Properties& options);
+    int run(const Properties& options, const Arguments& arguments);
 
 private:
     RepeatRemover();

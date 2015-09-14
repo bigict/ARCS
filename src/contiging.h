@@ -5,7 +5,7 @@
 
 class Contiging : public Runner {
 public:
-    int run(const Properties& options);
+    int run(const Properties& options, const Arguments& arguments);
 
 private:
     Contiging();

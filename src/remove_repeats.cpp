@@ -15,7 +15,7 @@
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.RepeatRemover"));
 RepeatRemover RepeatRemover::_runner;
 
-int RepeatRemover::run(const Properties& options) {
+int RepeatRemover::run(const Properties& options, const Arguments& arguments) {
     int r = 0;
 
     if ((r = checkOptions(options)) != 0) {

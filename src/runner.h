@@ -7,11 +7,13 @@
 #include <string>
 #include <tr1/memory>
 #include <tr1/tuple>
+#include <vector>
 
 #include <boost/format.hpp>
 #include <boost/property_tree/ptree.hpp>
 
 typedef boost::property_tree::ptree Properties;
+typedef std::vector< std::string > Arguments;
 
 class Runner {
 public:
@@ -25,7 +27,7 @@ public:
         }
         return std::string(1, key);
     }
-    virtual int run(const Properties& options) = 0;
+    virtual int run(const Properties& options, const Arguments& arguments) = 0;
 protected:
     Runner(const std::string& options = "", const std::map< char, std::string >& table=std::map< char, std::string >()) : _options(options), _transform(table) {
     }
@@ -71,13 +73,29 @@ public:
     }
 
     int help() const {
-        std::cout << boost::format("%s version %s, bugreport %s") % PACKAGE_NAME % PACKAGE_VERSION % PACKAGE_BUGREPORT << std::endl;
+        std::cout << boost::format("%s version %s, report bugs to %s") % PACKAGE_NAME % PACKAGE_VERSION % PACKAGE_BUGREPORT << std::endl;
         std::cout << boost::format("usage: %s <command> [<args>]") % PACKAGE_NAME << std::endl;
         std::cout << std::endl;
         std::cout << boost::format("The most commonly used %s commands are:") % PACKAGE_NAME << std::endl;
-        for (RunnerList::const_iterator i = _runners.begin(); i != _runners.end(); ++i) {
-            std::cout << boost::format("   %s\t%s") % i->first % std::tr1::get< 1 >(i->second) << std::endl;
+
+        {
+            size_t max_name_length = 2;
+            {
+                std::vector< size_t > name_length;
+                for (RunnerList::const_iterator i = _runners.begin(); i != _runners.end(); ++i) {
+                    name_length.push_back(i->first.length());
+                }
+                if (!name_length.empty()) {
+                    max_name_length += *std::max_element(name_length.begin(), name_length.end());
+                }
+            }
+            for (RunnerList::const_iterator i = _runners.begin(); i != _runners.end(); ++i) {
+                std::string cmd(i->first);
+                cmd.resize(max_name_length, ' ');
+                std::cout << boost::format("   %s%s") % cmd % std::tr1::get< 1 >(i->second) << std::endl;
+            }
         }
+
         std::cout << std::endl;
         std::cout << boost::format("See '%s <command> -h' to read about a specific subcommand.") % PACKAGE_NAME << std::endl;
         return 256;

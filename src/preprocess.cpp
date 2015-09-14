@@ -3,6 +3,7 @@
 
 #include <iostream>
 
+#include <boost/algorithm/string.hpp>
 #include <boost/assign.hpp>
 #include <boost/format.hpp>
 
@@ -87,7 +88,7 @@ int _Preprocess_run_(size_t L, size_t buckets, double avg_quality, double min_qu
     return 0;
 }
 
-int Preprocess::run(const Properties& options) {
+int Preprocess::run(const Properties& options, const Arguments& arguments) {
     int r = 0;
 
     if ((r = checkOptions(options)) != 0) {
@@ -100,17 +101,23 @@ int Preprocess::run(const Properties& options) {
     size_t K = options.get< size_t >("K", 31);
     size_t buckets = options.get< size_t >("n", 0);
     double avg_quality = 0, min_quality = 0, percent = 1.0;
-    if (options.find("E") != options.not_found() && options.find("i") != options.not_found()) {
+    std::vector< std::string > filelist;
+    {
+        std::string input = options.get< std::string >("i", "");
+        boost::algorithm::split(filelist, input, boost::algorithm::is_any_of(":"));
+        std::cout << boost::algorithm::join(filelist, "$")<< std::endl;
+    }
+    if (options.find("E") != options.not_found() && !filelist.empty()) {
         ReadQuality statistics;
-        //avg_quality = statistics.threshold(filelist, &min_quality);
-        //percent = 0.95;
+        avg_quality = statistics.threshold(filelist, &min_quality);
+        percent = 0.95;
     }
     size_t read_cutoff = options.get< size_t >("READ_LENGTH_CUTOFF", -1);
     bool do_reverse = options.find("S") == options.not_found();
 
     // input & output opened
     std::istream* is = &std::cin;
-    if (options.find("i") != options.not_found()) {
+    if (false) {
         std::string file = options.get< std::string >("i");
         is = new std::ifstream(file.c_str());
 

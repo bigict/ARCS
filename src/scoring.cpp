@@ -15,7 +15,7 @@
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.Scoring"));
 Scoring Scoring::_runner;
 
-int Scoring::run(const Properties& options) {
+int Scoring::run(const Properties& options, const Arguments& arguments) {
     int r = 0;
 
     if ((r = checkOptions(options)) != 0) {

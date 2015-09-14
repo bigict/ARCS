@@ -173,7 +173,7 @@ void Graph_divide(Graph& graph, GraphList& components) {
 }
  
 
-int LPDivider::run(const Properties& options) {
+int LPDivider::run(const Properties& options, const Arguments& arguments) {
     int r = 0;
 
     if ((r = checkOptions(options)) != 0) {

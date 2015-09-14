@@ -211,7 +211,7 @@ int _Scaffolding_run_(size_t L, const Properties& options) {
     return 0;
 }
 
-int Scaffolding::run(const Properties& options) {
+int Scaffolding::run(const Properties& options, const Arguments& arguments) {
     int r = 0;
 
     if ((r = checkOptions(options)) != 0) {

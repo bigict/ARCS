@@ -64,7 +64,7 @@ int _Contiging_run_(size_t L, size_t loops, std::istream& is, const std::string&
     return 0;
 }
 
-int Contiging::run(const Properties& options) {
+int Contiging::run(const Properties& options, const Arguments& arguments) {
     int r = 0;
 
     if ((r = checkOptions(options)) != 0) {

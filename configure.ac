@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([arcs], [0.91], [bdb@ict.ac.cn])
+AC_INIT([arcs], [0.92], [bdb@ict.ac.cn])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([-Wall -Werror])
@@ -35,12 +35,6 @@ AC_CHECK_FUNCS([memset pow sqrt])
 
 AC_CONFIG_FILES([Makefile
                  m4/Makefile
-                 src/Makefile
-                 src/contiging/Makefile
-                 src/divideLP/Makefile
-                 src/gap_filling/Makefile
-                 src/remove_repeats/Makefile
-                 src/scaffolding/Makefile
-                 src/scoring/Makefile])
+                 src/Makefile])
 AC_CONFIG_SUBDIRS()
 AC_OUTPUT

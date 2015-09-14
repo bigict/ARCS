@@ -33,7 +33,11 @@ int main(int argc, char* argv[]) {
             if (optarg == NULL) {
                 cmd.put(key, NULL);
             } else {
-                cmd.put(key, optarg);
+                std::string val = optarg;
+                if (cmd.find(key) != cmd.not_found()) {
+                    val = boost::str(boost::format("%s:%s") % cmd.get< std::string >(key) % val);
+                }
+                cmd.put(key, val);
             }
         }
 
@@ -62,5 +66,11 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    return runner->run(options);
+    Arguments arguments;
+    for (int i = optind; i < argc; ++i) {
+        arguments.push_back(argv[i]);
+    }
+    //std::copy(argv, optind, argc, std::back_inserter(arguments));
+
+    return runner->run(options, arguments);
 }
