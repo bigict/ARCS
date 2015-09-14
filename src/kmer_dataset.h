@@ -96,7 +96,13 @@ private:
 
         Kmer< K > kmer(read.seq, 0, L);
         if (isValid(read, 0, L)) {
-            _hash_tbl[kmer]++;
+            //_hash_tbl[kmer]++;
+            typename KmerList::iterator k = _hash_tbl.find(kmer);
+            if (k != _hash_tbl.end()) {
+                ++k->second;
+            } else {
+                _hash_tbl.insert(std::make_pair(kmer, 1));
+            }
         }
 
         LOG4CXX_TRACE(logger, boost::format("kmer: %s") % kmer);
@@ -104,7 +110,13 @@ private:
         for (size_t i = 1,j = L; j < read.seq.length(); ++i,++j) {
             kmer.shift(read.seq[j]);
             if (isValid(read, i, j + 1)) {
-                _hash_tbl[kmer]++;
+                //_hash_tbl[kmer]++;
+                typename KmerList::iterator k = _hash_tbl.find(kmer);
+                if (k != _hash_tbl.end()) {
+                    ++k->second;
+                } else {
+                    _hash_tbl.insert(std::make_pair(kmer, 1));
+                }
             }
 
             LOG4CXX_TRACE(logger, boost::format("kmer: %s") % kmer);

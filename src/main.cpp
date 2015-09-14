@@ -8,6 +8,7 @@
 #include <log4cxx/basicconfigurator.h>
 #include <log4cxx/propertyconfigurator.h>
 
+#include "constant.h"
 #include "runner.h"
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.main"));
@@ -42,7 +43,7 @@ int main(int argc, char* argv[]) {
         }
 
         // config log4cxx.
-        const std::string log_config = cmd.get< std::string >("c", "log4cxx.properties");
+        const std::string log_config = cmd.get< std::string >("c", kLogConfig);
         if (boost::filesystem::exists(log_config)) {
             log4cxx::PropertyConfigurator::configure(log_config);
         } else {

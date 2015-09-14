@@ -7,6 +7,8 @@ arcs_SOURCES=arff.cpp \
             contiging.h \
             contigs.cpp \
             contigs.h \
+            constant.cpp \
+            constant.h \
             debruijn_graph.h \
             gap_filling.cpp \
             gap_filling.h \

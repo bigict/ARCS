@@ -72,12 +72,12 @@ int GapFilling::run(const Properties& options, const Arguments& arguments) {
     return 0;
 }
 
-GapFilling::GapFilling() : Runner("c:s:K:d:O:i:h", boost::assign::map_list_of('O', "MAX_OVERLAP")('i', "ITERATION")) {
+GapFilling::GapFilling() : Runner("c:s:d:K:O:C:i:l:h", boost::assign::map_list_of('O', "MAX_OVERLAP")('i', "ITERATION")) {
     RUNNER_INSTALL("gap_filling", this, "gap_filling");
 }
 
 int GapFilling::printHelps() const {
-    std::cout << "arcs gap_filling -K [kmer] -O [max overlap] -i [iteration] -d [workdir]" << std::endl;
+    std::cout << "arcs gap_filling -K [kmer] -O [overlpa_for_me] -C [condensed_contig_file_name] -i [initial_contig_file_name] -l [line_component_file]" << std::endl;
     return 256;
 }
 

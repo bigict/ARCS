@@ -1,4 +1,5 @@
 #include "preprocess.h"
+#include "constant.h"
 #include "kmer_dataset.h"
 
 #include <iostream>
@@ -76,16 +77,57 @@ private:
 };
 
 template< size_t K >
-int _Preprocess_run_(size_t L, size_t buckets, double avg_quality, double min_quality, double percent, size_t read_cutoff, bool do_reverse, std::istream& is, std::ostream& os) {
+int _Preprocess_run_(size_t L, const Properties& options, const Arguments& arguments) {
+    size_t r = 0;
+
     Kmer< K >::length(L); // IMPORTANT: set kmer length
+
+    // parameters
+    size_t buckets = options.get< size_t >("n", 0);
+    double avg_quality = 0, min_quality = 0, percent = 1.0;
+    std::vector< std::string > filelist;
+    {
+        std::string file = options.get< std::string >("i", "");
+        boost::algorithm::split(filelist, file, boost::algorithm::is_any_of(":"));
+        LOG4CXX_DEBUG(logger, boost::format("input: %s") % file);
+    }
+    if (options.find("E") != options.not_found() && !filelist.empty()) {
+        ReadQuality statistics;
+        avg_quality = statistics.threshold(filelist, &min_quality);
+        percent = 0.95;
+    }
+    size_t read_cutoff = options.get< size_t >("READ_LENGTH_CUTOFF", -1);
+    bool do_reverse = options.find("S") == options.not_found();
+
+    LOG4CXX_DEBUG(logger, boost::format("parameters: K=[%d], buckets=[%d], avg_quality=[%lf],min_quality=[%lf],read_cutoff=[%d],do_reverse=[%d]") % L % buckets % avg_quality % min_quality % read_cutoff % do_reverse);
+
+    // construct dataset
     KmerDataSet< K > tbl(buckets, avg_quality, min_quality, percent, read_cutoff, do_reverse);
-    if (!tbl.read(is)) {
-        return 1;
+
+    // read
+    if (r == 0){
+        if (!filelist.empty()) {
+            r = tbl.read(filelist) ? 0 : 1;
+        } else {
+            std::cin.sync_with_stdio(false);
+            r = tbl.read(std::cin) ? 0 : 1;
+        }
     }
-    if (!tbl.write(os)) {
-        return 1;
+    LOG4CXX_DEBUG(logger, boost::format("table=[%d]") % tbl.size());
+    // write
+    if (r == 0) {
+        if (options.find("o") != options.not_found()) {
+            std::string file = options.get< std::string >("o");
+            std::ofstream stream(file.c_str());
+            r = tbl.write(stream) ? 0 : 1;
+
+            LOG4CXX_DEBUG(logger, boost::format("output: %s") % file);
+        } else {
+            r = tbl.write(std::cout) ? 0 : 1;
+        }
     }
-    return 0;
+
+    return r;
 }
 
 int Preprocess::run(const Properties& options, const Arguments& arguments) {
@@ -98,79 +140,35 @@ int Preprocess::run(const Properties& options, const Arguments& arguments) {
     LOG4CXX_DEBUG(logger, "preprocess reads begin");
 
     // parameters
-    size_t K = options.get< size_t >("K", 31);
-    size_t buckets = options.get< size_t >("n", 0);
-    double avg_quality = 0, min_quality = 0, percent = 1.0;
-    std::vector< std::string > filelist;
-    {
-        std::string input = options.get< std::string >("i", "");
-        boost::algorithm::split(filelist, input, boost::algorithm::is_any_of(":"));
-        std::cout << boost::algorithm::join(filelist, "$")<< std::endl;
-    }
-    if (options.find("E") != options.not_found() && !filelist.empty()) {
-        ReadQuality statistics;
-        avg_quality = statistics.threshold(filelist, &min_quality);
-        percent = 0.95;
-    }
-    size_t read_cutoff = options.get< size_t >("READ_LENGTH_CUTOFF", -1);
-    bool do_reverse = options.find("S") == options.not_found();
-
-    // input & output opened
-    std::istream* is = &std::cin;
-    if (false) {
-        std::string file = options.get< std::string >("i");
-        is = new std::ifstream(file.c_str());
-
-        LOG4CXX_DEBUG(logger, boost::format("input: %s") % file);
-    }
-    if (is == &std::cin) {
-        std::cin.sync_with_stdio(false);
-    }
-    std::ostream* os = &std::cout;
-    if (options.find("o") != options.not_found()) {
-        std::string file = options.get< std::string >("o");
-        os = new std::ofstream(file.c_str());
-
-        LOG4CXX_DEBUG(logger, boost::format("output: %s") % file);
-    }
-
-    LOG4CXX_DEBUG(logger, boost::format("parameters: K=[%d], buckets=[%d], avg_quality=[%lf],min_quality=[%lf],read_cutoff=[%d],do_reverse=[%d]") % K % buckets % avg_quality % min_quality % read_cutoff % do_reverse);
+    size_t K = options.get< size_t >("K", kKmerSize);
 
     // process
     if (0 < K && K <= 32) {
-        r = _Preprocess_run_< 32 >(K, buckets, avg_quality, min_quality, percent, read_cutoff, do_reverse, *is, *os);
+        r = _Preprocess_run_< 32 >(K, options, arguments);
     } else if (32 < K && K <= 64) {
-        r = _Preprocess_run_< 64 >(K, buckets, avg_quality, min_quality, percent, read_cutoff, do_reverse, *is, *os);
+        r = _Preprocess_run_< 64 >(K, options, arguments);
     } else if (64 < K && K <= 96) {
-        r = _Preprocess_run_< 64 >(K, buckets, avg_quality, min_quality, percent, read_cutoff, do_reverse, *is, *os);
+        r = _Preprocess_run_< 96 >(K, options, arguments);
     } else if (96 < K && K <= 128) {
-        r = _Preprocess_run_< 128 >(K, buckets, avg_quality, min_quality, percent, read_cutoff, do_reverse, *is, *os);
+        r = _Preprocess_run_<128 >(K, options, arguments);
     } else if (96 < K && K <= 160) {
-        r = _Preprocess_run_< 160 >(K, buckets, avg_quality, min_quality, percent, read_cutoff, do_reverse, *is, *os);
+        r = _Preprocess_run_<169 >(K, options, arguments);
     } else if (160 < K && K <= 192) {
-        r = _Preprocess_run_< 192 >(K, buckets, avg_quality, min_quality, percent, read_cutoff, do_reverse, *is, *os);
+        r = _Preprocess_run_<192 >(K, options, arguments);
     } else {
         r = 1;
-    }
-
-    // input & output closed
-    if (os != &std::cout) {
-        delete os;
-    }
-    if (is != &std::cin) {
-        delete is;
     }
 
     LOG4CXX_DEBUG(logger, "preprocess reads end");
     return r;
 }
 
-Preprocess::Preprocess() : Runner("c:s:K:n:i:o:E:h", boost::assign::map_list_of('E', "READ_LENGTH_CUTOFF")) {
+Preprocess::Preprocess() : Runner("c:s:K:n:d:i:o:E:h", boost::assign::map_list_of('E', "READ_LENGTH_CUTOFF")) {
     RUNNER_INSTALL("preprocess", this, "preprocess");
 }
 
 int Preprocess::printHelps() const {
-    std::cout << "arcs preprocess -K [kmer] -i [input] -o [output] -E [read_cutoff] -n [buckets]" << std::endl;
+    std::cout << "arcs preprocess -K [kmer] -i [input] -o [output] -E [read_cutoff] -n [buckets] [<inputs>]" << std::endl;
     return 256;
 }
 
