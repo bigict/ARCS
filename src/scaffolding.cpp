@@ -140,7 +140,7 @@ int _Scaffolding_run_(size_t L, const Properties& options, const Arguments& argu
         KmerTable< K, KmerPosition > hash_tbl;
         BuildKmerTable_insertsize< K >(L, INSERT_SIZE, contigs, components, hash_tbl);
 
-        InsertSizeEstimater< K > estimater(K, INSERT_SIZE, pair_reads, hash_tbl);
+        InsertSizeEstimater< K > estimater(L, INSERT_SIZE, pair_reads, hash_tbl);
         estimater.estimate(&INSERT_SIZE, &DELTA);
     }
     LOG4CXX_INFO(logger, boost::format("INSERT_SIZE=[%d], DELTA=[%f]") % INSERT_SIZE % DELTA);
