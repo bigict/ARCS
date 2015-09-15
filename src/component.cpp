@@ -16,7 +16,7 @@ void Component::length(size_t K, const ContigList& contig_list) {
     _length = 0;
     if (!contigs.empty()) {
         _length = contig_list[contigs[0]].seq.length() + 1;//can change
-        for (size_t i = 1; i < contig_list.size(); ++i) {
+        for (size_t i = 1; i < contigs.size(); ++i) {
             _length += gaps[i - 1];
             BOOST_ASSERT(contig_list[contigs[i]].seq.size() >= K - 1);
             _length += contig_list[contigs[i]].seq.size() - K + 1;
