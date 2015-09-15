@@ -11,7 +11,7 @@
 
 #include <log4cxx/logger.h>
 
-static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("contiging.kseq"));
+static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.DNASeq"));
 
 void make_complement_dna(std::string& sequence) {
     static std::map< char, char > mapping = boost::assign::map_list_of

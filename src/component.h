@@ -23,8 +23,10 @@ public:
     }
 
     size_t id;
-    std::vector< size_t > contigs;
-    std::vector< long > gaps;
+    typedef std::vector< size_t > ContigIdList;
+    ContigIdList contigs;
+    typedef std::vector< long > GapList;
+    GapList gaps;
 
 private:
     friend std::ostream& operator<<(std::ostream& os, const Component& component) ;

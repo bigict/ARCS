@@ -10,7 +10,7 @@
 
 #include <log4cxx/logger.h>
 
-static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("scaffolding.component"));
+static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.Component"));
 
 void Component::length(size_t K, const ContigList& contig_list) {
     _length = 0;

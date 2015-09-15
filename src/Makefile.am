@@ -9,7 +9,11 @@ arcs_SOURCES=arff.cpp \
             contigs.h \
             constant.cpp \
             constant.h \
+            debruijn_edge.cpp \
+            debruijn_edge.h \
             debruijn_graph.h \
+            Gap_Filling.cpp \
+            Gap_Filling.h \
             gap_filling.cpp \
             gap_filling.h \
             gapped_fragment_graph.cpp \

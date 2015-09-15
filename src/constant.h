@@ -8,6 +8,9 @@ extern const char* kLogConfig;
 extern const char* kWorkDir;
 extern const size_t kKmerSize;
 
+// preprocess
+extern const size_t kBuckets;
+
 // gap_filling
 extern const int MAX_MERGE_GAP;
 extern const int MIN_EDGE_COUNT_FOR_TRAINING;

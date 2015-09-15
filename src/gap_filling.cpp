@@ -1,12 +1,12 @@
 #include "gap_filling.h"
-#include "uniq_edge_graph.h"
+#include "Gap_Filling.h"
+#include "constant.h"
 
-#include <iostream>
-#include <tr1/tuple>
+#include <string>
+#include <sstream>
 
 #include <boost/assign.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
+#include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 
@@ -15,69 +15,100 @@
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.GapFilling"));
 GapFilling GapFilling::_runner;
 
+extern int EXTEND;
+extern int STEP;
+extern int K;
+extern int overlap;
+extern int MU;
+extern int var;
+
+int EXTEND = -1;
+int STEP = -1;
+int K = -1;
+int overlap = -1;
+int MU = -1;
+int var = -1;
+
 int GapFilling::run(const Properties& options, const Arguments& arguments) {
     int r = 0;
-
     if ((r = checkOptions(options)) != 0) {
         return r;
     }
-    boost::filesystem::path workdir(options.get< std::string >("d", "."));
-    if (!boost::filesystem::exists(workdir) && !boost::filesystem::create_directory(workdir)) {
-        LOG4CXX_ERROR(logger, boost::format("failed to create directory: %s") % workdir);
-        return 1;
-    }
-
-
     LOG4CXX_DEBUG(logger, "gap_filling begin");
+		
+    std::string initial_contig_file_name;
+    std::string scaffold_file_name;
+    std::string condensed_contig_file_name;
+    std::string work_dir;
+    K = options.get< size_t >("K", kKmerSize);
+    work_dir = options.get< std::string >("d", ".");
+    if (options.find("MAX_OVERLAP") != options.not_found()) {
+        overlap = options.get< size_t >("MAX_OVERLAP");
+    }
+    if (options.find("C") != options.not_found()) {
+        condensed_contig_file_name = options.get< std::string >("C");
+    }
+    if (options.find("l") != options.not_found()) {
+        scaffold_file_name = options.get< std::string >("l");
+    }
+    if (options.find("I") != options.not_found()) {
+        initial_contig_file_name = options.get< std::string >("I");
+    }
+	
 
-    size_t K = options.get< size_t >("K");
-    size_t ITERATION = options.get< size_t >("ITERATION");
-    size_t MAX_OVERLAP = options.get< size_t >("MAX_OVERLAP");
+	if(chdir(work_dir.c_str()))
+	{
+		cout << "No such file or directory!! Change work directory failed!!!" << endl;
+		exit(EXIT_FAILURE);
+	}
 
-    LOG4CXX_DEBUG(logger, boost::format("parameters: K=[%d],ITERATION=[%d],MAX_OVERLAP=[%d]") % K % ITERATION % MAX_OVERLAP);
+    MU = options.get< size_t >("INSERT_SIZE");
+    var = options.get< double >("DELTA");
 
-    UniqEdgeGraph graph(K, MAX_OVERLAP, ITERATION);
+	STEP = MU + 3 * var;
+	EXTEND = 200;
+	
+	Gap_Filling gf;
     // load data
     {
-        typedef bool(UniqEdgeGraph::*LoadDataPtr)(std::istream&);
-        typedef std::tr1::tuple< std::string, LoadDataPtr> File2FuncPtr;
+        typedef bool(Gap_Filling::*LoadDataPtr)(const std::string&);
+        typedef std::tr1::tuple< std::string, LoadDataPtr > File2FuncPtr;
         std::vector< File2FuncPtr > file2func_list = boost::assign::list_of
-            (std::tr1::make_tuple("edge_cluster_len_%ld", &UniqEdgeGraph::input_edge_length))
-            (std::tr1::make_tuple("edge_cluster_pos_%ld", &UniqEdgeGraph::input_edge_position))
-            (std::tr1::make_tuple("contig_arc_graph_after_remove_ambigous_arcs_%ld", &UniqEdgeGraph::input_edge_link))
-            (std::tr1::make_tuple("component_%ld", &UniqEdgeGraph::input_component))
+            (std::tr1::make_tuple(condensed_contig_file_name, &Gap_Filling::input_contigs))
+            (std::tr1::make_tuple(initial_contig_file_name, &Gap_Filling::input_debruijn))
+            (std::tr1::make_tuple(scaffold_file_name, &Gap_Filling::input_scaffold))
             ;
-
         BOOST_FOREACH(const File2FuncPtr& file2func, file2func_list) {
-            std::string file = boost::str(boost::format(std::tr1::get< 0 >(file2func)) % ITERATION);
-            boost::filesystem::ifstream stream(workdir / file);
-            if (!boost::bind(std::tr1::get< 1 >(file2func), &graph, _1)(stream)) {
+            std::string file = std::tr1::get< 0 >(file2func);
+            if (!boost::bind(std::tr1::get< 1 >(file2func), &gf, _1)(file)) {
                 LOG4CXX_ERROR(logger, boost::format("failed to load %s") % file);
                 return 2;
             }
         }
     }
-    // resolve conflicts && output
-    {
-        boost::filesystem::ofstream stream(workdir / boost::filesystem::path(
-                    boost::str(boost::format("component_%ld") % (ITERATION + 1))
-            ));
-        if (!stream) {
-            return 1;
-        }
-        graph.linearize(stream);
-    }
+
+	gf.gap_filling();
+
+    std::string fileName = boost::str(boost::format("%dmer.gap_filling_info") % K);
+    std::ofstream outfile(fileName.c_str());
+	if (!outfile)
+	{
+		cerr << "[Info] Create " << fileName << "error!!!" << endl;
+		exit(EXIT_FAILURE);
+	}
+	outfile << gf;
 
     LOG4CXX_DEBUG(logger, "gap_filling end");
+
     return 0;
 }
 
-GapFilling::GapFilling() : Runner("c:s:d:K:O:C:i:l:h", boost::assign::map_list_of('O', "MAX_OVERLAP")('i', "ITERATION")) {
+GapFilling::GapFilling() : Runner("c:s:d:K:O:C:I:l:h", boost::assign::map_list_of('O', "MAX_OVERLAP")) {
     RUNNER_INSTALL("gap_filling", this, "gap_filling");
 }
 
 int GapFilling::printHelps() const {
-    std::cout << "arcs gap_filling -K [kmer] -O [overlpa_for_me] -C [condensed_contig_file_name] -i [initial_contig_file_name] -l [line_component_file]" << std::endl;
+    std::cout << "arcs gap_filling -K [kmer] -O [overlpa_for_me] -C [condensed_contig_file_name] -I [initial_contig_file_name] -l [line_component_file]" << std::endl;
     return 256;
 }
 

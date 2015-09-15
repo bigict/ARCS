@@ -14,7 +14,7 @@
 
 #include <log4cxx/logger.h>
 
-static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("scaffolding.contig"));
+static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.ContigReader"));
 
 std::ostream& operator<<(std::ostream& os, const ContigList& contigs) {
     size_t index = 0;
