@@ -72,7 +72,7 @@ size_t BuildKmerTable_insertsize(size_t L, size_t insert_size, const ContigList&
 
     BOOST_FOREACH(const Component& component, components) {
         if (component.contigs.empty() || component.length() < 2 * insert_size) continue;
-        num += _BuildKmerTable_(K, contigs, idx, component, tbl);
+        num += _BuildKmerTable_< K >(L, contigs, idx, component, tbl);
         ++idx;
     }
 
@@ -81,7 +81,18 @@ size_t BuildKmerTable_insertsize(size_t L, size_t insert_size, const ContigList&
 
 template< size_t K >
 size_t BuildKmerTable_pairends(size_t L, size_t insert_size, size_t edge_cutoff, const ContigList& contigs, const ComponentList& components, KmerTable< K, KmerPosition >& tbl) {
-    return 0;
+    size_t idx = 0, num = 0;
+
+    BOOST_FOREACH(const Component& component, components) {
+        if (component.contigs.empty() || (component.contigs.size() == 1 && contigs[component.contigs[0]].seq.length() < edge_cutoff)) {
+            ++idx;
+            continue;
+        }
+        num += _BuildKmerTable_< K >(L, insert_size, contigs, idx, component, tbl);
+        ++idx;
+    }
+
+    return num;
 }
 
 template< size_t K >
