@@ -46,7 +46,7 @@ bool ComponentReader::read(Component& component) {
                 boost::smatch what;
                 if (boost::regex_match(buf, what, reg)) {
                     state = eId;
-                    // component.id = boost::lexical_cast< size_t >(what[1]);
+                    component.id = boost::lexical_cast< size_t >(what[1]);
                 } else {
                     LOG4CXX_WARN(logger, boost::format("fa=>invalid line for not start with >: %s") % buf);
                     return false;

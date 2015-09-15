@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import sys
+import os,sys
 from itertools import ifilter,imap
 import string
 
@@ -24,7 +24,7 @@ def Worker_read(f):
             print>>sys.stderr, 'invalid line: %s' % (line)
 
 def Worker_run(config, contig, component):
-    config_file, component_file = file(contig, 'wb'), file(component, 'wb')
+    config_file, component_file = file(os.path.join(config['workdir'], contig), 'wb'), file(os.path.join(config['workdir'], component), 'wb')
 
     contig_index, component_index, edge_index = 0, 0, 0
     for _, _, seq, coverage in Worker_read(sys.stdin):
@@ -51,12 +51,14 @@ USAGE = '%s -p [contig_parameter_file] [output_fasta_file] [component0]'
 if __name__ == '__main__':
     import getopt
 
-    config = {}
-    opts, args = getopt.getopt(sys.argv[1:], "p:h")
+    config = {'workdir': '.'}
+    opts, args = getopt.getopt(sys.argv[1:], "i:p:d:h")
     for o, a in opts:
         if o == '-h':
             print USAGE % (sys.argv[0])
             sys.exit(1)
+        elif o == '-d':
+            config['workdir'] = a
         elif o == '-p':
             with file(a) as f:
                 for line in ifilter(lambda x: len(x) > 0 and not x.startswith('#'), imap(string.strip, f)):

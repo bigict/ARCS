@@ -9,7 +9,7 @@
 
 class Component {
 public:
-    Component() : _length(0) {
+    Component() : id(-1), _length(0) {
     }
     virtual ~Component() {
     }
@@ -18,7 +18,11 @@ public:
         return _length;
     } 
     void length(size_t K, const ContigList& contigs);
+    size_t edge_num() const {
+        return contigs.size();
+    }
 
+    size_t id;
     std::vector< size_t > contigs;
     std::vector< long > gaps;
 

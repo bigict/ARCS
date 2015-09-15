@@ -93,7 +93,7 @@ private:
 };
 
 template< size_t K >
-int _Scaffolding_run_(size_t L, const Properties& options) {
+int _Scaffolding_run_(size_t L, const Properties& options, const Arguments& arguments) {
     // check root dir
     boost::filesystem::path workdir(options.get< std::string >("d", "."));
     if (!boost::filesystem::exists(workdir) && !boost::filesystem::create_directory(workdir)) {
@@ -224,17 +224,17 @@ int Scaffolding::run(const Properties& options, const Arguments& arguments) {
 
     // process
     if (0 < K && K <= 32) {
-        r = _Scaffolding_run_< 32 >(K, options);
+        r = _Scaffolding_run_< 32 >(K, options, arguments);
     } else if (32 < K && K <= 64) {
-        r = _Scaffolding_run_< 64 >(K, options);
+        r = _Scaffolding_run_< 64 >(K, options, arguments);
     } else if (64 < K && K <= 96) {
-        r = _Scaffolding_run_< 64 >(K, options);
+        r = _Scaffolding_run_< 96 >(K, options, arguments);
     } else if (96 < K && K <= 128) {
-        r = _Scaffolding_run_< 128 >(K, options);
+        r = _Scaffolding_run_< 128 >(K, options, arguments);
     } else if (96 < K && K <= 160) {
-        r = _Scaffolding_run_< 160 >(K, options);
+        r = _Scaffolding_run_< 160 >(K, options, arguments);
     } else if (160 < K && K <= 192) {
-        r = _Scaffolding_run_< 192 >(K, options);
+        r = _Scaffolding_run_< 192 >(K, options, arguments);
     }
 
     LOG4CXX_DEBUG(logger, "scaffolding end");
