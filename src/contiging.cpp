@@ -15,7 +15,7 @@ static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.Contiging"));
 Contiging Contiging::_runner;
 
 template< size_t K >
-int _Contiging_run(size_t L, const Properties& options, const Arguments& arguments) {
+int _Contiging_run_(size_t L, const Properties& options, const Arguments& arguments) {
     Kmer< K >::length(L); // IMPORTANT: set kmer length
 
     // parameters
@@ -96,17 +96,17 @@ int Contiging::run(const Properties& options, const Arguments& arguments) {
     K = K - 1; // (K-1)mer
     // process
     if (0 < K && K <= 32) {
-        r = _Contiging_run< 32 >(K, options, arguments);
+        r = _Contiging_run_< 32 >(K, options, arguments);
     } else if (32 < K && K <= 64) {
-        r = _Contiging_run< 64 >(K, options, arguments);
+        r = _Contiging_run_< 64 >(K, options, arguments);
     } else if (64 < K && K <= 96) {
-        r = _Contiging_run< 96 >(K, options, arguments);
+        r = _Contiging_run_< 96 >(K, options, arguments);
     } else if (96 < K && K <= 128) {
-        r = _Contiging_run<128 >(K, options, arguments);
+        r = _Contiging_run_<128 >(K, options, arguments);
     } else if (96 < K && K <= 160) {
-        r = _Contiging_run<160 >(K, options, arguments);
+        r = _Contiging_run_<160 >(K, options, arguments);
     } else if (160 < K && K <= 192) {
-        r = _Contiging_run<192 >(K, options, arguments);
+        r = _Contiging_run_<192 >(K, options, arguments);
     } else {
         r = 1;
     }
