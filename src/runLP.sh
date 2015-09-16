@@ -16,7 +16,7 @@ if [ ! -d $3 ]; then
 	mkdir -p $3
 fi
 
-${PWD}/divideLP $1 $2 
+${PWD}/arcs divideLP -i $1 -d $2 
 
 for f in $(ls $2); do
 	if [ `echo $f | grep "math" | wc -l` -eq 0 ]; then
