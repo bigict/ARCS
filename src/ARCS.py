@@ -167,31 +167,33 @@ except:
 Path = sys.path[0] + "/"
 print Path
 
-if kmer_size > 0 and kmer_size <= 32:
-    if kmer_filter:
-        contiging_cmd = Path + 'contiging/contiging -s ' + configure_file + ' -d ' + workspace + ' -K ' + str(kmer_size) + ' -E ' + ' -p ' + str(cpu_num)
-    else:
-        contiging_cmd = Path + 'contiging/contiging -s ' + configure_file + ' -d ' + workspace + ' -K ' + str(kmer_size) + ' -p ' + str(cpu_num)
-elif kmer_size > 32 and kmer_size <= 64:    
-    contiging_cmd = Path + 'contiging/contiging -s ' + configure_file + ' -d ' + workspace + ' -K ' + str(kmer_size)
-elif kmer_size <= 96:    
-    contiging_cmd = Path + 'contiging/contiging -s ' + configure_file + ' -d ' + workspace + ' -K ' + str(kmer_size)
+
+preprocess_cmd = Path + "/arcs preprocess -K " + str(kmer_size) + " -i " + lib_list[0][0]  + " -i " + lib_list[0][1] + " -o " + workspace + "/kmers.arff -E -1"
+
+print '-------------------------------------'
+print preprocess_cmd
+print '-------------------------------------'
+
+#if os.system(preprocess_cmd) != 0:
+#    os._exit(1)
+
+contiging_cmd = Path + "/arcs contiging -i " + workspace + "/kmers.arff -K " + str(kmer_size) + " -d " + workspace
 
 print '-------------------------------------'
 print contiging_cmd
 print '-------------------------------------'
 
-if os.system(contiging_cmd) != 0:
-    os._exit(1)
+#if os.system(contiging_cmd) != 0:
+#    os._exit(1)
 
-copy_num_cmd = 'cat ' + workspace + '/condensed_de_bruijn_graph_after_trimming.data | ' + Path + 'contiging/copy_number_estimate.py -p' + workspace + '/contig_parameter ' + workspace + '/cdbg_copy_number.fa ' + workspace + '/component_0' 
+copy_num_cmd = 'cat ' + workspace + '/condensed_de_bruijn_graph_after_trimming.data | ' + Path + '/copy_number_estimate.py -p' + workspace + '/contig_parameter ' + workspace + '/cdbg_copy_number.fa ' + workspace + '/component_0' 
 
 print '-------------------------------------'
 print copy_num_cmd
 print '-------------------------------------'
 
-if os.system(copy_num_cmd) != 0:
-    os._exit(1)
+#if os.system(copy_num_cmd) != 0:
+#    os._exit(1)
 
 
 print "link quality size " + str(len(link_quality_percent))
@@ -203,50 +205,51 @@ for i in range(len(lib_list)):
 
     if len(contig_lengths_cutoff) <= i:
         contig_lengths_cutoff.append(edge_length_cutoff)
-    #scaffolding_cmd = Path + 'scaffolding/scaffolding -d ' + workspace + ' -K ' + str(kmer_size) + ' -c ' + workspace + '/cdbg_copy_number.fa -e ' + str(contig_lengths_cutoff[i]) + ' -1 ' + ele[0] + ' -2 ' + ele[1] + ' -L ' + insert_size[i] + ' -P ' + link_quality_percent[i] + ' -p ' + str(cpu_num) + ' -i ' + str(i) + ' -r ' + pair_kmer_cutoff[i] + ' -R ' + pair_reads_cutoff[i] 
-    scaffolding_cmd = Path + 'scaffolding/scaffolding -d ' + workspace + ' -K ' + str(kmer_size) + ' -C ' + workspace + '/cdbg_copy_number.fa -f ' + workspace + '/component_' + str(i)  + ' -e ' + str(contig_lengths_cutoff[i]) + ' -1 ' + ele[0] + ' -2 ' + ele[1] + ' -L ' + insert_size[i] + ' -P ' + link_quality_percent[i] + ' -p ' + str(cpu_num) + ' -i ' + str(i) + ' -r ' + pair_kmer_cutoff[i] + ' -R ' + pair_reads_cutoff[i] 
+    scaffolding_cmd = Path + '/arcs scaffolding -d ' + workspace + ' -K ' + str(kmer_size) + ' -C ' + workspace + '/cdbg_copy_number.fa -f ' + workspace + '/component_' + str(i)  + ' -e ' + str(contig_lengths_cutoff[i]) + ' -1 ' + ele[0] + ' -2 ' + ele[1] + ' -L ' + insert_size[i] + ' -P ' + link_quality_percent[i] + ' -p ' + str(cpu_num) + ' -i ' + str(i) + ' -r ' + pair_kmer_cutoff[i] + ' -R ' + pair_reads_cutoff[i] 
     print '-------------------------------------'
     print scaffolding_cmd
     print '-------------------------------------'
      
-    if os.system(scaffolding_cmd) != 0:
-        os._exit(1)
+#    if os.system(scaffolding_cmd) != 0:
+#        os._exit(1)
 
     #change lp to smallLPs by wangbing   
-    glpsol_cmd = Path + 'divideLP/runLP.sh ' +  workspace + '/position_lp_' + str(i) + '.math ' + workspace + '/smallLPs/ ' + workspace + '/smallLPResults/'
+    glpsol_cmd = Path + '/runLP.sh ' +  workspace + '/position_lp_' + str(i) + '.math ' + workspace + '/smallLPs_' + str(i) + '/ ' + workspace + '/smallLPResults_' + str(i) + '/'
     print '-------------------------------------'
     print glpsol_cmd
     print '-------------------------------------'
-    if os.system(glpsol_cmd) != 0:
-        os._exit(1)
+#    if os.system(glpsol_cmd) != 0:
+#        os._exit(1)
 
-    tran_pos_cmd = Path + 'scaffolding/parse_glpk_results.py -d ' + workspace + ' -i ' + str(i) + ' -p ' + os.path.join(workspace, 'scaffold_parameter_%d' % (i))
+    tran_pos_cmd = Path + '/parse_glpk_results.py -d ' + workspace + ' -i ' + str(i) + ' -p ' + os.path.join(workspace, 'scaffold_parameter_%d' % (i))
     print '-------------------------------------'
     print tran_pos_cmd
     print '-------------------------------------'
-    if os.system(tran_pos_cmd) != 0:
-        os._exit(1)
+#    if os.system(tran_pos_cmd) != 0:
+#        os._exit(1)
     #end change
-    remove_repeats_cmd = Path + 'remove_repeats/remove_repeats -d ' + workspace + ' -O ' + str(max_overlap) + ' -K ' + str(kmer_size) + ' -i ' + str(i)
+    remove_repeats_cmd = Path + '/arcs remove_repeats -d ' + workspace + ' -O ' + str(max_overlap) + ' -K ' + str(kmer_size) + ' -i ' + str(i)
     print '-------------------------------------'
     print remove_repeats_cmd 
     print '-------------------------------------'
 
-    if os.system(remove_repeats_cmd) != 0:
-        os._exit(1)
+#    if os.system(remove_repeats_cmd) != 0:
+#        os._exit(1)
         #kmer_size -= 2
 
 reverse_filter_cmd = Path + 'gap_filling/reverse_filter.py ' + workspace + ' ' + workspace + '/cdbg_copy_number.fa ' + workspace + '/component_' + str(len(insert_size))
 print '-------------------------------------'
 print reverse_filter_cmd
 print '-------------------------------------'
-if os.system(reverse_filter_cmd) != 0:
-	os._exit(1)
+#if os.system(reverse_filter_cmd) != 0:
+#	os._exit(1)
 
-gap_filling_cmd = Path + 'gap_filling/gap_filling -s scaffold_parameter_0 -K ' + str(kmer_size) + ' -O ' + str(kmer_size - 10) + ' -c cdbg_copy_number.fa -l component_last -d ' + workspace + ' -i condensed_de_bruijn_graph_before_trimming.data'
+gap_filling_cmd = Path + '/arcs gap_filling -s scaffold_parameter_0 -K ' + str(kmer_size) + ' -O ' + str(kmer_size - 10) + ' -C cdbg_copy_number.fa -l component_last -d ' + workspace + ' -I condensed_de_bruijn_graph_before_trimming.data'
 print '-------------------------------------'
 print gap_filling_cmd
 print '-------------------------------------'
+if os.system(gap_filling_cmd) != 0:
+	os._exit(1)
 
 end = datetime.now()
 print 'total running time is ' +  str((end - start).seconds) + ' seconds'
