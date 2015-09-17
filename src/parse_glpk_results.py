@@ -12,7 +12,7 @@ def Worker_run(config):
 
     pos_array = [0] * edge_num
 
-    root = os.path.join(workspace, 'smallLPResults')
+    root = os.path.join(workspace, 'smallLPResults_' + str(config['iteration']))
     for fname in os.listdir(root):
         row_num, column_num = 0, 0
         with file(os.path.join(root, fname), 'r') as f:
