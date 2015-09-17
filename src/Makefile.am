@@ -3,17 +3,17 @@ arcs_SOURCES=arff.cpp \
 			arff.h \
             component.cpp \
             component.h \
+            condensed_debruijn_graph.cpp \
+            condensed_debruijn_graph.h \
             contiging.cpp \
             contiging.h \
             contigs.cpp \
             contigs.h \
             constant.cpp \
             constant.h \
-            debruijn_edge.cpp \
-            debruijn_edge.h \
             debruijn_graph.h \
-            Gap_Filling.cpp \
-            Gap_Filling.h \
+            gap_filler.cpp \
+            fap_filler.h \
             gap_filling.cpp \
             gap_filling.h \
             gapped_fragment_graph.cpp \

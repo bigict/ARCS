@@ -1,5 +1,5 @@
 #include "gap_filling.h"
-#include "Gap_Filling.h"
+#include "gap_filler.h"
 #include "constant.h"
 
 #include <string>
@@ -68,15 +68,15 @@ int GapFilling::run(const Properties& options, const Arguments& arguments) {
 	STEP = MU + 3 * var;
 	EXTEND = 200;
 	
-	Gap_Filling gf;
+	GapFiller gf;
     // load data
     {
-        typedef bool(Gap_Filling::*LoadDataPtr)(const std::string&);
+        typedef bool(GapFiller::*LoadDataPtr)(const std::string&);
         typedef std::tr1::tuple< std::string, LoadDataPtr > File2FuncPtr;
         std::vector< File2FuncPtr > file2func_list = boost::assign::list_of
-            (std::tr1::make_tuple(condensed_contig_file_name, &Gap_Filling::input_contigs))
-            (std::tr1::make_tuple(initial_contig_file_name, &Gap_Filling::input_debruijn))
-            (std::tr1::make_tuple(scaffold_file_name, &Gap_Filling::input_scaffold))
+            (std::tr1::make_tuple(condensed_contig_file_name, &GapFiller::input_contigs))
+            (std::tr1::make_tuple(initial_contig_file_name, &GapFiller::input_debruijn))
+            (std::tr1::make_tuple(scaffold_file_name, &GapFiller::input_scaffold))
             ;
         BOOST_FOREACH(const File2FuncPtr& file2func, file2func_list) {
             std::string file = std::tr1::get< 0 >(file2func);
@@ -87,16 +87,18 @@ int GapFilling::run(const Properties& options, const Arguments& arguments) {
         }
     }
 
-	gf.gap_filling();
+	gf.fill();
 
-    std::string fileName = boost::str(boost::format("%dmer.gap_filling_info") % K);
-    std::ofstream outfile(fileName.c_str());
-	if (!outfile)
-	{
-		cerr << "[Info] Create " << fileName << "error!!!" << endl;
-		exit(EXIT_FAILURE);
-	}
-	outfile << gf;
+    // write data
+    {
+        std::string file = boost::str(boost::format("%dmer.gap_filling_info") % K);
+        std::ofstream stream(file.c_str());
+        if (!stream) {
+            LOG4CXX_ERROR(logger, boost::format("Create %s error!!!") % file);
+            return 2;
+        }
+        stream << gf;
+    }
 
     LOG4CXX_DEBUG(logger, "gap_filling end");
 
