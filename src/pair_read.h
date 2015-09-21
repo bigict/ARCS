@@ -81,6 +81,13 @@ template< size_t K >
 void InsertSizeEstimater< K >::estimate(size_t* insert_size, double* delta) {
     LOG4CXX_DEBUG(logger, boost::format("pair_reads=[%d]") % _pair_reads.size());
 
+    if (insert_size != NULL) {
+        *insert_size = 0;
+    }
+    if (delta != NULL) {
+        *delta = 0.0;
+    }
+
     InsertSizeDistr insert_size_distr;
     BOOST_FOREACH(const PairRead& pair_read, _pair_reads) {
         if (insert_size_distr.size() >= 1000) {//trick
@@ -95,14 +102,16 @@ void InsertSizeEstimater< K >::estimate(size_t* insert_size, double* delta) {
 
     Accumulator acc;
     std::for_each(insert_size_distr.begin(), insert_size_distr.end(), Statistics(11, acc));
-    if (insert_size != NULL) {
-        *insert_size = boost::accumulators::mean(acc);
-    }
-    if (delta != NULL) {// delta = E(xi-mean)^2
-        size_t mean = (size_t)boost::accumulators::mean(acc);
-        *delta = std::sqrt(
-                boost::accumulators::moment< 2 >(acc) - 2 * boost::accumulators::mean(acc) * mean + std::pow(mean, 2)
-                );
+    if (boost::accumulators::count(acc) > 0) {
+        if (insert_size != NULL) {
+            *insert_size = boost::accumulators::mean(acc);
+        }
+        if (delta != NULL) {// delta = E(xi-mean)^2
+            size_t mean = (size_t)boost::accumulators::mean(acc);
+            *delta = std::sqrt(
+                    boost::accumulators::moment< 2 >(acc) - 2 * boost::accumulators::mean(acc) * mean + std::pow(mean, 2)
+                    );
+        }
     }
 }
 
