@@ -334,7 +334,6 @@ void GapFiller::BFS(const int gap_index, const  int left_index, const  int right
         CondensedDeBruijnGraph::NodeList::const_iterator i = _all_graph._children.find(end);
         if (i == _all_graph._children.end()) {
 		    fail_gap_info.push_back(gap_index);
-            std::cout << "xxxxxxxxx^^\t" << end << std::endl;;
             return;
         }
         for (CondensedDeBruijnGraph::EdgeList::const_iterator j = i->second.begin(); j != i->second.end(); ++j) {
@@ -355,7 +354,6 @@ void GapFiller::BFS(const int gap_index, const  int left_index, const  int right
             next_sets.clear();
             final_sets.clear();
 
-            std::cout << "yyyyyyyyy\t" << start << std::endl;;
             return;
         }
         for (CondensedDeBruijnGraph::EdgeList::const_iterator j = i->second.begin(); j != i->second.end(); ++j) {
