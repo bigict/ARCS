@@ -1,8 +1,9 @@
 #include "arff.h"
 
 #include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
+#include <boost/foreach.hpp>
 #include <boost/regex.hpp>
+#include <boost/tokenizer.hpp>
 
 #include <log4cxx/logger.h>
 
@@ -28,6 +29,7 @@ bool ARFFReader::read(ARFF& arff) {
         boost::regex("@data\\s*"), 
         boost::regex("([ACGTN]+)\\t(\\d+)")
     };
+    static boost::char_separator< char > sep("\t");
     boost::smatch what;
 
     std::string line;
@@ -45,8 +47,12 @@ bool ARFFReader::read(ARFF& arff) {
                 LOG4CXX_WARN(logger, "read ARFF from stream failed@attribute");
             }
         } else if (state == kTuple) {
-            std::vector< std::string > item;
-            boost::algorithm::split(item, line, boost::algorithm::is_any_of(" \t"));
+            ARFF::ItemPtr item = new ARFF::Item(_num_fields);
+            boost::tokenizer< boost::char_separator< char > > tok(line, sep);
+            size_t k = 0;
+            BOOST_FOREACH(const std::string& i, tok) {
+                (*item)[k++] = i;
+            }
             arff.data.push_back(item);
         }
     }

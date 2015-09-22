@@ -52,7 +52,7 @@ public:
     bool read(std::istream& stream) {
         ARFF arff;
 
-        ARFFReader reader(stream); 
+        ARFFReader reader(stream, 2); 
         if (!reader.read(arff)) {
             return false;
         }
@@ -68,10 +68,10 @@ public:
 
         LOG4CXX_DEBUG(logger, "build debruijn graph begin");
         size_t L = Kmer< K >::length();
-        BOOST_FOREACH(const ARFF::Item& item, arff.data) {
-            Kmer< K > prefix(item[0], 0, L), suffix(item[0], 1, L + 1);
+        BOOST_FOREACH(const ARFF::ItemPtr& item, arff.data) {
+            Kmer< K > prefix((*item)[0], 0, L), suffix((*item)[0], 1, L + 1);
 
-            addEdge(_indexer.id(prefix), _indexer.id(suffix), boost::lexical_cast< size_t >(item[1]));
+            addEdge(_indexer.id(prefix), _indexer.id(suffix), boost::lexical_cast< size_t >((*item)[1]));
         }
         LOG4CXX_DEBUG(logger, "build debruijn graph end");
 
@@ -126,8 +126,7 @@ public:
 private:
     template< size_t X >
     friend std::ostream& operator << (std::ostream& os, const DeBruijnGraph< X >& graph);
-    template< size_t X >
-    friend class NodeRemover;
+    friend class Indexer;
 
     class Indexer {
     public:
@@ -140,23 +139,30 @@ private:
         }
 
         void init(const ARFF& arff) {
-            _data.clear();
+            log4cxx::LoggerPtr logger = DeBruijnGraph< K >::logger;
+
+            LOG4CXX_DEBUG(logger, "Indexer init begin");
+            _data.resize(arff.data.size() * 2);
 
             size_t L = Kmer< K >::length();
-            BOOST_FOREACH(const ARFF::Item& item, arff.data) {
-                BOOST_ASSERT(item.size() == 2);
-                BOOST_ASSERT(item[0].length() == L + 1);
+            size_t k = 0;
+            BOOST_FOREACH(const ARFF::ItemPtr& item, arff.data) {
+                BOOST_ASSERT(item->size() == 2);
+                BOOST_ASSERT((*item)[0].length() == L + 1);
 
-                Kmer< K > prefix(item[0], 0, L), suffix(item[0], 1, L + 1);
-                _data.push_back(prefix);
-                _data.push_back(suffix);
-
+                Kmer< K > prefix((*item)[0], 0, L), suffix((*item)[0], 1, L + 1);
+                _data[k++] = prefix;
+                _data[k++] = suffix;
             }
+
+            LOG4CXX_DEBUG(logger, "Indexer init sorting");
 
             // uniq
             std::sort(_data.begin(), _data.end());
             typename KmerList::iterator last = std::unique(_data.begin(), _data.end());
             _data.resize(std::distance(_data.begin(), last));
+
+            LOG4CXX_DEBUG(logger, "Indexer init end");
         }
 
         size_t id(const Kmer< K >& kmer) const {
@@ -210,19 +216,13 @@ private:
 //
 template< size_t K >
 struct NodeRemover {
-    NodeRemover(DeBruijnGraph< K >* graph) : _graph(graph) {
+    NodeRemover(typename DeBruijnGraph< K >::NodeList& nodelist) : _nodelist(nodelist) {
     } 
 
     void add(size_t node) {
-        log4cxx::LoggerPtr logger = DeBruijnGraph< K >::logger;
-
-        LOG4CXX_TRACE(logger, boost::format("NodeRemover::add(%s)") % _graph->_indexer.kmer(node))
         _noiselist.insert(node);
     }
     void add(size_t i, size_t j) {
-        log4cxx::LoggerPtr logger = DeBruijnGraph< K >::logger;
-
-        LOG4CXX_TRACE(logger, boost::format("NodeRemover::add(%s,%s)") % _graph->_indexer.kmer(i) % _graph->_indexer.kmer(j))
         _edgelist.push_back(std::make_pair(i, j));
     }
     void remove() {
@@ -243,11 +243,11 @@ private:
     typedef std::vector< NoiseEdge > NoiseEdgeList;
 
     void unlink(size_t n) {
-        typename DeBruijnGraph< K >::Node& node = _graph->_nodelist[n];
+        typename DeBruijnGraph< K >::Node& node = _nodelist[n];
 
         // Remove child's links
         for (typename DeBruijnGraph< K >::EdgeList::const_iterator i = node.children.begin(); i != node.children.end(); ++i) {
-            typename DeBruijnGraph< K >::Node& j = _graph->_nodelist[i->first];
+            typename DeBruijnGraph< K >::Node& j = _nodelist[i->first];
             typename DeBruijnGraph< K >::EdgeList::iterator k = j.parents.find(n);
             if (k != j.parents.end()) {
                 j.parents.erase(n);
@@ -257,7 +257,7 @@ private:
 
         // Remove parent's links
         for (typename DeBruijnGraph< K >::EdgeList::const_iterator i = node.parents.begin(); i != node.parents.end(); ++i) {
-            typename DeBruijnGraph< K >::Node& j = _graph->_nodelist[i->first];
+            typename DeBruijnGraph< K >::Node& j = _nodelist[i->first];
             typename DeBruijnGraph< K >::EdgeList::iterator k = j.children.find(n);
             if (k != j.parents.end()) {
                 j.children.erase(k);
@@ -273,7 +273,7 @@ private:
     void unlink(size_t i, size_t j) {
         // Children
         {
-            typename DeBruijnGraph< K >::Node& from = _graph->_nodelist[i];
+            typename DeBruijnGraph< K >::Node& from = _nodelist[i];
             typename DeBruijnGraph< K >::EdgeList::iterator k = from.children.find(j);
             if (k != from.children.end()) {
                 from.children.erase(k);
@@ -281,7 +281,7 @@ private:
         }
         // Parent
         {
-            typename DeBruijnGraph< K >::Node& to = _graph->_nodelist[j];
+            typename DeBruijnGraph< K >::Node& to = _nodelist[j];
             typename DeBruijnGraph< K >::EdgeList::iterator k = to.parents.find(i);
             if (k != to.parents.end()) {
                 to.parents.erase(k);
@@ -292,14 +292,15 @@ private:
     NoiseNodeList _noiselist;
     NoiseEdgeList _edgelist;
 
-    DeBruijnGraph< K >* _graph;
+    typename DeBruijnGraph< K >::NodeList& _nodelist;
 };
+
 
 template< size_t K >
 void DeBruijnGraph< K >::removeNoise() {
     LOG4CXX_DEBUG(logger, boost::format("remove noise begin. nodelist=[%d]") % _nodelist.size());
 
-    NodeRemover< K > remover(this);
+    NodeRemover< K > remover(_nodelist);
 
     for (size_t i = 0; i < _nodelist.size(); ++i) {
         Node& node = _nodelist[i];
