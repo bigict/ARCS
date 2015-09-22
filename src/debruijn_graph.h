@@ -126,6 +126,8 @@ public:
 private:
     template< size_t X >
     friend std::ostream& operator << (std::ostream& os, const DeBruijnGraph< X >& graph);
+    template< size_t X >
+    friend class NodeRemover;
 
     class Indexer {
     public:
@@ -208,13 +210,19 @@ private:
 //
 template< size_t K >
 struct NodeRemover {
-    NodeRemover(typename DeBruijnGraph< K >::NodeList& nodelist) : _nodelist(nodelist) {
+    NodeRemover(DeBruijnGraph< K >* graph) : _graph(graph) {
     } 
 
     void add(size_t node) {
+        log4cxx::LoggerPtr logger = DeBruijnGraph< K >::logger;
+
+        LOG4CXX_TRACE(logger, boost::format("NodeRemover::add(%s)") % _graph->_indexer.kmer(node))
         _noiselist.insert(node);
     }
     void add(size_t i, size_t j) {
+        log4cxx::LoggerPtr logger = DeBruijnGraph< K >::logger;
+
+        LOG4CXX_TRACE(logger, boost::format("NodeRemover::add(%s,%s)") % _graph->_indexer.kmer(i) % _graph->_indexer.kmer(j))
         _edgelist.push_back(std::make_pair(i, j));
     }
     void remove() {
@@ -235,11 +243,11 @@ private:
     typedef std::vector< NoiseEdge > NoiseEdgeList;
 
     void unlink(size_t n) {
-        typename DeBruijnGraph< K >::Node& node = _nodelist[n];
+        typename DeBruijnGraph< K >::Node& node = _graph->_nodelist[n];
 
         // Remove child's links
         for (typename DeBruijnGraph< K >::EdgeList::const_iterator i = node.children.begin(); i != node.children.end(); ++i) {
-            typename DeBruijnGraph< K >::Node& j = _nodelist[i->first];
+            typename DeBruijnGraph< K >::Node& j = _graph->_nodelist[i->first];
             typename DeBruijnGraph< K >::EdgeList::iterator k = j.parents.find(n);
             if (k != j.parents.end()) {
                 j.parents.erase(n);
@@ -249,7 +257,7 @@ private:
 
         // Remove parent's links
         for (typename DeBruijnGraph< K >::EdgeList::const_iterator i = node.parents.begin(); i != node.parents.end(); ++i) {
-            typename DeBruijnGraph< K >::Node& j = _nodelist[i->first];
+            typename DeBruijnGraph< K >::Node& j = _graph->_nodelist[i->first];
             typename DeBruijnGraph< K >::EdgeList::iterator k = j.children.find(n);
             if (k != j.parents.end()) {
                 j.children.erase(k);
@@ -265,7 +273,7 @@ private:
     void unlink(size_t i, size_t j) {
         // Children
         {
-            typename DeBruijnGraph< K >::Node& from = _nodelist[i];
+            typename DeBruijnGraph< K >::Node& from = _graph->_nodelist[i];
             typename DeBruijnGraph< K >::EdgeList::iterator k = from.children.find(j);
             if (k != from.children.end()) {
                 from.children.erase(k);
@@ -273,7 +281,7 @@ private:
         }
         // Parent
         {
-            typename DeBruijnGraph< K >::Node& to = _nodelist[j];
+            typename DeBruijnGraph< K >::Node& to = _graph->_nodelist[j];
             typename DeBruijnGraph< K >::EdgeList::iterator k = to.parents.find(i);
             if (k != to.parents.end()) {
                 to.parents.erase(k);
@@ -284,15 +292,14 @@ private:
     NoiseNodeList _noiselist;
     NoiseEdgeList _edgelist;
 
-    typename DeBruijnGraph< K >::NodeList& _nodelist;
+    DeBruijnGraph< K >* _graph;
 };
-
 
 template< size_t K >
 void DeBruijnGraph< K >::removeNoise() {
     LOG4CXX_DEBUG(logger, boost::format("remove noise begin. nodelist=[%d]") % _nodelist.size());
 
-    NodeRemover< K > remover(_nodelist);
+    NodeRemover< K > remover(this);
 
     for (size_t i = 0; i < _nodelist.size(); ++i) {
         Node& node = _nodelist[i];
