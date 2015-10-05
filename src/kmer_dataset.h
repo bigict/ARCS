@@ -73,12 +73,12 @@ public:
         double mean = 0, var = 0;
         statistics(&mean, &var);
 
-        stream << boost::format("@attribute mean %f") % mean << std::endl;
-        stream << boost::format("@attribute variance %f") % var << std::endl;
-        stream << boost::format("@data") << std::endl;
+        stream << boost::format("@attribute mean %f\n") % mean;
+        stream << boost::format("@attribute variance %f\n") % var;
+        stream << boost::format("@data\n");
         for (typename KmerList::const_iterator it = _hash_tbl.begin(); it != _hash_tbl.end(); ++it) {
             if (it->second > 1) {
-                stream << boost::format("%s\t%d") % it->first % it->second << std::endl;
+                stream << boost::format("%s\t%d\n") % it->first % it->second;
             }
         }
         return true;

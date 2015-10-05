@@ -225,13 +225,13 @@ int Scaffolding::run(const Properties& options, const Arguments& arguments) {
     // process
     if (0 < K && K <= 32) {
         r = _Scaffolding_run_< 32 >(K, options, arguments);
-    } else if (32 < K && K <= 64) {
+    } else if ( 32 < K && K <= 64) {
         r = _Scaffolding_run_< 64 >(K, options, arguments);
-    } else if (64 < K && K <= 96) {
+    } else if ( 64 < K && K <= 96) {
         r = _Scaffolding_run_< 96 >(K, options, arguments);
-    } else if (96 < K && K <= 128) {
+    } else if ( 96 < K && K <= 128) {
         r = _Scaffolding_run_< 128 >(K, options, arguments);
-    } else if (96 < K && K <= 160) {
+    } else if (128 < K && K <= 160) {
         r = _Scaffolding_run_< 160 >(K, options, arguments);
     } else if (160 < K && K <= 192) {
         r = _Scaffolding_run_< 192 >(K, options, arguments);

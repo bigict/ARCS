@@ -145,13 +145,13 @@ int Preprocess::run(const Properties& options, const Arguments& arguments) {
     // process
     if (0 < K && K <= 32) {
         r = _Preprocess_run_< 32 >(K, options, arguments);
-    } else if (32 < K && K <= 64) {
+    } else if ( 32 < K && K <= 64) {
         r = _Preprocess_run_< 64 >(K, options, arguments);
-    } else if (64 < K && K <= 96) {
+    } else if ( 64 < K && K <= 96) {
         r = _Preprocess_run_< 96 >(K, options, arguments);
-    } else if (96 < K && K <= 128) {
+    } else if ( 96 < K && K <= 128) {
         r = _Preprocess_run_<128 >(K, options, arguments);
-    } else if (96 < K && K <= 160) {
+    } else if (128 < K && K <= 160) {
         r = _Preprocess_run_<169 >(K, options, arguments);
     } else if (160 < K && K <= 192) {
         r = _Preprocess_run_<192 >(K, options, arguments);
@@ -163,12 +163,12 @@ int Preprocess::run(const Properties& options, const Arguments& arguments) {
     return r;
 }
 
-Preprocess::Preprocess() : Runner("c:s:K:n:d:i:o:E:h", boost::assign::map_list_of('E', "READ_LENGTH_CUTOFF")) {
+Preprocess::Preprocess() : Runner("c:s:K:n:d:i:o:ESe:h", boost::assign::map_list_of('e', "READ_LENGTH_CUTOFF")) {
     RUNNER_INSTALL("preprocess", this, "preprocess");
 }
 
 int Preprocess::printHelps() const {
-    std::cout << "arcs preprocess -K [kmer] -i [input] -o [output] -E [read_cutoff] -n [buckets] [<inputs>]" << std::endl;
+    std::cout << "arcs preprocess -K [kmer] -i [input] -o [output] -e [read_cutoff] -n [buckets] [<inputs>]" << std::endl;
     return 256;
 }
 

@@ -112,6 +112,38 @@ public:
         }
     }
 
+    void unshift(char nucleotide) {
+        unshift(Nucleotide::char2code(nucleotide));
+    }
+    void unshift(int nucleotide) {
+        if (!_data.empty()) {
+            size_t k = Kmer< K >::_K - 1;
+            size_t m = (2 * k) / SIZEOF_BITS(size_t), n = SIZEOF_BITS(size_t) - ((2 * k) % SIZEOF_BITS(size_t)) - 2;
+            _data[m] >>= n + 2;
+            _data[m] <<= n + 2;
+        }
+        for (size_t i = _data.size(); i > 1; --i) {
+            _data[i - 1] >>= 2;
+            _data[i - 1] |= ((_data[i - 2] & 0x03) << (SIZEOF_BITS(size_t) - 2));
+        }
+        if (!_data.empty()) {
+            _data[0] >>= 2;
+            _data[0] |= (((size_t)nucleotide) << (SIZEOF_BITS(size_t) - 2));
+        }
+    }
+
+    Kmer< K > operator + (const char c) const {
+        Kmer kmer = *this;
+        kmer.shift(c);
+        return kmer;
+    }
+
+    Kmer< K > operator - (const char c) const {
+        Kmer kmer = *this;
+        kmer.unshift(c);
+        return kmer;
+    }
+
     bool operator < (const Kmer< K >& o) const {
         return _data < o._data;
     }
