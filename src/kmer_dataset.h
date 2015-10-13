@@ -69,7 +69,7 @@ public:
         }
         return true;
     }
-    bool write(std::ostream& stream) const {
+    bool write(std::ostream& stream, size_t threshold=1) const {
         double mean = 0, var = 0;
         statistics(&mean, &var);
 
@@ -77,7 +77,7 @@ public:
         stream << boost::format("@attribute variance %f\n") % var;
         stream << boost::format("@data\n");
         for (typename KmerList::const_iterator it = _hash_tbl.begin(); it != _hash_tbl.end(); ++it) {
-            if (it->second > 1) {
+            if (it->second > threshold) {
                 stream << boost::format("%s\t%d\n") % it->first % it->second;
             }
         }

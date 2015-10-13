@@ -62,4 +62,15 @@ private:
     size_t _read_cutoff;
 };
 
+class FASTAReader {
+public:
+    FASTAReader(std::istream& stream) : _stream(stream) {
+    }
+
+    bool read(DNASeq& sequence);
+private:
+    std::istream& _stream;
+    std::string _name;
+};
+
 #endif // kseq_h_

@@ -18,8 +18,6 @@ static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.GapFiller"));
 #define TRAINING
 #define RESULT
 
-const int ALPHABET = 5;
-
 struct DeBruijnGraphEdge {
     DeBruijnGraphEdge() : i(0), j(0), coverage(0) {
     }

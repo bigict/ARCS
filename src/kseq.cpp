@@ -127,3 +127,38 @@ void DNASeqReader::cutoff(DNASeq& sequence) const {
         sequence.quality = sequence.quality.substr(0, length);
     }
 }
+
+bool FASTAReader::read(DNASeq& sequence) {
+    if (_stream) {
+        std::string seq;
+
+        std::string line;
+        while (std::getline(_stream, line)) {
+            boost::algorithm::trim(line);
+            if (line.empty()) continue;
+            if (boost::algorithm::starts_with(line, ">")) {
+                if (!seq.empty() && !_name.empty()) {
+                    sequence.name = _name;
+                    sequence.seq = seq;
+                    _name = line.substr(1);
+                    return true;
+                } else if (!_name.empty()) {
+                    LOG4CXX_WARN(logger, boost::format("fastq=>invalid line for sequence name: %s") % line);
+                    return false;
+                }
+                _name = line.substr(1);
+            } else {
+                seq += line;
+            }
+        }
+
+        // the last one
+        if (!seq.empty() && !_name.empty()) {
+            sequence.name = _name;
+            sequence.seq = seq;
+            return true;
+        }
+    }
+
+    return false;
+}

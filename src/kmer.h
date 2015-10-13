@@ -21,7 +21,7 @@ public:
         NUM      = 0x04
     };
     
-    static int char2code(char chr) {
+    static int char2code(char chr, int def=Adenine) {
         chr = std::toupper(chr);
         switch (chr) {
         case 'A': return Adenine;
@@ -29,17 +29,17 @@ public:
         case 'G': return Guanine;
         case 'T': return Thymine;
         }
-        return Adenine;
+        return def;
     }
     
-    static char code2char(int code) {
+    static char code2char(int code, char def='A') {
         switch (code) {
         case Adenine:  return 'A';
         case Cytosine: return 'C';
         case Guanine:  return 'G';
         case Thymine:  return 'T';
         }
-        return 'A';
+        return def;
     }
 };
 

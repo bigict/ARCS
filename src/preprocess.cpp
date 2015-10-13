@@ -116,14 +116,15 @@ int _Preprocess_run_(size_t L, const Properties& options, const Arguments& argum
     LOG4CXX_DEBUG(logger, boost::format("table=[%d]") % tbl.size());
     // write
     if (r == 0) {
+        size_t threshold = options.get< size_t >("THRESHOLD", 1);
         if (options.find("o") != options.not_found()) {
             std::string file = options.get< std::string >("o");
             std::ofstream stream(file.c_str());
-            r = tbl.write(stream) ? 0 : 1;
+            r = tbl.write(stream, threshold) ? 0 : 1;
 
             LOG4CXX_DEBUG(logger, boost::format("output: %s") % file);
         } else {
-            r = tbl.write(std::cout) ? 0 : 1;
+            r = tbl.write(std::cout, threshold) ? 0 : 1;
         }
     }
 
@@ -163,7 +164,7 @@ int Preprocess::run(const Properties& options, const Arguments& arguments) {
     return r;
 }
 
-Preprocess::Preprocess() : Runner("c:s:K:n:d:i:o:ESe:h", boost::assign::map_list_of('e', "READ_LENGTH_CUTOFF")) {
+Preprocess::Preprocess() : Runner("c:s:K:n:d:i:o:t:ESe:h", boost::assign::map_list_of('e', "READ_LENGTH_CUTOFF")('t', "THRESHOLD")) {
     RUNNER_INSTALL("preprocess", this, "preprocess");
 }
 
