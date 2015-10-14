@@ -68,6 +68,8 @@ public:
 
         LOG4CXX_DEBUG(logger, boost::format("attrs=[%d],data=[%d] average=[%f]") % arff.attrs.size() % arff.data.size() % _average);
 
+        _nodelist.rehash(arff.data.size() * 2);
+
         LOG4CXX_DEBUG(logger, "build debruijn graph begin");
         size_t L = Kmer< K >::length();
         BOOST_FOREACH(const ARFF::ItemPtr& item, arff.data) {
