@@ -72,7 +72,17 @@ public:
         return false;
     }
 
-    int help() const {
+    int help(int argc, char* argv[]) const {
+        static std::string options("vh");
+        int opt = -1;
+        while ((opt = getopt(argc, argv, options.c_str())) != -1) {
+            switch ((char)opt) {
+            case 'v':
+                std::cout << boost::format("%s version %s") % PACKAGE_NAME % PACKAGE_VERSION << std::endl;
+                return 256;
+            }
+        }
+
         std::cout << boost::format("%s version %s, report bugs to %s") % PACKAGE_NAME % PACKAGE_VERSION % PACKAGE_BUGREPORT << std::endl;
         std::cout << boost::format("usage: %s <command> [<args>]") % PACKAGE_NAME << std::endl;
         std::cout << std::endl;

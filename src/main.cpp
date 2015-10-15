@@ -15,12 +15,12 @@ static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.main"));
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        return RunnerManager::get()->help();
+        return RunnerManager::get()->help(argc, argv);
     }
 
     RunnerPtr runner = RunnerManager::get()->create(argv[1]);
     if (!runner) {
-        return RunnerManager::get()->help();
+        return RunnerManager::get()->help(argc, argv);
     }
 
     Properties options;
