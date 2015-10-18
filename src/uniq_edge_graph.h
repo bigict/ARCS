@@ -42,10 +42,10 @@ public:
 	bool input_component(std::istream& stream);
 
 	void linearize(std::ostream& stream);
-	void output_graph(const std::string& file) const;
 	
 private:
     friend class ConflictResolver;
+    friend std::ostream& operator<<(std::ostream& stream, const UniqEdgeGraph& g);
     struct Edge {
         Edge(int distance = 0, int count = 0, int score = 0) : distance(distance), count(count), score(score) {
         }

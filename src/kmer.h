@@ -187,4 +187,7 @@ std::ostream& operator << (std::ostream& os, const Kmer< K >& kmer) {
 template< size_t K, class V >
 using KmerTable = std::tr1::unordered_map< Kmer< K >, V, KmerHasher< K > >;
 
+template< size_t K, class V >
+using KmerMultiTable = std::tr1::unordered_multimap< Kmer< K >, V, KmerHasher< K > >;
+
 #endif // kmer_h_

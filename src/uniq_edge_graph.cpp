@@ -153,11 +153,11 @@ void ConflictResolver::resolve() {
         int conflict_scaf = 0;
 
         for (size_t k = 0; k < scaffolds.size(); ++k) {
-            if (!scaffolds.empty()) {
+            if (!scaffolds[k].empty()) {
                 bool find_cft = false;
 
                 for (size_t i = 0; i < scaffolds[k].size() - 1; ++i) {
-                    for(size_t j = i + 1; j < scaffolds[k].size(); ++j) {
+                    for (size_t j = i + 1; j < scaffolds[k].size(); ++j) {
                         if (scaffolds[k][i].position + scaffolds[k][i].length > scaffolds[k][j].position && 
                                 !_graph->hasEdge(scaffolds[k][i].id, scaffolds[k][j].id) &&
                                 !_graph->hasEdge(scaffolds[k][j].id, scaffolds[k][i].id)) {
@@ -552,20 +552,6 @@ int UniqEdgeGraph::getDescendant(size_t x, size_t y) const {
 	return -1;
 }
 
-void UniqEdgeGraph::output_graph(const std::string& filename) const {
-	//cout << "begin output edge graph" << endl;
-    std::string file = boost::str(boost::format("%s_%ld") % filename % _iteration);
-    std::ofstream out(file.c_str());
-
-    for (NodeList::const_iterator i = _nodelist.begin(); i != _nodelist.end(); ++i) {
-        for (Children::const_iterator j = i->second.children.begin(); j != i->second.children.end(); ++j) {
-				out << i->first << "|" << _length_tbl[i->first] << "|" << _position_tbl[i->first] << "\t" << j->first << "|" << _length_tbl[j->first] << "|" << _position_tbl[j->first] << "\t" << j->second.distance << "|" << j->second.count << "|" << j->second.score << std::endl;
-        }
-    }
-	out.close();
-	//cout << "end out put graph" << endl;
-}
-
 void UniqEdgeGraph::addEdge(size_t from, size_t to, int distance, int count, int score) {
     // Add nodes
     {
@@ -677,5 +663,15 @@ int UniqEdgeGraph::getDistance(size_t from, size_t to) const {
         }
     }
     return -1;
+}
+
+std::ostream& operator<<(std::ostream& stream, const UniqEdgeGraph& g) {
+    for (UniqEdgeGraph::NodeList::const_iterator i = g._nodelist.begin(); i != g._nodelist.end(); ++i) {
+        for (UniqEdgeGraph::Children::const_iterator j = i->second.children.begin(); j != i->second.children.end(); ++j) {
+		    stream << i->first << "|" << g._length_tbl[i->first] << "|" << g._position_tbl[i->first] << "\t" << j->first << "|" << g._length_tbl[j->first] << "|" << g._position_tbl[j->first] << "\t" << j->second.distance << "|" << j->second.count << "|" << j->second.score << std::endl;
+        }
+    }
+
+    return stream;
 }
 
