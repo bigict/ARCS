@@ -2,11 +2,65 @@
 
 import time
 from datetime import datetime
-import os
-import commands
-import sys
+from itertools import ifilter, imap
+import string
+import os,sys
 import getopt
-import re
+
+def configfile_parse(f, config):
+    transform = {
+            'INSERT_SIZE': int, 
+            'LINK_QUALITY_PERCENT': float, 
+            'PAIR_KMER_CUTOFF': int, 
+            'PAIR_READS_CUTOFF': int, 
+            'EDGE_LENGTH_CUTOFF': int, 
+            'q1': str, 
+            'q2': str
+            }
+    library_list = []
+
+    options = {}
+    for line in ifilter(lambda x: len(x) > 0, imap(string.strip, f)):
+        if line.startswith('#'): continue
+        key, val = map(string.strip, line.split('=', 1))
+        if transform.has_key(key):
+            if options.has_key(key):
+                library_list.append(options);
+                options = {}
+            options[key] = transform[key](val)
+    if len(options) > 0:
+        library_list.append(options)
+
+    config['library_list'] = library_list
+
+    return config
+
+def command_run(arcs, cmd, args, config):
+    proc = '%s %s %s' % (arcs, cmd, args)
+    if config.has_key('verbose') and config['verbose']:
+        print '-------------------------------------'
+        print proc
+        print '-------------------------------------'
+
+    pstart = datetime.now()
+    if not config['test'] and os.system(proc) != 0:
+        sys.exit(1)
+    pend = datetime.now()
+    if config.has_key('runtime') and config['runtime']:
+        print '%s time is %d seconds' %  (cmd, (pend - pstart).seconds)
+
+def workspace_check(workspace, config):
+    if not os.path.exists(workspace) or not os.path.isdir(workspace):
+        print 'directory %s  does not exist' % (workspace)
+        print "creat this directory? yes/no"
+        word = sys.stdin.readline().strip().lower()
+        if word == 'y' or word == 'yes':
+            os.makedirs(workspace)
+        else:
+            print "system exit"
+            sys.exit(0)
+
+    print 'path : %s' % (workspace)
 
 print ""
 print "======================================================================================"
@@ -19,14 +73,6 @@ print ""
 print datetime.now()
 print ""
 
-result = commands.getstatusoutput("glpsol --help")
-
-if result[0] != 0:
-    print "glpk has not been installed"
-    print "please install glpk and run again"
-    print "for ubuntu, just sudo apt-get install glpk"
-    sys.exit(1)
-
 USAGE = """"USAGE: ARCS.py [options]
  DESCRIPTION:
  OPTIONS:
@@ -38,219 +84,150 @@ USAGE = """"USAGE: ARCS.py [options]
     -h --help                 help information
     -v --version              software version
     -E --kmer_filter          filter low quality kmers
-    -p --CPU                  CPU number to be used
+    -V --verbose              verbose model
+    -t --test                 test model
+    -x --arcs                 arcs path
 """
+config = {
+        'kmer_size': 27, 
+        'max_overlap': 200, 
+        'runtime': True,  
+        'kmer_filter': False, 
+        'test': False, 
+        'verbose': False
+        }
 
-if len(sys.argv) == 1:
-    print USAGE
-    os._exit(0)
+if os.environ.has_key('ARCS_CMD'):
+    ARCS_CMD = os.environ['ARCS_CMD']
+else:
+    ARCS_CMD = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'arcs')
 
-try:
-    longopts = ["help", "version", "configure_file=", "workspace=", "kmer_size=", "edge_length_cutoff=", "max_overlap", "CPU","kmer_filter"]
-except:
-    print "parameter error"
-opts, var = getopt.getopt(sys.argv[1:], "s:d:K:e:hO:vp:E:c:", longopts)
-
-configure_file = ''
-workspace = ''
-kmer_size = 27
-edge_length_cutoff = kmer_size
-max_overlap = 200
-cpu_num = 8
-kmer_filter = 0
-
+opts, var = getopt.getopt(sys.argv[1:], 
+        's:d:K:e:hO:vp:EVtc:x:', 
+        ['help', 'version', 'configure_file=', 'workspace=', 'kmer_size=', 'edge_length_cutoff=', 'max_overlap', 'CPU','kmer_filter', 'verbose', 'test', '=arcs']
+        )
 if len(opts) == 0:
     print USAGE
-    os._exit(0)
-for pair in opts:
-    if pair[0] == '-h' or pair[0] == '--help':
+    sys.exit(0)
+
+for o, a in opts:
+    if o == '-h' or o == '--help':
         print USAGE
-        os._exit(0)
-    elif pair[0] == '-s' or pair[0] == '--configure_file':
-        configure_file = pair[1]
-    elif pair[0] == '-d' or pair[0] == '--workspace':
-        workspace = pair[1]
-    elif pair[0] == '-K' or pair[0] == '--kmer_size':
-        kmer_size = int(pair[1])
-        if kmer_size < 1 or kmer_size > 96:
-            print "kmer size must be in [1, 96]"
+        sys.exit(0)
+    elif o == '-s' or o == '--configure_file':
+        config['configure_file'] = a
+    elif o == '-d' or o == '--workspace':
+        config['workspace'] = a
+    elif o == '-K' or o == '--kmer_size':
+        config['kmer_size'] = int(a)
+        kmer_size = int(a)
+        if kmer_size < 1 or kmer_size > 196:
+            print "kmer size must be in [1, 196]"
             print "system exit"
-            os._exit(0)
-    elif pair[0] == '-e' or pair[0] == '--edge_length_cutoff':
-        edge_length_cutoff = int(pair[1])
-    elif pair[0] == '-p' or pair[0] == '--CPU':
-        cpu_num = int(pair[1])
-    elif pair[0] == '-O' or pair[0] == '--max_overlap':
-        max_overlap = int(pair[1])
-    elif pair[0] == '-v' or pair[0] == '--version':
-        print "Version 0.9: released on July 2th, 2014"
-        os._exit(0)
-    elif pair[0] == '-E' or pair[0] == '--kmer_filter':
-        kmer_filter = int(pair[1])
-    else:
-        print "no option -" + pair[0]
-        print USAGE
-        os._exit(0)
+            sys.exit(1)
+    elif o == '-e' or o == '--edge_length_cutoff':
+        config['edge_length_cutoff'] = int(a)
+    elif o == '-p' or o == '--CPU':
+        config['cpu_num'] = int(a)
+        cpu_num = int(a)
+    elif o == '-O' or o == '--max_overlap':
+        config['max_overlap'] = int(a)
+    elif o == '-E' or o == '--kmer_filter':
+        config['kmer_filter'] = True
+    elif o == '-x' or o == '--arcs':
+        ARCS_CMD = a
+    elif o == '-t' or o == '--test':
+        config['test'] = True
+    elif o == '-V' or o == '--verbose':
+        config['verbose'] = True
+    elif o == '-v' or o == '--version':
+        command_run(ARCS_CMD, '', '-v', {})
+        sys.exit(0)
 
-if workspace == '':
-    print "please specify a workspace"
-    os._exit(0)
+#
+# check options
+#
+if not config.has_key('workspace'):
+    print "please specify a workspace!!!"
+    sys.exit(1)
 
-if configure_file == '':
-    print "please specify a configure file"
-    os._exit(0)
+if not config.has_key('configure_file'):
+    print "please specify a configure file!!!"
+    sys.exit(1)
 
-word = ''
-if not os.path.exists(workspace):
-    print "directory " + workspace + " does not exist"
-    print "creat this directory yes/no"
-    word = sys.stdin.readline().strip()
-    word = word.lower()
-    if word == 'y' or word == 'yes':
-        os.mkdir(workspace)
-    else:
-        print "system exit"
-        os._exit(0)
+#
+# check the workspace
+#
+workspace_check(config['workspace'], config)
 
-if workspace[len(workspace) - 1] == '/':
-    workspace = workspace[0 : len(workspace) - 1]
-workspace = os.path.abspath(workspace)
-print "path : " + workspace
+with file(config['configure_file']) as f:
+    config = configfile_parse(f, config)
+
+if len(config['library_list']) == 0:
+    print "please specify libraries!!!"
+    sys.exit(1)
 
 start = datetime.now()
 
-fin = open(configure_file, 'r')
-array = []
-cha = ' '
-lib_list = []
-insert_size = []
-link_quality_percent = []
-pair_kmer_cutoff = []
-pair_reads_cutoff = []
-contig_lengths_cutoff = []
+###################################################################
+#
+# arcs preprocess
+#
+###################################################################
+args = '-K %d -i %s -i %s -o %s -e -1' % (config['kmer_size'], config['library_list'][0]['q1'], config['library_list'][0]['q2'], os.path.join(config['workspace'], 'kmers.arff'))
+if config['kmer_filter'] and config['kmer_size'] < 33:
+    args = '%s -E' % (args)
+command_run(ARCS_CMD, 'preprocess', args, config)
+    
 
-q1 = ''
-q2 = ''
+###################################################################
+#
+# arcs contiging
+#
+###################################################################
+args = '-d %s -K %d -i %s' % (config['workspace'], config['kmer_size'], os.path.join(config['workspace'], 'kmers.arff'))
+command_run(ARCS_CMD, 'contiging', args, config)
 
-try:
-    while True:
-        line = fin.next().strip()
-        for i in range(len(line)):
-            if line[i] != ' ':
-                cha = line[i]
-        if cha == '#':
-            continue
-        line = line.strip()
-        array = re.split('[:=]', line)
-        if array[0] == 'q1':
-            q1 = array[1]
-            q1 = q1.strip()
-        if array[0] == 'q2':
-            q2 = array[1]
-            q2 = q2.strip()
-            lib_list.append((q1, q2))
-        if array[0] == 'INSERT_SIZE':
-            insert_size.append(array[1].strip())
-        if array[0] == 'LINK_QUALITY_PERCENT':
-            link_quality_percent.append(array[1].strip())
-        if array[0] == 'PAIR_KMER_CUTOFF':
-            pair_kmer_cutoff.append(array[1].strip())
-        if array[0] == 'PAIR_READS_CUTOFF':
-            pair_reads_cutoff.append(array[1].strip())
-        if array[0] == 'EDGE_LENGTH_CUTOFF':
-            contig_lengths_cutoff.append(array[1].strip())
-        
+###################################################################
+#
+# arcs copy_num_estimate 
+#
+###################################################################
+args = '-s %s -i %s -G %s -C %s' % (os.path.join(config['workspace'], 'contig_parameter'), os.path.join(config['workspace'], 'condensed_de_bruijn_graph_after_trimming.data'), os.path.join(config['workspace'], 'cdbg_copy_number.fa'), os.path.join(config['workspace'], 'component_0')) 
+command_run(ARCS_CMD, 'copy_num_estimate', args, config)
 
-except:
-    print "pass configure file"
+for i, library in enumerate(config['library_list']):
+    print "............ iter %d" % (i + 1)
 
-Path = sys.path[0] + "/"
-print Path
+    if not library.has_key('EDGE_LENGTH_CUTOFF'):
+        if config.has_key('edge_length_cutoff'):
+            library['EDGE_LENGTH_CUTOFF'] = config['edge_length_cutoff']
+        else:
+            library['EDGE_LENGTH_CUTOFF'] = config['kmer_size']
 
+    ###################################################################
+    #
+    # arcs scaffolding
+    #
+    ###################################################################
+    args = '-d %s -K %d -C %s -f %s -e %d -1 %s -2 %s -L %d -P %f -i %d -r %d -R %d' % (config['workspace'], config['kmer_size'], os.path.join(config['workspace'], 'cdbg_copy_number.fa'), os.path.join(config['workspace'], 'component_%d' % (i)), library['EDGE_LENGTH_CUTOFF'], library['q1'], library['q2'], library['INSERT_SIZE'], library['LINK_QUALITY_PERCENT'], i, library['PAIR_KMER_CUTOFF'], library['PAIR_READS_CUTOFF'])
+    command_run(ARCS_CMD, 'scaffolding', args, config)
 
-preprocess_cmd = Path + "/arcs preprocess -K " + str(kmer_size) + " -i " + lib_list[0][0]  + " -i " + lib_list[0][1] + " -o " + workspace + "/kmers.arff -E -1"
+    ###################################################################
+    #
+    # arcs solveLP
+    #
+    ###################################################################
+    args = '-i %s -o %s' % (os.path.join(config['workspace'], 'position_lp_%d.math' % (i)), os.path.join(config['workspace'], 'edge_cluster_pos_%d' % (i)))
+    command_run(ARCS_CMD, 'solveLP', args, config)
 
-print '-------------------------------------'
-print preprocess_cmd
-print '-------------------------------------'
-
-#if os.system(preprocess_cmd) != 0:
-#    os._exit(1)
-
-contiging_cmd = Path + "/arcs contiging -i " + workspace + "/kmers.arff -K " + str(kmer_size) + " -d " + workspace
-
-print '-------------------------------------'
-print contiging_cmd
-print '-------------------------------------'
-
-#if os.system(contiging_cmd) != 0:
-#    os._exit(1)
-
-copy_num_cmd = 'cat ' + workspace + '/condensed_de_bruijn_graph_after_trimming.data | ' + Path + '/copy_number_estimate.py -p' + workspace + '/contig_parameter ' + workspace + '/cdbg_copy_number.fa ' + workspace + '/component_0' 
-
-print '-------------------------------------'
-print copy_num_cmd
-print '-------------------------------------'
-
-#if os.system(copy_num_cmd) != 0:
-#    os._exit(1)
-
-
-print "link quality size " + str(len(link_quality_percent))
-
-
-for i in range(len(lib_list)):
-    print "............ iter " + str(i + 1)
-    ele = lib_list[i]
-
-    if len(contig_lengths_cutoff) <= i:
-        contig_lengths_cutoff.append(edge_length_cutoff)
-    scaffolding_cmd = Path + '/arcs scaffolding -d ' + workspace + ' -K ' + str(kmer_size) + ' -C ' + workspace + '/cdbg_copy_number.fa -f ' + workspace + '/component_' + str(i)  + ' -e ' + str(contig_lengths_cutoff[i]) + ' -1 ' + ele[0] + ' -2 ' + ele[1] + ' -L ' + insert_size[i] + ' -P ' + link_quality_percent[i] + ' -p ' + str(cpu_num) + ' -i ' + str(i) + ' -r ' + pair_kmer_cutoff[i] + ' -R ' + pair_reads_cutoff[i] 
-    print '-------------------------------------'
-    print scaffolding_cmd
-    print '-------------------------------------'
-     
-#    if os.system(scaffolding_cmd) != 0:
-#        os._exit(1)
-
-    #change lp to smallLPs by wangbing   
-    glpsol_cmd = Path + '/runLP.sh ' +  workspace + '/position_lp_' + str(i) + '.math ' + workspace + '/smallLPs_' + str(i) + '/ ' + workspace + '/smallLPResults_' + str(i) + '/'
-    print '-------------------------------------'
-    print glpsol_cmd
-    print '-------------------------------------'
-#    if os.system(glpsol_cmd) != 0:
-#        os._exit(1)
-
-    tran_pos_cmd = Path + '/parse_glpk_results.py -d ' + workspace + ' -i ' + str(i) + ' -p ' + os.path.join(workspace, 'scaffold_parameter_%d' % (i))
-    print '-------------------------------------'
-    print tran_pos_cmd
-    print '-------------------------------------'
-#    if os.system(tran_pos_cmd) != 0:
-#        os._exit(1)
-    #end change
-    remove_repeats_cmd = Path + '/arcs remove_repeats -d ' + workspace + ' -O ' + str(max_overlap) + ' -K ' + str(kmer_size) + ' -i ' + str(i)
-    print '-------------------------------------'
-    print remove_repeats_cmd 
-    print '-------------------------------------'
-
-#    if os.system(remove_repeats_cmd) != 0:
-#        os._exit(1)
-        #kmer_size -= 2
-
-reverse_filter_cmd = Path + 'gap_filling/reverse_filter.py ' + workspace + ' ' + workspace + '/cdbg_copy_number.fa ' + workspace + '/component_' + str(len(insert_size))
-print '-------------------------------------'
-print reverse_filter_cmd
-print '-------------------------------------'
-#if os.system(reverse_filter_cmd) != 0:
-#	os._exit(1)
-
-gap_filling_cmd = Path + '/arcs gap_filling -s scaffold_parameter_0 -K ' + str(kmer_size) + ' -O ' + str(kmer_size - 10) + ' -C cdbg_copy_number.fa -l component_last -d ' + workspace + ' -I condensed_de_bruijn_graph_before_trimming.data'
-print '-------------------------------------'
-print gap_filling_cmd
-print '-------------------------------------'
-if os.system(gap_filling_cmd) != 0:
-	os._exit(1)
+    ###################################################################
+    #
+    # arcs remove_repeats
+    #
+    ###################################################################
+    args = '-d %s -K %d -O %d -i %d' % (config['workspace'], config['kmer_size'], config['max_overlap'], i)
+    command_run(ARCS_CMD, 'remove_repeats', args, config)
 
 end = datetime.now()
-print 'total running time is ' +  str((end - start).seconds) + ' seconds'
-
+print 'total running time is %d seconds' % ((end - start).seconds)

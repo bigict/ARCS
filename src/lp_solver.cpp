@@ -128,136 +128,6 @@ static bool PositionList_write(const PositionList& position_tbl, std::ostream& s
     return true;
 }
 
-static bool Graph_write(const Graph& graph, std::ostream& stream, size_t loops) {
-    if (!stream) {
-        return false;
-    }
-
-    glp_prob* lp = glp_create_prob();
-    glp_set_prob_name(lp, "scaffold");
-    glp_set_obj_dir(lp, GLP_MIN);
-
-    size_t rows = 0, cols = 0, vals = 0;
-    for (Graph::const_iterator i = graph.begin(); i != graph.end(); ++i) {
-        ++cols; // var x_i
-        for (Children::const_iterator j = i->second.children.begin(); j != i->second.children.end(); ++j) {
-            rows += 3;
-            cols += 2; // var e_i_j; var E_i_j;
-            vals += 7;
-        }
-    }
-
-    glp_add_rows(lp, rows);
-    glp_add_cols(lp, cols);
-
-    std::map< std::pair< size_t, size_t >, size_t > mapping;
-    {
-        size_t row = 1, col = 1;
-        for (Graph::const_iterator i = graph.begin(); i != graph.end(); ++i) {
-            mapping[std::make_pair(i->first, -1)] = col;
-
-            glp_set_col_bnds(lp, col++, GLP_LO, 0.0, 0.0); // x_i >= 0
-            for (Children::const_iterator j = i->second.children.begin(); j != i->second.children.end(); ++j) {
-                glp_set_row_bnds(lp, row++, GLP_FX, j->second, j->second);
-                glp_set_row_bnds(lp, row++, GLP_LO, 0.0, 0.0);
-                glp_set_row_bnds(lp, row++, GLP_LO, 0.0, 0.0);
-
-                mapping[std::make_pair(i->first, j->first)] = col;
-
-                ++col; // var e_i
-                glp_set_obj_coef(lp, col++, 1.0);
-            }
-        }
-    }
-
-    LOG4CXX_TRACE(logger, boost::format(" rows = %d, cols = %d, vals = %d") % rows % cols % vals);
-
-    int* ia = new int[vals + 1];
-    int* ja = new int[vals + 1];
-    double* ra = new double[vals + 1];
-
-    {
-        size_t l = 1, row = 1, col = 1;
-        for (Graph::const_iterator i = graph.begin(); i != graph.end(); ++i) {
-            for (Children::const_iterator j = i->second.children.begin(); j != i->second.children.end(); ++j) {
-                // x_j - x_i + e_i_j = d_i_j
-                ia[l] = row;
-                ja[l] = mapping[std::make_pair(j->first, -1)];
-                ra[l] = 1.0;
-                ++l;
-
-                ia[l] = row;
-                ja[l] = mapping[std::make_pair(i->first, -1)];
-                ra[l] = -1.0;
-                ++l;
-
-                ia[l] = row;
-                ja[l] = mapping[std::make_pair(i->first, j->first)] + 0;
-                ra[l] = 1.0;
-                ++l;
-
-                ++row;
-
-                // E_i_j + e_i_j >= 0
-                ia[l] = row;
-                ja[l] = mapping[std::make_pair(i->first, j->first)] + 1;
-                ra[l] = 1.0;
-                ++l;
-
-                ia[l] = row;
-                ja[l] = mapping[std::make_pair(i->first, j->first)] + 0;
-                ra[l] = 1.0;
-                ++l;
-
-                ++row;
-
-                // E_i_j - e_i_j >= 0
-                ia[l] = row;
-                ja[l] = mapping[std::make_pair(i->first, j->first)] + 1;
-                ra[l] = 1.0;
-                ++l;
-
-                ia[l] = row;
-                ja[l] = mapping[std::make_pair(i->first, j->first)] + 0;
-                ra[l] = -1.0;
-                ++l;
-
-                ++row;
-            }
-        }
-    }
-
-    glp_load_matrix(lp, vals, ia, ja, ra);
-
-    glp_smcp parm;
-    glp_init_smcp(&parm);
-    parm.it_lim = loops;
-    //parm.pricing = GLP_PT_PSE;
-    //parm.presolve = GLP_ON;
-    parm.msg_lev = GLP_MSG_ERR;
-    glp_simplex(lp, &parm);
-
-    double z = glp_get_obj_val(lp);
-    LOG4CXX_TRACE(logger, boost::format("z = %f") % z);
-
-    for (Graph::const_iterator i = graph.begin(); i != graph.end(); ++i) {
-        stream << boost::format("x\t%d\t%d") % i->first % glp_get_col_prim(lp, mapping[std::make_pair(i->first, -1)]) << std::endl;
-    }
-
-    delete[] ra;
-    delete[] ja;
-    delete[] ia;
-
-    glp_delete_prob(lp);
-
-    return true;
-}
-
-static bool Graph_write(Graph& graph, const std::string& file, size_t loops) {
-    std::ofstream stream(file.c_str());
-    return Graph_write(graph, stream, loops);
-}
-
 static bool Graph_solve(Graph& graph, size_t loops, PositionList* position_tbl) {
     glp_prob* lp = glp_create_prob();
     glp_set_prob_name(lp, "scaffold");
@@ -382,7 +252,7 @@ static bool Graph_solve(Graph& graph, size_t loops, PositionList* position_tbl) 
     return true;
 }
 
-static void Graph_divide(Graph& graph, size_t loops, PositionList* position_tbl) {
+static bool Graph_divide(Graph& graph, size_t loops, PositionList* position_tbl) {
     typedef std::set< size_t > NodeList;
     NodeList nodes;
 
@@ -419,8 +289,13 @@ static void Graph_divide(Graph& graph, size_t loops, PositionList* position_tbl)
 
         LOG4CXX_DEBUG(logger, boost::format("component:%d/%d") % component.size() % graph.size());
 
-        Graph_solve(component, loops, position_tbl);
+        if (!Graph_solve(component, loops, position_tbl)) {
+            LOG4CXX_ERROR(logger, "solve component failed");
+            return false;
+        }
     }
+
+    return true;
 }
  
 
@@ -456,18 +331,21 @@ int LPSolver::run(const Properties& options, const Arguments& arguments) {
     Graph graph;
 
 	// read graph data
-    if (!Graph_read(graph, *is)) {
-        LOG4CXX_ERROR(logger, boost::format("failed to read graph from stream"));
-        return 1;
+    if (r == 0 && !Graph_read(graph, *is)) {
+        LOG4CXX_ERROR(logger, boost::format("failed to read graph from stream!!!"));
+        r = 1;
     }
 
     PositionList position_tbl(options.get< size_t >("EDGE_CLUSTER_NUM"), 0);
     // divide into connected components and solve them one by one.
-    Graph_divide(graph, loops, &position_tbl);
+    if (r == 0 && !Graph_divide(graph, loops, &position_tbl)) {
+        LOG4CXX_ERROR(logger, boost::format("solve LP failed!!!"));
+        r = 2;
+    }
     // write graph data
-    if (!PositionList_write(position_tbl, *os)) {
-        LOG4CXX_ERROR(logger, boost::format("failed to write position to stream"));
-        return 1;
+    if (r == 0 && !PositionList_write(position_tbl, *os)) {
+        LOG4CXX_ERROR(logger, boost::format("failed to write position to stream!!!"));
+        r = 3;
     }
 
     // input & output closed
