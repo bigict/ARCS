@@ -46,7 +46,7 @@ def command_run(arcs, cmd, args, config):
     if not config['test'] and os.system(proc) != 0:
         sys.exit(1)
     pend = datetime.now()
-    if config.has_key('runtime') and config['runtime']:
+    if not config['test'] and config.has_key('runtime') and config['runtime']:
         print '%s time is %d seconds' %  (cmd, (pend - pstart).seconds)
 
 def workspace_check(workspace, config):
@@ -178,7 +178,6 @@ args = '-K %d -i %s -i %s -o %s -e -1' % (config['kmer_size'], config['library_l
 if config['kmer_filter'] and config['kmer_size'] < 33:
     args = '%s -E' % (args)
 command_run(ARCS_CMD, 'preprocess', args, config)
-    
 
 ###################################################################
 #
