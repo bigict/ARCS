@@ -76,9 +76,32 @@ bool ReadContigs(std::istream& stream, ContigList& contigs) {
     return true;
 }
 
+bool WriteContigs(std::ostream& stream, ContigList& contigs) {
+    if (!stream) {
+        LOG4CXX_ERROR(logger, boost::format("can not write contig to stream"));
+        return false;
+    }
+    LOG4CXX_DEBUG(logger, boost::format("write contig to stream begin"));
+
+    size_t idx = 0;
+    BOOST_FOREACH(const Contig& contig, contigs) {
+        stream << boost::format(">seq_%d\t%d\n%s\n") % idx % contig.copy_num % contig.seq;
+        ++idx;
+    }
+
+    LOG4CXX_DEBUG(logger, boost::format("write contig to stream end"));
+
+    return true;
+}
+
 bool ReadContigs(const std::string& file, ContigList& contigs) {
     std::ifstream stream(file.c_str());
     return ReadContigs(stream, contigs);
+}
+
+bool WriteContigs(const std::string& file, ContigList& contigs) {
+    std::ofstream stream(file.c_str());
+    return WriteContigs(stream, contigs);
 }
 
 size_t GenomeLength(const ContigList& contigs, size_t K) {

@@ -16,6 +16,8 @@ typedef std::vector< Contig > ContigList;
 
 bool ReadContigs(std::istream& stream, ContigList& contigs);
 bool ReadContigs(const std::string& file, ContigList& contigs);
+bool WriteContigs(std::ostream& stream, ContigList& contigs);
+bool WriteContigs(const std::string& file, ContigList& contigs);
 size_t GenomeLength(const ContigList& contigs, size_t K);
 
 // FA(contig file) Format Specification: file_name(.fa)

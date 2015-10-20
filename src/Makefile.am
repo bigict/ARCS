@@ -5,12 +5,16 @@ arcs_SOURCES=arff.cpp \
             component.h \
             condensed_debruijn_graph.cpp \
             condensed_debruijn_graph.h \
+            condensed_debruijn_graph_reader.cpp \
+            condensed_debruijn_graph_reader.h \
             contiging.cpp \
             contiging.h \
             contigs.cpp \
             contigs.h \
             constant.cpp \
             constant.h \
+            copy_num_estimator.cpp \
+            copy_num_estimator.h \
             debruijn_graph.h \
             gap_filler.cpp \
             fap_filler.h \
