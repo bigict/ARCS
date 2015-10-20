@@ -34,6 +34,7 @@ AC_FUNC_MALLOC
 AC_CHECK_FUNCS([memset pow sqrt])
 
 AC_CONFIG_FILES([Makefile
+                 benchmark/Makefile
                  m4/Makefile
                  src/Makefile])
 AC_CONFIG_SUBDIRS()

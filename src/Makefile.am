@@ -26,6 +26,8 @@ arcs_SOURCES=arff.cpp \
             kseq.h \
             lp_divider.cpp \
             lp_divider.h \
+            lp_solver.cpp \
+            lp_solver.h \
             pair_read.cpp \
             pair_read.h \
             preprocess.cpp \
