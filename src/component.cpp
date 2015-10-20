@@ -12,14 +12,13 @@
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.Component"));
 
-void Component::length(size_t K, const ContigList& contig_list) {
+void Component::length(const ContigList& contig_list) {
     _length = 0;
     if (!contigs.empty()) {
-        _length = contig_list[contigs[0]].seq.length() + 1;//can change
+        _length = contig_list[contigs[0]].seq.length();
         for (size_t i = 1; i < contigs.size(); ++i) {
             _length += gaps[i - 1];
-            BOOST_ASSERT(contig_list[contigs[i]].seq.size() >= K - 1);
-            _length += contig_list[contigs[i]].seq.size() - K + 1;
+            _length += contig_list[contigs[i]].seq.size();
         }
     }
 }
@@ -89,13 +88,13 @@ std::ostream& operator<<(std::ostream& os, const Component& component) {
     return os;
 }
 
-bool ReadComponents(std::istream& stream, const ContigList& contigs, size_t K, ComponentList& components) {
+bool ReadComponents(std::istream& stream, const ContigList& contigs, ComponentList& components) {
     LOG4CXX_DEBUG(logger, boost::format("read component from stream begin"));
 
     ComponentReader reader(stream);
     Component component;
     while (reader.read(component)) {
-        component.length(K, contigs);
+        component.length(contigs);
         components.push_back(component);
     }
 
@@ -103,8 +102,8 @@ bool ReadComponents(std::istream& stream, const ContigList& contigs, size_t K, C
     return true;
 }
 
-bool ReadComponents(const std::string& file, const ContigList& contigs, size_t K, ComponentList& components) {
+bool ReadComponents(const std::string& file, const ContigList& contigs, ComponentList& components) {
     std::ifstream stream(file.c_str());
-    return ReadComponents(stream, contigs, K, components);
+    return ReadComponents(stream, contigs, components);
 }
 

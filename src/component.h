@@ -17,7 +17,7 @@ public:
     size_t length() const {
         return _length;
     } 
-    void length(size_t K, const ContigList& contigs);
+    void length(const ContigList& contigs);
     size_t edge_num() const {
         return contigs.size();
     }
@@ -30,13 +30,12 @@ public:
 
 private:
     friend std::ostream& operator<<(std::ostream& os, const Component& component) ;
-
     size_t _length;
 };
 
 typedef std::vector< Component > ComponentList;
-bool ReadComponents(std::istream& stream, const ContigList& contigs, size_t K, ComponentList& components);
-bool ReadComponents(const std::string& file, const ContigList& contigs, size_t K, ComponentList& components);
+bool ReadComponents(std::istream& stream, const ContigList& contigs, ComponentList& components);
+bool ReadComponents(const std::string& file, const ContigList& contigs, ComponentList& components);
 
 // component Format Specification : file name :component_iter
 // Syntax

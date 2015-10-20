@@ -22,7 +22,7 @@ Scaffolding Scaffolding::_runner;
 template< size_t K >
 class ConnectGraphBuilder {
 public:
-    ConnectGraphBuilder(size_t L, size_t insert_size, const PairReadList& pair_reads, const KmerTable< K, KmerPosition >& hash_tbl, const ComponentList& components) : _K(L), _insert_size(insert_size), _pair_reads(pair_reads), _hash_tbl(hash_tbl), _components(components) {
+    ConnectGraphBuilder(size_t L, size_t insert_size, const PairReadList& pair_reads, const KmerMultiTable< K, KmerPosition >& hash_tbl, const ComponentList& components) : _K(L), _insert_size(insert_size), _pair_reads(pair_reads), _hash_tbl(hash_tbl), _components(components) {
     }
 
     size_t build(GappedFragmentGraph* graph) const {
@@ -57,7 +57,7 @@ private:
         for (size_t i = 0, j = _K; j <= read1.size() && j <= read2.size(); ++i,++j) {
             Kmer< K > kmer1 = read1.substr(i, _K), kmer2 = read2.substr(i, _K);
 
-            typename KmerTable< K, KmerPosition >::const_iterator left = _hash_tbl.find(kmer1), right = _hash_tbl.find(kmer2);
+            typename KmerMultiTable< K, KmerPosition >::const_iterator left = _hash_tbl.find(kmer1), right = _hash_tbl.find(kmer2);
             
             if (left != _hash_tbl.end() && right != _hash_tbl.end() && left->second.first != right->second.first) {
                 ++num;
@@ -65,13 +65,29 @@ private:
                 LOG4CXX_TRACE(logger, boost::format("pair kmre1=%s %d %d") % kmer1 % left->second.first % left->second.second);
                 LOG4CXX_TRACE(logger, boost::format("pair kmre2=%s %d %d") % kmer2 % right->second.first % right->second.second);
             
+                //////////////////////////////////////////////////////
+                //
+                //              x
+                //          R1  |                       y
+                // |____________|____|             R2   |
+                // |            |    |    |_____________|__|
+                // |            |    | gap|             |
+                // |            |    |----|             |
+                // |            |        insert_size    |
+                // |            |-----------------------|
+                // |     distance         |
+                // |----------------------|
+                //
+                // NOTE: overlap := -gap
+                // 
+                // ///////////////////////////////////////////////////
                 long distance = _insert_size + left->second.second - right->second.second;
-                long left_len = _components[left->second.first].length();
-                long overlap = left_len - distance - _K + 1;
+                size_t R1 = _components[left->second.first].length();
+                long overlap = R1 - distance;
                 if (overlap > 0) {
                     if (overlap > _insert_size)
                         continue;
-                    distance = left_len - _K + 1; //can change
+                    distance = R1;
                 }
                 if (find_component.find(std::make_pair(left->second.first, right->second.first)) != find_component.end()) {
                     graph->addEdge(left->second.first, right->second.first, distance, 1, 0);
@@ -88,7 +104,7 @@ private:
     size_t _K;
     size_t _insert_size;
     const PairReadList& _pair_reads;
-    const KmerTable< K, KmerPosition >& _hash_tbl;
+    const KmerMultiTable< K, KmerPosition >& _hash_tbl;
     const ComponentList& _components;
 };
 
@@ -116,7 +132,7 @@ int _Scaffolding_run_(size_t L, const Properties& options, const Arguments& argu
 
     // read component file
     ComponentList components;
-    if (!ReadComponents(options.get< std::string >("f"), contigs, L, components)) {
+    if (!ReadComponents(options.get< std::string >("f"), contigs, components)) {
         LOG4CXX_ERROR(logger, boost::format("faild to read components from file: %s") % options.get< std::string >("f"));
         return 1;
     }
@@ -152,7 +168,7 @@ int _Scaffolding_run_(size_t L, const Properties& options, const Arguments& argu
     GappedFragmentGraph g(L, pair_kmer_cutoff, pair_read_cutoff, percent, components.size(), GENOME_LEN);
     // build
     {
-        KmerTable< K, KmerPosition > hash_tbl;
+        KmerMultiTable< K, KmerPosition > hash_tbl;
         BuildKmerTable_pairends< K >(L, options.get< size_t >("L", 180), EDGE_CUTOFF, contigs, components, hash_tbl);
 
         ConnectGraphBuilder< K > builder(L, INSERT_SIZE, pair_reads, hash_tbl, components);

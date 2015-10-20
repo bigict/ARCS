@@ -59,7 +59,7 @@ private:
                 LOG4CXX_TRACE(logger, boost::format("INSERT SIZE pair kmre2=%s %d %d") % kmer2 % right->second.first % right->second.second);
 
                 if (right->second.second - left->second.second > _insert_size / 4 
-                        && right->second.second - left->second.second < 2 * _insert_size) {
+                        && right->second.second - left->second.second < 2 * _insert_size) { // use abs(x) ?????????
                     insert_size_distr.push_back(right->second.second - left->second.second);
                 }
             }

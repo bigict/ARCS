@@ -21,7 +21,7 @@ public:
     typedef std::list< Edge > EdgeList;
     typedef std::vector< EdgeList > NodeList;
 
-    GappedFragmentGraph(size_t k, size_t pair_kmer_cutoff, size_t pair_read_cutoff, double percent, size_t size, size_t genome_len) ;
+    GappedFragmentGraph(size_t K, size_t pair_kmer_cutoff, size_t pair_read_cutoff, double percent, size_t size, size_t genome_len) ;
     virtual ~GappedFragmentGraph() ;
 
     void setPairKmerNumAndInsertSizeAndDelta(size_t pair_kmer_num, size_t insert_size, double delta) ;
@@ -36,8 +36,8 @@ public:
 private:
     friend std::ostream& operator<<(std::ostream& os, const GappedFragmentGraph& g);
 
-    NodeList _graph;
-    size_t _k;
+    NodeList _nodelist;
+    size_t _K;
     double _percent;
     size_t _pair_read_cutoff;
     size_t _pair_kmer_cutoff;

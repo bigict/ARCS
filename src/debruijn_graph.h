@@ -29,11 +29,11 @@
 template< size_t K >
 class DeBruijnGraph {
 public:
-    typedef std::map< char, size_t > EdgeList;
+    typedef std::tr1::unordered_map< char, uint32_t > EdgeList;
     struct Node {
-        Node() {
+        Node() : children(Nucleotide::NUM), parents(Nucleotide::NUM) {
         }
-        Node(const char edge, size_t weight) {
+        Node(const char edge, size_t weight) : children(Nucleotide::NUM), parents(Nucleotide::NUM) {
             children[edge] = weight;
         }
         EdgeList children;

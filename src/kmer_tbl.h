@@ -33,7 +33,7 @@ size_t _BuildKmerTable_(size_t L, const ContigList& contigs, size_t component_no
 }
 
 template< size_t K >
-size_t _BuildKmerTable_(size_t L, size_t insert_size, const ContigList& contigs, size_t component_no, const Component& component, KmerTable< K, KmerPosition >& tbl) {
+size_t _BuildKmerTable_(size_t L, size_t insert_size, const ContigList& contigs, size_t component_no, const Component& component, KmerMultiTable< K, KmerPosition >& tbl) {
     size_t num = 0;
     
     size_t cutoff = 2 * insert_size;
@@ -41,7 +41,7 @@ size_t _BuildKmerTable_(size_t L, size_t insert_size, const ContigList& contigs,
     if (component.contigs.size() == 1) {
         const  Contig& contig = contigs[component.contigs[0]];
         for (size_t i = 0, j = L; j <= contig.seq.length(); ++i,++j) {
-            if (idx <= cutoff || idx >= component.length() - 1 - L + 1 - cutoff) {
+            if (idx <= cutoff || (component.length() >= L + cutoff && idx >= component.length() - L + 1 - 1 - cutoff)) {
                 Kmer< K > kmer(contig.seq, i, j);
                 tbl.insert(std::make_pair(kmer, KmerPosition(component_no, idx)));
                 ++num;
@@ -52,7 +52,7 @@ size_t _BuildKmerTable_(size_t L, size_t insert_size, const ContigList& contigs,
         for (size_t k = 0; k < component.contigs.size(); ++k) {
             const Contig& contig = contigs[component.contigs[k]];
             for (size_t i = 0,j = L; j <= contig.seq.length(); ++i,++j) {
-                if (idx <= cutoff || idx >= component.length() - 1 - cutoff) {
+                if (idx <= cutoff || (component.length() >= L + cutoff && idx >= component.length() - L + 1 - 1 - cutoff)) {
                     Kmer< K > kmer(contig.seq, i, j);
                     tbl.insert(std::make_pair(kmer, KmerPosition(component_no, idx)));
                     ++num;
@@ -80,7 +80,7 @@ size_t BuildKmerTable_insertsize(size_t L, size_t insert_size, const ContigList&
 }
 
 template< size_t K >
-size_t BuildKmerTable_pairends(size_t L, size_t insert_size, size_t edge_cutoff, const ContigList& contigs, const ComponentList& components, KmerTable< K, KmerPosition >& tbl) {
+size_t BuildKmerTable_pairends(size_t L, size_t insert_size, size_t edge_cutoff, const ContigList& contigs, const ComponentList& components, KmerMultiTable< K, KmerPosition >& tbl) {
     size_t idx = 0, num = 0;
 
     BOOST_FOREACH(const Component& component, components) {
