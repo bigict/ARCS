@@ -228,5 +228,21 @@ for i, library in enumerate(config['library_list']):
     args = '-d %s -K %d -O %d -i %d' % (config['workspace'], config['kmer_size'], config['max_overlap'], i)
     command_run(ARCS_CMD, 'remove_repeats', args, config)
 
+###################################################################
+#
+# python reverse_filter.py
+#
+###################################################################
+args = '%s %s %s' % (config['workspace'], os.path.join(config['workspace'], 'cdbg_copy_number.fa'), os.path.join(config['workspace'], 'component_%d' % len(config['library_list'])))
+command_run('python', os.path.join(os.path.abspath(os.path.dirname(__file__)), 'reverse_filter.py'), args, config)
+
+###################################################################
+#
+# arcs gap_filling
+#
+###################################################################
+args = '-s %s -d %s -K %d -O %d -C cdbg_copy_number.fa -l component_last -I condensed_de_bruijn_graph_after_trimming.data' % (os.path.join(config['workspace'], 'scaffold_parameter_0'), config['workspace'], config['kmer_size'], config['kmer_size'] - 10)
+command_run(ARCS_CMD, 'gap_filling', args, config)
+
 end = datetime.now()
 print 'total running time is %d seconds' % ((end - start).seconds)
