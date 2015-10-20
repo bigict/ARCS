@@ -78,6 +78,8 @@ int CopyNumEstimator::run(const Properties& options, const Arguments& arguments)
             }
             ++contig_idx;
         }
+
+        LOG4CXX_DEBUG(logger, boost::format("Number of Uniques = %d") % component_idx);
     }
 
     LOG4CXX_DEBUG(logger, "copy_num_estimator end");

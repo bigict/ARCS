@@ -1,6 +1,7 @@
 #include "gap_filler.h"
 #include "component.h"
 #include "condensed_debruijn_graph.h"
+#include "condensed_debruijn_graph_reader.h"
 #include "constant.h"
 #include "contigs.h"
 #include "kmer.h"
@@ -17,58 +18,6 @@ static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.GapFiller"));
 
 #define TRAINING
 #define RESULT
-
-struct DeBruijnGraphEdge {
-    DeBruijnGraphEdge() : i(0), j(0), coverage(0) {
-    }
-    size_t i, j;
-    std::string seq;
-    double coverage;
-};
-
-class DeBruijnGraphReader {
-public:
-    DeBruijnGraphReader(std::istream& stream) : _stream(stream) {
-    }
-    bool read(DeBruijnGraphEdge& edge);
-private:
-    std::istream& _stream;
-};
-
-bool DeBruijnGraphReader::read(DeBruijnGraphEdge& edge) {
-    enum {
-        kEdge, 
-        kCoverage
-    };
-    if (_stream) {
-        static boost::regex reg("(\\d+)\\s+(\\d+)\\s+([ACGTN]+)\\s+.*");
-
-        try {
-            int state = kEdge;
-            std::string line;
-            while (std::getline(_stream, line)) {
-                boost::algorithm::trim(line);
-                if (line.empty()) continue;
-                if (state == kEdge) {
-                    boost::smatch what;
-                    if (boost::regex_match(line, what, reg)) {
-                        edge.i = boost::lexical_cast< size_t >(what[1]);
-                        edge.j = boost::lexical_cast< size_t >(what[2]);
-                        edge.seq = what[3];
-                        state = kCoverage;
-                    } else {
-                        return false;
-                    }
-                } else if (state == kCoverage) {
-                    edge.coverage = boost::lexical_cast< double >(line);
-                    return true;
-                }
-            }
-        } catch (...) {
-        }
-    }
-    return false;
-}
 
 //gap filling
 void GapFiller::fill() {
@@ -203,8 +152,8 @@ bool GapFiller::input_debruijn(const std::string& file) {
         LOG4CXX_WARN(logger, boost::format("%s: No such file or directory!!!") % file);
         return false;
     }
-    DeBruijnGraphReader reader(stream);
-    DeBruijnGraphEdge debruijn;
+    CondensedDeBruijnGraphReader reader(stream);
+    CondensedDeBruijnGraphEdge debruijn;
     while (reader.read(debruijn)) {
         _all_graph.addEdge(debruijn.seq, 0);
     }
