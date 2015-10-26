@@ -37,10 +37,10 @@ size_t _BuildKmerTable_(size_t L, size_t insert_size, const ContigList& contigs,
     size_t num = 0;
     
     size_t cutoff = 2 * insert_size;
-    long idx = 0;
-    if (component.contigs.size() == 1) {
-        const  Contig& contig = contigs[component.contigs[0]];
-        for (size_t i = 0, j = L; j <= contig.seq.length(); ++i,++j) {
+    size_t idx = 0;
+    for (size_t k = 0; k < component.contigs.size(); ++k) {
+        const Contig& contig = contigs[component.contigs[k]];
+        for (size_t i = 0,j = L; j <= contig.seq.length(); ++i,++j) {
             if (idx <= cutoff || (component.length() >= L + cutoff && idx >= component.length() - L + 1 - 1 - cutoff)) {
                 Kmer< K > kmer(contig.seq, i, j);
                 tbl.insert(std::make_pair(kmer, KmerPosition(component_no, idx)));
@@ -48,19 +48,7 @@ size_t _BuildKmerTable_(size_t L, size_t insert_size, const ContigList& contigs,
             }
             ++idx;
         }
-    } else {
-        for (size_t k = 0; k < component.contigs.size(); ++k) {
-            const Contig& contig = contigs[component.contigs[k]];
-            for (size_t i = 0,j = L; j <= contig.seq.length(); ++i,++j) {
-                if (idx <= cutoff || (component.length() >= L + cutoff && idx >= component.length() - L + 1 - 1 - cutoff)) {
-                    Kmer< K > kmer(contig.seq, i, j);
-                    tbl.insert(std::make_pair(kmer, KmerPosition(component_no, idx)));
-                    ++num;
-                }
-                ++idx;
-            }
-            idx += std::min(L, contig.seq.length()) + component.gaps[k]; // kmer size + gap
-        }
+        idx += std::min(L, contig.seq.length()) + component.gaps[k]; // kmer size + gap
     }
 
     return num;
