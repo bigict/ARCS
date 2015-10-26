@@ -3,9 +3,9 @@
 
 #include "config.h"
 
+#include <iostream>
 #include <map>
 #include <string>
-#include <tr1/memory>
 #include <tr1/tuple>
 #include <vector>
 

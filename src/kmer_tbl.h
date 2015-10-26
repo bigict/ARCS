@@ -26,7 +26,7 @@ size_t _BuildKmerTable_(size_t L, const ContigList& contigs, size_t component_no
             ++idx;
             ++num;
         }
-        idx += component.gaps[k];
+        idx += std::min(L, contig.seq.length()) + component.gaps[k]; // kmer size + gap
     }
 
     return num;
@@ -59,7 +59,7 @@ size_t _BuildKmerTable_(size_t L, size_t insert_size, const ContigList& contigs,
                 }
                 ++idx;
             }
-            idx += component.gaps[k];
+            idx += std::min(L, contig.seq.length()) + component.gaps[k]; // kmer size + gap
         }
     }
 

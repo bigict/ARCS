@@ -42,12 +42,12 @@ def command_run(arcs, cmd, args, config):
         print proc
         print '-------------------------------------'
 
-    pstart = datetime.now()
-    if not config['test'] and os.system(proc) != 0:
+    start = datetime.now()
+    if not config.get('test', False) and os.system(proc) != 0:
         sys.exit(1)
-    pend = datetime.now()
-    if not config['test'] and config.has_key('runtime') and config['runtime']:
-        print '%s time is %d seconds' %  (cmd, (pend - pstart).seconds)
+    end = datetime.now()
+    if not config.get('test', False) and config.has_key('runtime') and config['runtime']:
+        print '%s time is %d seconds' %  (cmd, (end - start).seconds)
 
 def workspace_check(workspace, config):
     if not os.path.exists(workspace) or not os.path.isdir(workspace):

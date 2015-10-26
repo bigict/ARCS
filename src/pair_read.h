@@ -1,7 +1,6 @@
 #ifndef pair_read_h_
 #define pair_read_h_
 
-#include "component.h"
 #include "kmer_tbl.h"
 #include "kseq.h"
 
@@ -26,7 +25,7 @@ bool ReadPairReads(const std::string& file1, const std::string& file2, PairReadL
 template< size_t K >
 class InsertSizeEstimater {
 public:
-    InsertSizeEstimater(size_t L, size_t insert_size, const PairReadList& pair_reads, const KmerTable< K, KmerPosition >& hash_tbl) : _K(L), _insert_size(insert_size), _pair_reads(pair_reads), _hash_tbl(hash_tbl) {
+    InsertSizeEstimater(size_t L, size_t insert_size, const PairReadList& pair_reads, const KmerTable< K, KmerPosition >& hash_tbl, bool do_reverse = true) : _K(L), _insert_size(insert_size), _pair_reads(pair_reads), _hash_tbl(hash_tbl), _do_reverse(do_reverse) {
     }
 
     void estimate(size_t* insert_size, double* delta);
@@ -70,6 +69,7 @@ private:
     size_t _insert_size;
     const PairReadList& _pair_reads;
     const KmerTable< K, KmerPosition >& _hash_tbl;
+    bool _do_reverse;
 
     static log4cxx::LoggerPtr logger;
 };
@@ -97,7 +97,9 @@ void InsertSizeEstimater< K >::estimate(size_t* insert_size, double* delta) {
             continue;
         }
         estimateOnePR(pair_read.set1, make_complement_dna(pair_read.set2), insert_size_distr);
-        estimateOnePR(pair_read.set2, make_complement_dna(pair_read.set1), insert_size_distr);
+        if (_do_reverse) {
+            estimateOnePR(pair_read.set2, make_complement_dna(pair_read.set1), insert_size_distr);
+        }
     }
 
     Accumulator acc;

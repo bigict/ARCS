@@ -18,9 +18,6 @@ public:
         return _length;
     } 
     void length(const ContigList& contigs);
-    size_t edge_num() const {
-        return contigs.size();
-    }
 
     size_t id;
     typedef std::vector< size_t > ContigIdList;

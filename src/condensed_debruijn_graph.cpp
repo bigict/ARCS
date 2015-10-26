@@ -21,6 +21,7 @@ void CondensedDeBruijnGraph::addEdge(const std::string& seq, size_t copy_num) {
         char next = edge.seq[_K - 1];
         NodeList::iterator  i = _parents.find(prefix);
         if (i != _parents.end()) {
+            BOOST_ASSERT(i->second.find(next) == i->second.end());
             i->second[next] = idx;
         } else {
             EdgeList parent = boost::assign::map_list_of(next, idx);
@@ -33,6 +34,7 @@ void CondensedDeBruijnGraph::addEdge(const std::string& seq, size_t copy_num) {
         char prev = edge.seq[edge.seq.length() - _K];
         NodeList::iterator  i = _children.find(suffix);
         if (i != _children.end()) {
+            BOOST_ASSERT(i->second.find(prev) == i->second.end());
             i->second[prev] = idx;
         } else {
             EdgeList child = boost::assign::map_list_of(prev, idx);

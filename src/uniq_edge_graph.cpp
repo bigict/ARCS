@@ -330,9 +330,11 @@ void UniqEdgeGraph::linearize(std::ostream& out) {
 			//out << _position_tbl[_component[i][j].id] - _position_tbl[_component[i][j-1].id] - _length_tbl[_component[i][j-1].id] + K << " " ;
 			int distance = getDistance(scaffolds[i][j - 1].id, scaffolds[i][j].id);
 			if (distance >= 0) {
-				out << (int)(distance - scaffolds[i][j-1].length + _K)  << " " ;
+				//out << (int)(distance - scaffolds[i][j-1].length + _K)  << " " ;
+				out << (int)(distance - scaffolds[i][j-1].length)  << " " ;
 			} else {
-				out << (int)(_position_tbl[scaffolds[i][j].id] - _position_tbl[scaffolds[i][j-1].id] - _length_tbl[scaffolds[i][j-1].id] + _K) << " " ;
+				//out << (int)(_position_tbl[scaffolds[i][j].id] - _position_tbl[scaffolds[i][j-1].id] - _length_tbl[scaffolds[i][j-1].id] + _K) << " " ;
+				out << (int)(_position_tbl[scaffolds[i][j].id] - _position_tbl[scaffolds[i][j-1].id] - _length_tbl[scaffolds[i][j-1].id]) << " " ;
 			}
 
 			for (size_t k = 1; k < _component_tbl[scaffolds[i][j].id].gaps.size(); ++k) {

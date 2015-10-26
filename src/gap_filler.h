@@ -1,5 +1,5 @@
-#ifndef _GAP_FILLING_H
-#define _GAP_FILLING_H
+#ifndef gap_filler_h_
+#define gap_filler_h_
 
 #include <iostream>
 #include <fstream>
@@ -25,7 +25,7 @@
 using namespace std;
 
 extern int K;
-extern int overlap;
+extern int OVERLAP;
 extern int MU;
 extern int var;
 extern int EXTEND;
@@ -47,30 +47,35 @@ public:
 private:
 	friend std::ostream& operator<<(std::ostream& os, const GapFiller& obj);
 
-	void get_gap_info();                                //get gap info
-
-	void uniq_candidate_gap_filling();                  //fill unique gaps
 	void multi_candidates_gap_filling();                //fill multi gaps
 
 	void get_multi_candidates_gap_local_seq();          //get multi gaps local sequences
+	void output_initial_scaffolds_seq();   // no multi gaps and filled 'N' for fail gap
 
 	size_t alignment(const string& suffix, const string& prefix);
-    void merge_segments(const set<int > &);
-
-	void get_all_scaffolds_segments();
-    void get_gap_candidate_number_hash();
 
     typedef std::vector< size_t > Path;
     typedef std::vector< std::vector< size_t > > PathList;
+    struct GapInfo {
+        GapInfo(const PathList& pathlist, size_t graph, int overlap) : pathlist(pathlist), graph(graph), overlap(overlap) {
+        }
+        GapInfo(size_t graph, int overlap) : graph(graph), overlap(overlap) {
+        }
+        GapInfo() : graph(-1), overlap(0) {
+        }
+        PathList pathlist;
+        size_t graph;     // graph index
+        int overlap;      // overlap
+    };
+    typedef std::pair< size_t, size_t > GapIndex;
+    typedef std::map< GapIndex, GapInfo > GapInfoTable;
 
-	void output_initial_scaffolds_seq();   // no multi gaps and filled 'N' for fail gap
-    void BFS(const Component& component, std::vector< std::vector< size_t > >& pathlist);
-    void BFS(const size_t i, const size_t j, std::vector< std::vector< size_t > >& pathlist);
-	void BFS(const  int, const  int , const  int , int);
+    std::string path2seq(const CondensedDeBruijnGraph& graph, const Path& path) const;
+    void BFS(const CondensedDeBruijnGraph& graph, const size_t i, const size_t j, int distance, size_t max_depth, size_t max_queue, PathList& pathlist);
+    void BFS(const CondensedDeBruijnGraph& graph, const std::string& lseq, const std::string& rseq, int distance, size_t max_depth, size_t max_queue, PathList& pathlist);
+	void BFS(const  int, const  int , const  int , int, GapInfo* gapinfo);
+
 	void DFS(vector<int> &, const vector<int> &, vector<string> &, int , vector<string> &, string , string& , vector<string> &);
-
-    ComponentList all_scaffolds; //scaffolds
-    std::vector< int > gap_distances;      //gap distances in scaffolds
 
     //record the (gap, index) pair
     std::vector< std::pair< int, int > > gap_indexs;
@@ -80,17 +85,10 @@ private:
 	//false -- initial contigs
     std::set< int > gap_state;
 
-    //gap (contig pair) -- gap candidate 
-    map<pair<int,int> ,int > gap_candidate_number_hash;         //0-overlap, 1-uniq, >=2 :multi, 0-failed
-
-	map< int, string > uniq_gap_seq;                            //candidate seq (including the left and right contigs)
 	map< int, vector< string > > multi_gap_seq;                 //candidate seq (do not include left and right contigd)
 
     //gap classification
-	vector< pair<int,vector<int> > > uniq_gap_info;             // unique candidate
 	vector< pair<int,vector<vector<int> > > > multi_gap_info;   // multi candidates
-	map< int , int> pre_gap_info;                               //overlap
-	vector< int > fail_gap_info;                                //no candidate
 	
 
     //the remaind multi gaps
@@ -99,15 +97,17 @@ private:
     //the remaind multi gaps and index them again, 
     //the index is the initial index!!!
 	map<int, vector< string > > multi_gap_candidate_seq;
-	//map<pair<int,int> , vector<string> > new_multi_gap_candidate_seq;
 
 	//initial scaffolds seq and several segs since the multi gap
 	//include the left and right (K-1)-mer
     //Do not merge the gaps whose choices is grt MAX_CHOICE
-	vector<vector<string> > all_scaffolds_segments;
+	vector<vector<string> > _scaffolds_segments;
 
+    ComponentList _scaffolds; //scaffolds
     CondensedDeBruijnGraph _uniq_graph;
-    CondensedDeBruijnGraph  _all_graph;
+    CondensedDeBruijnGraph _all_graph;
+
+    GapInfoTable _gapinfo_tbl;
 };
 
-#endif /*_GAP_FILLING_H*/
+#endif //gap_filler_h_

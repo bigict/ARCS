@@ -18,14 +18,14 @@ GapFilling GapFilling::_runner;
 extern int EXTEND;
 extern int STEP;
 extern int K;
-extern int overlap;
+extern int OVERLAP;
 extern int MU;
 extern int var;
 
 int EXTEND = -1;
 int STEP = -1;
 int K = -1;
-int overlap = -1;
+int OVERLAP = -1;
 int MU = -1;
 int var = -1;
 
@@ -43,7 +43,7 @@ int GapFilling::run(const Properties& options, const Arguments& arguments) {
     K = options.get< size_t >("K", kKmerSize);
     work_dir = options.get< std::string >("d", ".");
     if (options.find("MAX_OVERLAP") != options.not_found()) {
-        overlap = options.get< size_t >("MAX_OVERLAP");
+        OVERLAP = options.get< size_t >("MAX_OVERLAP");
     }
     if (options.find("C") != options.not_found()) {
         condensed_contig_file_name = options.get< std::string >("C");
@@ -75,8 +75,8 @@ int GapFilling::run(const Properties& options, const Arguments& arguments) {
         typedef std::tr1::tuple< std::string, LoadDataPtr > File2FuncPtr;
         std::vector< File2FuncPtr > file2func_list = boost::assign::list_of
             (std::tr1::make_tuple(condensed_contig_file_name, &GapFiller::input_contigs))
-            (std::tr1::make_tuple(initial_contig_file_name, &GapFiller::input_debruijn))
-            (std::tr1::make_tuple(scaffold_file_name, &GapFiller::input_scaffold))
+            (std::tr1::make_tuple(initial_contig_file_name,   &GapFiller::input_debruijn))
+            (std::tr1::make_tuple(scaffold_file_name,         &GapFiller::input_scaffold))
             ;
         BOOST_FOREACH(const File2FuncPtr& file2func, file2func_list) {
             std::string file = std::tr1::get< 0 >(file2func);

@@ -102,10 +102,10 @@ void GappedFragmentGraph::scoreAndRemoveNoise(const ComponentList& components) {
                     j = i->erase(j);
                     continue;
                 }
-                j->distance /= j->kmer_cov;
+                //j->distance /= j->kmer_cov;
                 size_t leni = components[count].length();
                 size_t lenj =components[j->component_id].length();
-                j->score = scorer.score(leni, lenj, j->distance - leni, j->kmer_cov);
+                j->score = scorer.score(leni, lenj, j->distance / j->kmer_cov - leni, j->kmer_cov);
                 score_list.push_back(j->score);
                 ++j;
                 ++graph_size;
@@ -168,7 +168,7 @@ void GappedFragmentGraph::outputLP(std::ostream& os) {
 	size_t index = 1;
 	for (size_t i = 0; i < _nodelist.size(); ++i) {
 		for (EdgeList::const_iterator it = _nodelist[i].begin(); it != _nodelist[i].end(); ++it) {
-			os << boost::format("s.t. con%d : x_%d - x_%d + e_%d_%d = %d;") % index++ % it->component_id % i % i % it->component_id % it->distance << std::endl;
+			os << boost::format("s.t. con%d : x_%d - x_%d + e_%d_%d = %d;") % index++ % it->component_id % i % i % it->component_id % (it->distance / it->kmer_cov) << std::endl;
 		}
 	}
 
@@ -188,7 +188,7 @@ std::ostream& operator<<(std::ostream& os, const GappedFragmentGraph& g) {
     for (GappedFragmentGraph::NodeList::const_iterator i = g._nodelist.begin(); i != g._nodelist.end(); ++i, ++index) {
         for (GappedFragmentGraph::EdgeList::const_iterator j=i->begin(); j != i->end(); ++j) {
             if (j->distance > 0) {
-                os << boost::format("%d\t%d\t%d\t%d\t%f") % index % j->component_id % j->distance % j->kmer_cov % j->score << std::endl;
+                os << boost::format("%d\t%d\t%d\t%d\t%f") % index % j->component_id % (j->distance / j->kmer_cov) % j->kmer_cov % j->score << std::endl;
             }
         }
     }

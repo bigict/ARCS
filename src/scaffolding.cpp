@@ -22,7 +22,7 @@ Scaffolding Scaffolding::_runner;
 template< size_t K >
 class ConnectGraphBuilder {
 public:
-    ConnectGraphBuilder(size_t L, size_t insert_size, const PairReadList& pair_reads, const KmerMultiTable< K, KmerPosition >& hash_tbl, const ComponentList& components) : _K(L), _insert_size(insert_size), _pair_reads(pair_reads), _hash_tbl(hash_tbl), _components(components) {
+    ConnectGraphBuilder(size_t L, size_t insert_size, const PairReadList& pair_reads, const KmerMultiTable< K, KmerPosition >& hash_tbl, const ComponentList& components, bool do_reverse=true) : _K(L), _insert_size(insert_size), _pair_reads(pair_reads), _hash_tbl(hash_tbl), _components(components), _do_reverse(do_reverse) {
     }
 
     size_t build(GappedFragmentGraph* graph) const {
@@ -34,7 +34,9 @@ public:
                 continue;
             }
             pair_kmer_num += addEdge(pair_read.set1, make_complement_dna(pair_read.set2), graph);
-            pair_kmer_num += addEdge(pair_read.set2, make_complement_dna(pair_read.set1), graph);
+            if (_do_reverse) {
+                pair_kmer_num += addEdge(pair_read.set2, make_complement_dna(pair_read.set1), graph);
+            }
         }
         LOG4CXX_DEBUG(logger, boost::format("build graph end"));
 
@@ -68,8 +70,8 @@ private:
                 //////////////////////////////////////////////////////
                 //
                 //              x
-                //          R1  |                       y
-                // |____________|____|             R2   |
+                //          C1  |                       y
+                // |____________|____|             C2   |
                 // |            |    |    |_____________|__|
                 // |            |    | gap|             |
                 // |            |    |----|             |
@@ -82,12 +84,12 @@ private:
                 // 
                 // ///////////////////////////////////////////////////
                 long distance = _insert_size + left->second.second - right->second.second;
-                size_t R1 = _components[left->second.first].length();
-                long overlap = R1 - distance;
+                size_t C1 = _components[left->second.first].length();
+                long overlap = C1 - distance;
                 if (overlap > 0) {
                     if (overlap > _insert_size)
                         continue;
-                    distance = R1;
+                    distance = C1;
                 }
                 if (find_component.find(std::make_pair(left->second.first, right->second.first)) != find_component.end()) {
                     graph->addEdge(left->second.first, right->second.first, distance, 1, 0);
@@ -106,6 +108,7 @@ private:
     const PairReadList& _pair_reads;
     const KmerMultiTable< K, KmerPosition >& _hash_tbl;
     const ComponentList& _components;
+    bool _do_reverse;
 };
 
 template< size_t K >
@@ -156,8 +159,10 @@ int _Scaffolding_run_(size_t L, const Properties& options, const Arguments& argu
         KmerTable< K, KmerPosition > hash_tbl;
         BuildKmerTable_insertsize< K >(L, INSERT_SIZE, contigs, components, hash_tbl);
 
-        InsertSizeEstimater< K > estimater(L, INSERT_SIZE, pair_reads, hash_tbl);
+        InsertSizeEstimater< K > estimater(L, INSERT_SIZE, pair_reads, hash_tbl, options.find("S") == options.not_found());
         estimater.estimate(&INSERT_SIZE, &DELTA);
+
+        DELTA = std::max(DELTA, 1.0E-5);
     }
     LOG4CXX_INFO(logger, boost::format("INSERT_SIZE=[%d], DELTA=[%f]") % INSERT_SIZE % DELTA);
     //build graph
@@ -171,7 +176,7 @@ int _Scaffolding_run_(size_t L, const Properties& options, const Arguments& argu
         KmerMultiTable< K, KmerPosition > hash_tbl;
         BuildKmerTable_pairends< K >(L, options.get< size_t >("L", 180), EDGE_CUTOFF, contigs, components, hash_tbl);
 
-        ConnectGraphBuilder< K > builder(L, INSERT_SIZE, pair_reads, hash_tbl, components);
+        ConnectGraphBuilder< K > builder(L, INSERT_SIZE, pair_reads, hash_tbl, components, options.find("S") == options.not_found());
         PAIR_KMER_NUM = builder.build(&g);
     }
     LOG4CXX_INFO(logger, boost::format("pair_kmer_num=%d") % PAIR_KMER_NUM);
@@ -257,7 +262,7 @@ int Scaffolding::run(const Properties& options, const Arguments& arguments) {
     return r;
 }
 
-Scaffolding::Scaffolding() : Runner("d:K:C:f:e:1:2:L:P:p:i:r:R:c:h") {
+Scaffolding::Scaffolding() : Runner("d:K:C:f:e:1:2:L:P:p:i:r:R:c:Sh") {
     RUNNER_INSTALL("scaffolding", this, "scaffold");
 }
 

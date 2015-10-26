@@ -287,7 +287,7 @@ static bool Graph_divide(Graph& graph, size_t loops, PositionList* position_tbl)
             }
         }
 
-        LOG4CXX_DEBUG(logger, boost::format("component:%d/%d") % component.size() % graph.size());
+        LOG4CXX_TRACE(logger, boost::format("component:%d/%d") % component.size() % graph.size());
 
         if (!Graph_solve(component, loops, position_tbl)) {
             LOG4CXX_ERROR(logger, "solve component failed");

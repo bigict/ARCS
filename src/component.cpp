@@ -17,8 +17,7 @@ void Component::length(const ContigList& contig_list) {
     if (!contigs.empty()) {
         _length = contig_list[contigs[0]].seq.length();
         for (size_t i = 1; i < contigs.size(); ++i) {
-            _length += gaps[i - 1];
-            _length += contig_list[contigs[i]].seq.size();
+            _length += gaps[i - 1] + contig_list[contigs[i]].seq.length();
         }
     }
 }
