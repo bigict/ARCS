@@ -86,7 +86,8 @@ private:
                 long distance = _insert_size + left->second.second - right->second.second;
                 size_t C1 = _components[left->second.first].length();
                 long overlap = C1 - distance;
-                if (overlap > 0) {
+                if (overlap > 0 && overlap > _K) {
+                    continue;
                     if (overlap > _insert_size)
                         continue;
                     distance = C1;
@@ -164,7 +165,7 @@ int _Scaffolding_run_(size_t L, const Properties& options, const Arguments& argu
 
         DELTA = std::max(DELTA, 1.0E-5);
     }
-    LOG4CXX_INFO(logger, boost::format("INSERT_SIZE=[%d], DELTA=[%f]") % INSERT_SIZE % DELTA);
+    LOG4CXX_INFO(logger, boost::format("INSERT_SIZE=[%d], DELTA=[%f],EDGE_CUTOFF=[%d]") % INSERT_SIZE % DELTA % EDGE_CUTOFF);
     //build graph
     size_t pair_kmer_cutoff = options.get< size_t >("r", 0);
     size_t pair_read_cutoff = options.get< size_t >("R", 0);;
@@ -242,6 +243,7 @@ int Scaffolding::run(const Properties& options, const Arguments& arguments) {
     LOG4CXX_DEBUG(logger, "scaffolding begin");
 
     size_t K = options.get< size_t >("K", 31);
+    K = K - 1;
 
     // process
     if (0 < K && K <= 32) {

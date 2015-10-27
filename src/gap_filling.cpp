@@ -91,7 +91,7 @@ int GapFilling::run(const Properties& options, const Arguments& arguments) {
 
     // write data
     {
-        std::string file = boost::str(boost::format("%dmer.gap_filling_info") % K);
+        std::string file = boost::str(boost::format("%dmer.scaf_seq_with_gaps") % K);
         std::ofstream stream(file.c_str());
         if (!stream) {
             LOG4CXX_ERROR(logger, boost::format("Create %s error!!!") % file);
