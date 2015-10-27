@@ -39,8 +39,6 @@ arcs_SOURCES=arff.cpp \
             remove_repeats.h \
             scaffolding.cpp \
             scaffolding.h \
-            scoring.cpp \
-            scoring.h \
             uniq_edge_graph.cpp \
             uniq_edge_graph.h \
             main.cpp
