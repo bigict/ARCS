@@ -8,6 +8,7 @@
 #include "utils.h"
 
 #include <deque>
+#include <fstream>
 #include <iterator>
 #include <numeric>
 
@@ -18,9 +19,6 @@
 #include <log4cxx/logger.h>
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.GapFiller"));
-
-#define TRAINING
-#define RESULT
 
 //gap filling
 void GapFiller::fill() {
@@ -38,21 +36,21 @@ void GapFiller::fill() {
 
             const std::string& lsequence = _uniq_graph._indexer[left_index].seq;
             const std::string& rsequence = _uniq_graph._indexer[right_index].seq;
-            std::string suffix = lsequence.substr(lsequence.length() - (K - 1), K - 1);
-            std::string prefix = rsequence.substr(0, K - 1);
+            std::string suffix = lsequence.substr(lsequence.length() - (_K - 1), _K - 1);
+            std::string prefix = rsequence.substr(0, _K - 1);
 
 			int overlap = alignment(suffix, prefix);
             int gap = _scaffolds[i].gaps[j - 1];
-			if (overlap >= OVERLAP) {
+			if (overlap >= _OVERLAP) {
                 _gapinfo_tbl[std::make_pair(i, j)] = GapInfo(-1, -overlap);
-			} else if (gap > MU + 3*var) {
+			} else if (gap > _INSERT_SIZE + 3*_DELTA) {
                 _gapinfo_tbl[std::make_pair(i, j)] = GapInfo(-1, gap);
             } else {
                 try {
                     GapInfo gapinfo(-1, gap);
                     BFS(left_index, right_index, gap, &gapinfo);
                     _gapinfo_tbl[std::make_pair(i, j)] = gapinfo;
-                } catch(bad_alloc) {
+                } catch(std::bad_alloc) {
                     LOG4CXX_WARN(logger, "BFS is too memory-intensive, ignoring...");
                     _gapinfo_tbl[std::make_pair(i, j)] = GapInfo(-1, -gap);
                 }
@@ -68,7 +66,7 @@ void GapFiller::fill() {
 }
 
 //Align two nerghboring contigs
-size_t GapFiller::alignment(const string& suffix, const string& prefix) {
+size_t GapFiller::alignment(const std::string& suffix, const std::string& prefix) {
 	BOOST_ASSERT(prefix.length() == suffix.length());
 
     std::vector< size_t > score(prefix.size() + 1, 0);
@@ -162,7 +160,7 @@ std::string GapFiller::path2seq(const CondensedDeBruijnGraph& graph, const Path&
     if (path.size() > i) {
         seq += graph._indexer[path[i++]].seq;
         while (i < j) {
-            seq += graph._indexer[path[i++]].seq.substr(K - 1);
+            seq += graph._indexer[path[i++]].seq.substr(_K - 1);
         }
     }
     return seq;
@@ -170,16 +168,16 @@ std::string GapFiller::path2seq(const CondensedDeBruijnGraph& graph, const Path&
 
 void GapFiller::BFS(const CondensedDeBruijnGraph& graph, const std::string& lseq, const std::string& rseq, int gap, size_t max_depth, size_t max_queue, PathList& pathlist) {
 
-    std::string suffix = lseq.substr(lseq.length() - (K - 1), K - 1);
-    std::string prefix = rseq.substr(0, K - 1);
+    std::string suffix = lseq.substr(lseq.length() - (_K - 1), _K - 1);
+    std::string prefix = rseq.substr(0, _K - 1);
 
     CondensedDeBruijnGraph::NodeList::const_iterator i = graph._children.find(suffix), j = graph._parents.find(prefix);
     if (i != graph._children.end() && j != graph._parents.end()) {
         for (CondensedDeBruijnGraph::EdgeList::const_iterator m = i->second.begin(); m != i->second.end(); ++m) {
-            if (m->first == lseq[lseq.length() - K]) {
+            if (m->first == lseq[lseq.length() - _K]) {
                 for (CondensedDeBruijnGraph::EdgeList::const_iterator n = j->second.begin(); n != j->second.end(); ++n) {
-                    if (n->first == rseq[K - 1]) {
-                        BFS(graph, m->second, n->second, gap, STEP, 2000, pathlist);
+                    if (n->first == rseq[_K - 1]) {
+                        BFS(graph, m->second, n->second, gap, _STEP, 2000, pathlist);
                     }
                 }
             }
@@ -193,7 +191,7 @@ void GapFiller::BFS(const CondensedDeBruijnGraph& graph, const size_t from, cons
     Path path = boost::assign::list_of(from);
     typedef std::pair< Path, int > Choice;
     std::deque< Choice > Q = boost::assign::list_of(std::make_pair(
-                path, 0 - (K - 1)
+                path, 0 - (_K - 1)
                 ));
     while (!Q.empty()) {
         ++step;
@@ -216,16 +214,16 @@ void GapFiller::BFS(const CondensedDeBruijnGraph& graph, const size_t from, cons
             if (node == to) {
                 pathlist.push_back(choice.first);
             }
-            if (choice.second > gap - (K - 1)) {
+            if (choice.second > gap - (_K - 1)) {
                 continue;
             }
             const CondensedDeBruijnGraph::CondensedEdge& edge = graph._indexer[node];
-            std::string suffix = edge.seq.substr(edge.seq.length() - (K - 1), K - 1);
+            std::string suffix = edge.seq.substr(edge.seq.length() - (_K - 1), _K - 1);
             CondensedDeBruijnGraph::NodeList::const_iterator i = graph._parents.find(suffix);
             if (i != graph._parents.end()) {
                 for (CondensedDeBruijnGraph::EdgeList::const_iterator j = i->second.begin(); j != i->second.end(); ++j) {
                     //size_t length = graph._indexer[j->second].seq.length();
-                    size_t length = graph._indexer[j->second].seq.length() - (K - 1);
+                    size_t length = graph._indexer[j->second].seq.length() - (_K - 1);
 
                     Choice new_choice(choice);
                     new_choice.first.push_back(j->second);
@@ -242,14 +240,14 @@ void GapFiller::BFS(const CondensedDeBruijnGraph& graph, const size_t from, cons
 
 // Run BFS to fill current gap 
 void GapFiller::BFS(size_t left_index, size_t right_index, int gap, GapInfo* gapinfo) {
-	int dis = gap + (K-1+3*var) +30; //gap constraints
+	int dis = gap + (_K-1+3*_DELTA) +30; //gap constraints
 
     PathList pathlist;
-    BFS(_uniq_graph, left_index, right_index, dis, STEP, 1000, pathlist);
+    BFS(_uniq_graph, left_index, right_index, dis, _STEP, 1000, pathlist);
     if (pathlist.empty()) {
         const std::string& lsequence = _uniq_graph._indexer[left_index].seq;
         const std::string& rsequence = _uniq_graph._indexer[right_index].seq;
-        BFS(_all_graph, lsequence, rsequence, dis, STEP, 2000, pathlist);
+        BFS(_all_graph, lsequence, rsequence, dis, _STEP, 2000, pathlist);
     }
 
     if (!pathlist.empty()) {
@@ -290,8 +288,8 @@ std::ostream& operator<<(std::ostream& os, const GapFiller &obj) {
                 BOOST_ASSERT(it->second.graph == -1);
                 //for failed gap , the count of 'N' is determined by the distance estimation
                 int distance = it->second.gap;
-                if (distance > (MU + 3*var)) {
-                    seq += std::string(MU+3*var,'N');
+                if (distance > (obj._INSERT_SIZE + 3*obj._DELTA)) {
+                    seq += std::string(obj._INSERT_SIZE+3*obj._DELTA, 'N');
                 } else if (distance < 0) {
                 } else {
                     seq += std::string(distance, 'N');
@@ -300,8 +298,8 @@ std::ostream& operator<<(std::ostream& os, const GapFiller &obj) {
                 const GapFiller::Path& path = it->second.pathlist[0];
                 BOOST_ASSERT(path.size() >= 2);
                 std::string gap = obj.path2seq(it->second.graph == 0 ? obj._uniq_graph : obj._all_graph, path, 1, path.size() - 1);
-                BOOST_ASSERT(gap.length() >= 2 * (K - 1));
-                gap = gap.substr(K - 1, gap.length() - 2*(K - 1));
+                BOOST_ASSERT(gap.length() >= 2 * (obj._K - 1));
+                gap = gap.substr(obj._K - 1, gap.length() - 2*(obj._K - 1));
                 seq += gap;
             } else {                                                // multi_gap
             }
@@ -325,7 +323,7 @@ std::ostream& operator<<(std::ostream& os, const GapFiller &obj) {
 	LOG4CXX_INFO(logger, "---Scaffold---");
 	LOG4CXX_INFO(logger, "Scaff length : Top 20...");
 
-	for (size_t i = 0; i < min((size_t)20, scaffold_length_list.size()); ++i) {
+	for (size_t i = 0; i < std::min((size_t)20, scaffold_length_list.size()); ++i) {
         LOG4CXX_INFO(logger, boost::format("%d") % scaffold_length_list[i]);
 	}
 

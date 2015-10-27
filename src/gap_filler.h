@@ -2,16 +2,8 @@
 #define gap_filler_h_
 
 #include <iostream>
-#include <fstream>
-#include <exception>
-#include <stdexcept>
 #include <string>
 #include <map>
-#include <set>
-#include <iterator>
-#include <cstdlib>
-#include <algorithm>
-#include <queue>
 
 
 #include <assert.h>
@@ -22,18 +14,14 @@
 #include "component.h"
 #include "condensed_debruijn_graph.h"
 
-using namespace std;
-
-extern int K;
-extern int OVERLAP;
 extern int MU;
 extern int var;
-extern int EXTEND;
 extern int STEP;
 
 class GapFiller {
 public:
-	GapFiller() : _uniq_graph(K), _all_graph(K) {
+	GapFiller(size_t K, size_t max_overlap, size_t insert_size, double delta) : _K(K), _OVERLAP(max_overlap), _INSERT_SIZE(insert_size), _DELTA(delta), _uniq_graph(K), _all_graph(K) {
+        _STEP = _INSERT_SIZE + 3*_DELTA;
     }
 	virtual ~GapFiller() {
     }
@@ -63,7 +51,7 @@ private:
     typedef std::pair< size_t, size_t > GapIndex;
     typedef std::map< GapIndex, GapInfo > GapInfoTable;
 
-	size_t alignment(const string& suffix, const string& prefix);
+	size_t alignment(const std::string& suffix, const std::string& prefix);
     std::string path2seq(const CondensedDeBruijnGraph& graph, const Path& path) const;
     std::string path2seq(const CondensedDeBruijnGraph& graph, const Path& path, size_t i, size_t j) const;
     void BFS(const CondensedDeBruijnGraph& graph, const size_t i, const size_t j, int gap, size_t max_depth, size_t max_queue, PathList& pathlist);
@@ -75,6 +63,11 @@ private:
     CondensedDeBruijnGraph _all_graph;
 
     GapInfoTable _gapinfo_tbl;
+    int _K;
+    size_t _OVERLAP;
+    size_t _INSERT_SIZE;
+    double _DELTA;
+    size_t _STEP;
 };
 
 #endif //gap_filler_h_

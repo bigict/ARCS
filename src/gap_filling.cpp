@@ -3,10 +3,12 @@
 #include "constant.h"
 
 #include <string>
-#include <sstream>
+#include <fstream>
 
 #include <boost/assign.hpp>
 #include <boost/bind.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 
@@ -15,33 +17,26 @@
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.GapFilling"));
 GapFilling GapFilling::_runner;
 
-extern int EXTEND;
-extern int STEP;
-extern int K;
-extern int OVERLAP;
-extern int MU;
-extern int var;
-
-int EXTEND = -1;
-int STEP = -1;
-int K = -1;
-int OVERLAP = -1;
-int MU = -1;
-int var = -1;
-
 int GapFilling::run(const Properties& options, const Arguments& arguments) {
     int r = 0;
     if ((r = checkOptions(options)) != 0) {
         return r;
     }
+
+    boost::filesystem::path workdir(options.get< std::string >("d", "."));
+    if (!boost::filesystem::exists(workdir) && !boost::filesystem::create_directory(workdir)) {
+        LOG4CXX_ERROR(logger, boost::format("failed to create directory: %s") % workdir);
+        return 1;
+    }
+
     LOG4CXX_DEBUG(logger, "gap_filling begin");
 		
     std::string initial_contig_file_name;
     std::string scaffold_file_name;
     std::string condensed_contig_file_name;
     std::string work_dir;
-    K = options.get< size_t >("K", kKmerSize);
-    work_dir = options.get< std::string >("d", ".");
+    size_t K = options.get< size_t >("K", kKmerSize);
+    size_t OVERLAP = -1;
     if (options.find("MAX_OVERLAP") != options.not_found()) {
         OVERLAP = options.get< size_t >("MAX_OVERLAP");
     }
@@ -55,20 +50,10 @@ int GapFilling::run(const Properties& options, const Arguments& arguments) {
         initial_contig_file_name = options.get< std::string >("I");
     }
 	
+    size_t INSERT_SIZE = options.get< size_t >("INSERT_SIZE");
+    double DELTA = options.get< double >("DELTA");
 
-	if(chdir(work_dir.c_str()))
-	{
-		cout << "No such file or directory!! Change work directory failed!!!" << endl;
-		exit(EXIT_FAILURE);
-	}
-
-    MU = options.get< size_t >("INSERT_SIZE");
-    var = options.get< double >("DELTA");
-
-	STEP = MU + 3 * var;
-	EXTEND = 200;
-	
-	GapFiller gf;
+	GapFiller gf(K, OVERLAP, INSERT_SIZE, DELTA);
     // load data
     {
         typedef bool(GapFiller::*LoadDataPtr)(const std::string&);
@@ -92,7 +77,7 @@ int GapFilling::run(const Properties& options, const Arguments& arguments) {
     // write data
     {
         std::string file = boost::str(boost::format("%dmer.scaf_seq_with_gaps") % K);
-        std::ofstream stream(file.c_str());
+        boost::filesystem::ofstream stream(workdir / file);
         if (!stream) {
             LOG4CXX_ERROR(logger, boost::format("Create %s error!!!") % file);
             return 2;
