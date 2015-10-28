@@ -25,7 +25,7 @@ then run make:
 make
 
 --------------
-Installing SGA
+Installing ARCS
 
 Running make install will install arcs into /usr/local/bin/ by default. To specify the install
 location use the --prefix option to configure:
@@ -54,7 +54,7 @@ it will discard reads that have uncalled bases ('N' or '.'). If you wish to keep
 flag which will randomly change any uncalled bases to one of [ACGT]. It is mandatory to run this command 
 on real data. 
 
-* sga assemble
+* arcs assemble
 
 Assemble takes the output of the preprocess step and constructs contigs.
 
