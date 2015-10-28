@@ -58,11 +58,6 @@ void GapFiller::fill() {
 		}
 	}
 	LOG4CXX_DEBUG(logger, boost::format("The number of gaps = %d") % _gapinfo_tbl.size());
-	//LOG4CXX_DEBUG(logger, boost::format("Filling the gaps which shares overlap ( < %d) = %d") % OVERLAP % pre_gap_info.size());
-	//LOG4CXX_DEBUG(logger, boost::format("Unique candidate gaps number = %d") % uniq_gap_info.size());
-	//LOG4CXX_DEBUG(logger, boost::format("Multi candidates gaps number = %d") % multi_gap_info.size());
-	//LOG4CXX_DEBUG(logger, boost::format("Failed gaps number = %d") % fail_gap_info.size());
-	//LOG4CXX_DEBUG(logger, boost::format("Pre  gaps number = %d") % pre_gap_info.size());
 }
 
 //Align two nerghboring contigs
