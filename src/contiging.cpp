@@ -116,7 +116,7 @@ int Contiging::run(const Properties& options, const Arguments& arguments) {
 }
 
 Contiging::Contiging() : Runner("c:s:K:i:d:l:h") {
-    RUNNER_INSTALL("contiging", this, "contigs");
+    RUNNER_INSTALL("assemble", this, "generate contigs from an assembly graph");
 }
 
 int Contiging::printHelps() const {

@@ -89,7 +89,7 @@ int CopyNumEstimator::run(const Properties& options, const Arguments& arguments)
 CopyNumEstimator CopyNumEstimator::_runner;
 
 CopyNumEstimator::CopyNumEstimator() : Runner("c:s:i:G:C:h") {
-    RUNNER_INSTALL("copy_num_estimate", this, "copy_num_estimator");
+    RUNNER_INSTALL("copy_num_estimate", this, "estimate copy number of contigs");
 }
 
 int CopyNumEstimator::printHelps() const {

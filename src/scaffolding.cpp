@@ -265,7 +265,7 @@ int Scaffolding::run(const Properties& options, const Arguments& arguments) {
 }
 
 Scaffolding::Scaffolding() : Runner("d:K:C:f:e:1:2:L:P:p:i:r:R:c:Sh") {
-    RUNNER_INSTALL("scaffolding", this, "scaffold");
+    RUNNER_INSTALL("scaffold", this, "generate ordered sets of contigs using distance estimates");
 }
 
 int Scaffolding::printHelps() const {

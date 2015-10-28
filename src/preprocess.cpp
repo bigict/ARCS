@@ -165,7 +165,7 @@ int Preprocess::run(const Properties& options, const Arguments& arguments) {
 }
 
 Preprocess::Preprocess() : Runner("c:s:K:n:d:i:o:t:ESe:h", boost::assign::map_list_of('e', "READ_LENGTH_CUTOFF")('t', "THRESHOLD")) {
-    RUNNER_INSTALL("preprocess", this, "preprocess");
+    RUNNER_INSTALL("preprocess", this, "filter and quality-trim reads");
 }
 
 int Preprocess::printHelps() const {

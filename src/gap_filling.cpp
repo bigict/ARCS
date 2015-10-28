@@ -91,7 +91,7 @@ int GapFilling::run(const Properties& options, const Arguments& arguments) {
 }
 
 GapFilling::GapFilling() : Runner("c:s:d:K:O:C:I:l:h", boost::assign::map_list_of('O', "MAX_OVERLAP")) {
-    RUNNER_INSTALL("gap_filling", this, "gap_filling");
+    RUNNER_INSTALL("gapfill", this, "fill intra-scaffold gaps");
 }
 
 int GapFilling::printHelps() const {
