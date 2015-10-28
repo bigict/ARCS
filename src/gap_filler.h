@@ -5,12 +5,6 @@
 #include <string>
 #include <map>
 
-
-#include <assert.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
 #include "component.h"
 #include "condensed_debruijn_graph.h"
 
@@ -63,6 +57,7 @@ private:
     CondensedDeBruijnGraph _all_graph;
 
     GapInfoTable _gapinfo_tbl;
+
     int _K;
     size_t _OVERLAP;
     size_t _INSERT_SIZE;

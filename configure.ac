@@ -3,6 +3,7 @@
 
 AC_PREREQ([2.69])
 AC_INIT([arcs], [0.92], [bdb@ict.ac.cn])
+AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([config.h.in])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([-Wall -Werror])

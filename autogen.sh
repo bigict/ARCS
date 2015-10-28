@@ -1,4 +1,4 @@
-aclocal -I m4
+aclocal
 autoheader
 libtoolize -f
 autoconf
