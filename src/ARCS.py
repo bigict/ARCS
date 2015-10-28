@@ -241,7 +241,7 @@ command_run('python', os.path.join(os.path.abspath(os.path.dirname(__file__)), '
 # arcs gap_filling
 #
 ###################################################################
-args = '-s %s -d %s -K %d -O %d -C cdbg_copy_number.fa -l component_last -I condensed_de_bruijn_graph_after_trimming.data' % (os.path.join(config['workspace'], 'scaffold_parameter_0'), config['workspace'], config['kmer_size'], config['kmer_size'] - 10)
+args = '-s %s -d %s -K %d -O %d -C %s -l %s -I %s' % (os.path.join(config['workspace'], 'scaffold_parameter_0'), config['workspace'], config['kmer_size'], config['kmer_size'] - 10, os.path.join(config['workspace'], 'cdbg_copy_number.fa'), os.path.join(config['workspace'], 'component_last'), os.path.join(config['workspace'], 'condensed_de_bruijn_graph_after_trimming.data'))
 command_run(ARCS_CMD, 'gap_filling', args, config)
 
 end = datetime.now()

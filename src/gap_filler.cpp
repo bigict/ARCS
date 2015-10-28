@@ -262,6 +262,7 @@ void GapFiller::BFS(size_t left_index, size_t right_index, int gap, GapInfo* gap
 std::ostream& operator<<(std::ostream& os, const GapFiller &obj) {
 	LOG4CXX_DEBUG(logger, "Output each scaffold segments begin...");
 
+    size_t num_failed_gaps = 0;
     std::vector< size_t > scaffold_length_list;
 
     for (size_t i = 0; i < obj._scaffolds.size(); ++i) {
@@ -276,19 +277,14 @@ std::ostream& operator<<(std::ostream& os, const GapFiller &obj) {
             GapFiller::GapInfoTable::const_iterator it = obj._gapinfo_tbl.find(std::make_pair(i, j));
             BOOST_ASSERT(it != obj._gapinfo_tbl.end());
 
-            if (it->second.graph == -1 && it->second.gap < 0) {    // overlap
+            if (it->second.graph == -1 && it->second.gap < 0) {     // overlap
                 BOOST_ASSERT(seq.length() > -it->second.gap);
                 seq.resize(seq.length() + it->second.gap);
-            } else if (it->second.graph == -1) {                     // failed gap
-                BOOST_ASSERT(it->second.graph == -1);
+            } else if (it->second.graph == -1) {                    // failed gap
+                BOOST_ASSERT(it->second.gap >= 0);
                 //for failed gap , the count of 'N' is determined by the distance estimation
-                int distance = it->second.gap;
-                if (distance > (obj._INSERT_SIZE + 3*obj._DELTA)) {
-                    seq += std::string(obj._INSERT_SIZE+3*obj._DELTA, 'N');
-                } else if (distance < 0) {
-                } else {
-                    seq += std::string(distance, 'N');
-                }
+                seq += std::string(it->second.gap, 'N');
+                ++num_failed_gaps;
             } else if (it->second.graph != -1 && it->second.pathlist.size() == 1) { // unique
                 const GapFiller::Path& path = it->second.pathlist[0];
                 BOOST_ASSERT(path.size() >= 2);
@@ -297,6 +293,7 @@ std::ostream& operator<<(std::ostream& os, const GapFiller &obj) {
                 gap = gap.substr(obj._K - 1, gap.length() - 2*(obj._K - 1));
                 seq += gap;
             } else {                                                // multi_gap
+                seq += std::string(it->second.gap, 'N');
             }
 
             seq += obj._uniq_graph._indexer[contigs[j]].seq;
@@ -305,7 +302,7 @@ std::ostream& operator<<(std::ostream& os, const GapFiller &obj) {
         os << seq << '\n';
         scaffold_length_list.push_back(seq.length());
     }
-    assert(obj._scaffolds.size() ==  scaffold_length_list.size());
+    BOOST_ASSERT(obj._scaffolds.size() ==  scaffold_length_list.size());
 
     std::sort(scaffold_length_list.begin(), scaffold_length_list.end(), std::greater< size_t >());
     size_t GENOME = std::accumulate(scaffold_length_list.begin(), scaffold_length_list.end(), 0);
@@ -347,8 +344,8 @@ std::ostream& operator<<(std::ostream& os, const GapFiller &obj) {
 	LOG4CXX_INFO(logger, boost::format("N90 : %d") % N90_val);
 
 	LOG4CXX_INFO(logger, boost::format("All gaps number in scaffolds : %d") % obj._gapinfo_tbl.size());
-	//LOG4CXX_INFO(logger, boost::format("filled gap numbers : %d") % (gap_indexs.size() - fail_gap_info.size()));
-	//LOG4CXX_INFO(logger, boost::format("failed gap numbers : %d") % fail_gap_info.size());
+	LOG4CXX_INFO(logger, boost::format("filled gap numbers : %d") % (obj._gapinfo_tbl.size() - num_failed_gaps));
+	LOG4CXX_INFO(logger, boost::format("failed gap numbers : %d") % num_failed_gaps);
 
 	LOG4CXX_DEBUG(logger, "Output each scaffold segments end...");
 	return os;
