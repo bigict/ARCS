@@ -181,11 +181,11 @@ command_run(ARCS_CMD, 'preprocess', args, config)
 
 ###################################################################
 #
-# arcs contiging
+# arcs assemble
 #
 ###################################################################
 args = '-d %s -K %d -i %s' % (config['workspace'], config['kmer_size'], os.path.join(config['workspace'], 'kmers.arff'))
-command_run(ARCS_CMD, 'contiging', args, config)
+command_run(ARCS_CMD, 'assemble', args, config)
 
 ###################################################################
 #
@@ -206,11 +206,11 @@ for i, library in enumerate(config['library_list']):
 
     ###################################################################
     #
-    # arcs scaffolding
+    # arcs scaffold
     #
     ###################################################################
     args = '-d %s -K %d -C %s -f %s -e %d -1 %s -2 %s -L %d -P %f -i %d -r %d -R %d' % (config['workspace'], config['kmer_size'], os.path.join(config['workspace'], 'cdbg_copy_number.fa'), os.path.join(config['workspace'], 'component_%d' % (i)), library['EDGE_LENGTH_CUTOFF'], library['q1'], library['q2'], library['INSERT_SIZE'], library['LINK_QUALITY_PERCENT'], i, library['PAIR_KMER_CUTOFF'], library['PAIR_READS_CUTOFF'])
-    command_run(ARCS_CMD, 'scaffolding', args, config)
+    command_run(ARCS_CMD, 'scaffold', args, config)
 
     ###################################################################
     #
@@ -238,11 +238,11 @@ command_run('python', os.path.join(os.path.abspath(os.path.dirname(__file__)), '
 
 ###################################################################
 #
-# arcs gap_filling
+# arcs gapfill
 #
 ###################################################################
 args = '-s %s -d %s -K %d -O %d -C %s -l %s -I %s' % (os.path.join(config['workspace'], 'scaffold_parameter_0'), config['workspace'], config['kmer_size'], config['kmer_size'] - 10, os.path.join(config['workspace'], 'cdbg_copy_number.fa'), os.path.join(config['workspace'], 'component_last'), os.path.join(config['workspace'], 'condensed_de_bruijn_graph_after_trimming.data'))
-command_run(ARCS_CMD, 'gap_filling', args, config)
+command_run(ARCS_CMD, 'gapfill', args, config)
 
 end = datetime.now()
 print 'total running time is %d seconds' % ((end - start).seconds)
