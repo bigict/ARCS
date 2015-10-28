@@ -17,7 +17,7 @@ arcs_SOURCES=arff.cpp \
             copy_num_estimator.h \
             debruijn_graph.h \
             gap_filler.cpp \
-            fap_filler.h \
+            gap_filler.h \
             gap_filling.cpp \
             gap_filling.h \
             gapped_fragment_graph.cpp \
