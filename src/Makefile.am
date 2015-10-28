@@ -41,6 +41,7 @@ arcs_SOURCES=arff.cpp \
             scaffolding.h \
             uniq_edge_graph.cpp \
             uniq_edge_graph.h \
+            utils.h \
             main.cpp
 arcs_CXXFLAGS=${LOG4CXX_CFLAGS}
 arcs_LDFLAGS=${LOG4CXX_LIBS} \
@@ -49,4 +50,4 @@ arcs_LDFLAGS=${LOG4CXX_LIBS} \
 				  -lboost_system \
 				  -lglpk
 
-EXTRA_DIST=ARCS.py log4cxx.properties
+EXTRA_DIST=ARCS.py reverse_filter.py log4cxx.properties
