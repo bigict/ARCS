@@ -10,20 +10,20 @@
 
 class GapFiller {
 public:
-	GapFiller(size_t K, size_t max_overlap, size_t insert_size, double delta) : _K(K), _OVERLAP(max_overlap), _INSERT_SIZE(insert_size), _DELTA(delta), _uniq_graph(K), _all_graph(K) {
+    GapFiller(size_t K, size_t max_overlap, size_t insert_size, double delta) : _K(K), _OVERLAP(max_overlap), _INSERT_SIZE(insert_size), _DELTA(delta), _uniq_graph(K), _all_graph(K) {
         _STEP = _INSERT_SIZE + 3*_DELTA;
     }
-	virtual ~GapFiller() {
+    virtual ~GapFiller() {
     }
 
-	void fill();
+    void fill();
 
     bool input_scaffold(const std::string& file);
     bool input_contigs(const std::string& file);
     bool input_debruijn(const std::string& file);
 
 private:
-	friend std::ostream& operator<<(std::ostream& os, const GapFiller& obj);
+    friend std::ostream& operator<<(std::ostream& os, const GapFiller& obj);
 
     typedef std::vector< size_t > Path;
     typedef std::vector< std::vector< size_t > > PathList;
@@ -41,12 +41,12 @@ private:
     typedef std::pair< size_t, size_t > GapIndex;
     typedef std::map< GapIndex, GapInfo > GapInfoTable;
 
-	size_t alignment(const std::string& suffix, const std::string& prefix);
+    size_t alignment(const std::string& suffix, const std::string& prefix);
     std::string path2seq(const CondensedDeBruijnGraph& graph, const Path& path) const;
     std::string path2seq(const CondensedDeBruijnGraph& graph, const Path& path, size_t i, size_t j) const;
     void BFS(const CondensedDeBruijnGraph& graph, const size_t i, const size_t j, int gap, size_t max_depth, size_t max_queue, PathList& pathlist);
     void BFS(const CondensedDeBruijnGraph& graph, const std::string& lseq, const std::string& rseq, int gap, size_t max_depth, size_t max_queue, PathList& pathlist);
-	void BFS(size_t left_index, size_t right_index, int gap, GapInfo* gapinfo);
+    void BFS(size_t left_index, size_t right_index, int gap, GapInfo* gapinfo);
 
     ComponentList _scaffolds; //scaffolds
     CondensedDeBruijnGraph _uniq_graph;
