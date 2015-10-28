@@ -1,0 +1,70 @@
+ARCS - a second-generation genome assembler.
+============================
+
+
+ARCS is a de novo assembler for DNA sequence reads. It is based on Gene Myers' string graph
+formulation of assembly and uses the FM-index/Burrows-Wheeler transform to efficiently
+find overlaps between sequence reads. The core algorithms are described in this paper:
+
+http://bioinformatics.oxfordjournals.org/cgi/content/abstract/26/12/i367
+
+-------------
+Compiling ARCS
+
+ARCS dependencies:
+    -glpk (https://www.gnu.org/software/glpk/)
+    -boost (http://www.boost.org)
+    -log4cxx (http://logging.apache.org/log4cxx/)
+
+If you cloned the repository from github, run autogen.sh from the src directory 
+to generate the configure file:
+
+./autogen.sh
+
+then run make:
+make
+
+--------------
+Installing SGA
+
+Running make install will install arcs into /usr/local/bin/ by default. To specify the install
+location use the --prefix option to configure:
+
+./configure --prefix=/home/arcs/ && make && make install
+
+This command will copy arcs to /home/arcs/bin/arcs
+
+-----------
+Running ARCS
+
+ARCS consists of a number of subprograms, together which form the assembly pipeline. 
+Each program and subprogram will print a brief description and its usage instructions if the -h flag is used.
+
+To get a listing of all subprograms, run arcs -h.
+
+Examples of an ARCS assembly are provided in the benchmark directory. It is suggested to look at
+these examples to become familar with the flow of data through the program.
+
+The major subprograms are:
+
+* arcs preprocess 
+
+Prepare reads for assembly. It can perform optional quality filtering/trimming. By default
+it will discard reads that have uncalled bases ('N' or '.'). If you wish to keep these reads, use the --permuteAmbiguous
+flag which will randomly change any uncalled bases to one of [ACGT]. It is mandatory to run this command 
+on real data. 
+
+* sga assemble
+
+Assemble takes the output of the preprocess step and constructs contigs.
+
+-------
+License
+
+ARCS is licensed under GPLv3. See the COPYING file in the src directory.
+
+-------
+Credits
+
+Written by Renyu Zhang and Qing Xu.
+The algorithms were developed by Renyu Zhang, Qing Xu and Dongbo Bu.
