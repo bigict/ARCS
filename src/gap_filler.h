@@ -8,10 +8,6 @@
 #include "component.h"
 #include "condensed_debruijn_graph.h"
 
-extern int MU;
-extern int var;
-extern int STEP;
-
 class GapFiller {
 public:
 	GapFiller(size_t K, size_t max_overlap, size_t insert_size, double delta) : _K(K), _OVERLAP(max_overlap), _INSERT_SIZE(insert_size), _DELTA(delta), _uniq_graph(K), _all_graph(K) {
