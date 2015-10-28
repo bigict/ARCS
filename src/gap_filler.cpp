@@ -278,7 +278,7 @@ std::ostream& operator<<(std::ostream& os, const GapFiller &obj) {
             BOOST_ASSERT(it != obj._gapinfo_tbl.end());
 
             if (it->second.graph == -1 && it->second.gap < 0) {     // overlap
-                BOOST_ASSERT(seq.length() > -it->second.gap);
+                BOOST_ASSERT(seq.length() >= -it->second.gap);
                 seq.resize(seq.length() + it->second.gap);
             } else if (it->second.graph == -1) {                    // failed gap
                 BOOST_ASSERT(it->second.gap >= 0);
@@ -289,11 +289,15 @@ std::ostream& operator<<(std::ostream& os, const GapFiller &obj) {
                 const GapFiller::Path& path = it->second.pathlist[0];
                 BOOST_ASSERT(path.size() >= 2);
                 std::string gap = obj.path2seq(it->second.graph == 0 ? obj._uniq_graph : obj._all_graph, path, 1, path.size() - 1);
-                BOOST_ASSERT(gap.length() >= 2 * (obj._K - 1));
-                gap = gap.substr(obj._K - 1, gap.length() - 2*(obj._K - 1));
-                seq += gap;
+                // remove overlap kmer from two sides
+                BOOST_ASSERT(gap.length() >= obj._K - 1);
+                seq += gap.substr(obj._K - 1);
+                BOOST_ASSERT(seq.length() >= obj._K - 1);
+                seq.resize(seq.length() - (obj._K - 1));
             } else {                                                // multi_gap
-                seq += std::string(it->second.gap, 'N');
+                if (it->second.gap > 0) {
+                    seq += std::string(it->second.gap, 'N');
+                }
             }
 
             seq += obj._uniq_graph._indexer[contigs[j]].seq;

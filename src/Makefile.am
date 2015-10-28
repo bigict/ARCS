@@ -1,6 +1,6 @@
 bin_PROGRAMS=arcs
 arcs_SOURCES=arff.cpp \
-			arff.h \
+            arff.h \
             component.cpp \
             component.h \
             condensed_debruijn_graph.cpp \
@@ -45,9 +45,9 @@ arcs_SOURCES=arff.cpp \
             main.cpp
 arcs_CXXFLAGS=${LOG4CXX_CFLAGS}
 arcs_LDFLAGS=${LOG4CXX_LIBS} \
-				  -lboost_filesystem \
-				  -lboost_regex \
-				  -lboost_system \
-				  -lglpk
+            -lboost_filesystem \
+            -lboost_regex \
+            -lboost_system \
+            -lglpk
 
 EXTRA_DIST=ARCS.py reverse_filter.py log4cxx.properties

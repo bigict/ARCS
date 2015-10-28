@@ -3,11 +3,7 @@
 #include "kseq.h"
 
 #include <fstream>
-#include <numeric>
-#include <set>
 
-#include <boost/accumulators/accumulators.hpp>
-#include <boost/accumulators/statistics.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 
