@@ -111,8 +111,26 @@ public:
         return 256;
     }
 private:
+    struct cmp{
+        std::map< std::string, int > mp;
+        cmp() {
+            mp["preprocess"] = 1;
+            mp["assemble"] = 2;
+            mp["copy_num_estimate"] = 3;
+            mp["scaffold"] = 4;
+            mp["solveLP"] = 5;
+            mp["remove_repeats"] = 6;
+            mp["gapfill"] = 7;
+        }
+        bool operator()(const std::string& a, const std::string &b) const{
+            if (mp.find(a) == mp.end() || mp.find(b) == mp.end()) {
+                return true;
+            }
+            return mp.find(a)->second < mp.find(b)->second;
+        }
+    };
     typedef std::tr1::tuple< RunnerPtr, std::string > RunnerInfo;
-    typedef std::map< std::string, RunnerInfo > RunnerList;
+    typedef std::map< std::string, RunnerInfo, cmp> RunnerList;
     RunnerList _runners;
 };
 

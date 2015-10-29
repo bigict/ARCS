@@ -1,8 +1,9 @@
-ARCS - a second-generation genome assembler.
+
+ARCS - a genome assembler for 2nd-generation genome sequencing
 ============================
 
 
-ARCS is a de novo assembler for DNA sequence reads. It is based on Gene Myers' string graph
+ARCS is a de novo assembler designed for the 2nd-generation genome sequencing. It is based on de Bruijn graph model,for DNA sequence reads. It is based on Gene Myers' string graph
 formulation of assembly and uses the FM-index/Burrows-Wheeler transform to efficiently
 find overlaps between sequence reads. The core algorithms are described in this paper:
 
@@ -27,8 +28,7 @@ make
 --------------
 Installing ARCS
 
-Running make install will install arcs into /usr/local/bin/ by default. To specify the install
-location use the --prefix option to configure:
+The execution of 'make install' will install arcs into /usr/local/bin/ by default. The install location can be specified by using the --prefix option to configureas below:
 
 ./configure --prefix=/home/arcs/ && make && make install
 
@@ -37,8 +37,7 @@ This command will copy arcs to /home/arcs/bin/arcs
 -----------
 Running ARCS
 
-ARCS consists of a number of subprograms, together which form the assembly pipeline. 
-Each program and subprogram will print a brief description and its usage instructions if the -h flag is used.
+ARCS consists of a number of subprograms, together which form the assembly pipeline. Each program and subprogram will print a brief description and its usage instructions if the -h flag is used.
 
 To get a listing of all subprograms, run arcs -h.
 

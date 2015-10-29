@@ -269,7 +269,7 @@ Scaffolding::Scaffolding() : Runner("d:K:C:f:e:1:2:L:P:p:i:r:R:c:Sh") {
 }
 
 int Scaffolding::printHelps() const {
-    std::cout << "arcs scaffolding -K [kmer] -i [input] -d [workdir]" << std::endl;
+    std::cout << "arcs scaffold -K [kmer] -i [input] -d [workdir]" << std::endl;
     return 256;
 }
 

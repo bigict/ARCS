@@ -120,7 +120,7 @@ Contiging::Contiging() : Runner("c:s:K:i:d:l:h") {
 }
 
 int Contiging::printHelps() const {
-    std::cout << "arcs contiging -K [kmer] -i [input] -d [workdir]" << std::endl;
+    std::cout << "arcs assemble -K [kmer] -i [input] -d [workdir]" << std::endl;
     return 256;
 }
 

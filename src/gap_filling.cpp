@@ -95,7 +95,7 @@ GapFilling::GapFilling() : Runner("c:s:d:K:O:C:I:l:h", boost::assign::map_list_o
 }
 
 int GapFilling::printHelps() const {
-    std::cout << "arcs gap_filling -K [kmer] -O [overlpa_for_me] -C [condensed_contig_file_name] -I [initial_contig_file_name] -l [line_component_file]" << std::endl;
+    std::cout << "arcs gapfill -K [kmer] -O [overlpa_for_me] -C [condensed_contig_file_name] -I [initial_contig_file_name] -l [line_component_file]" << std::endl;
     return 256;
 }
 
