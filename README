@@ -1,13 +1,25 @@
 
 ARCS - a genome assembler for 2nd-generation genome sequencing
-============================
+==============
 
-
-ARCS is a de novo assembler designed for the 2nd-generation genome sequencing. It is based on de Bruijn graph model,for DNA sequence reads. It is based on Gene Myers' string graph
-formulation of assembly and uses the FM-index/Burrows-Wheeler transform to efficiently
-find overlaps between sequence reads. The core algorithms are described in this paper:
-
-http://bioinformatics.oxfordjournals.org/cgi/content/abstract/26/12/i367
+    ARCS is a de novo assembler designed for the 2nd-generation genome sequencing. 
+    ARCS first estimates the copy numbers of contigs, and then assembles and optimally 
+positions the identified nonrepeat contigs through linear programming to unravel 
+relative distance information among them. Then ARCS decomposes inexact repeats into 
+a collection of exact repeats interspersed with unique sequences that distinguish a 
+single repeat from others. These unique sequences act as bridges connecting neighboring 
+contigs and local scaffolds into longer scaffolds. ARCS solves the chimeric paired-end 
+reads by using a statistical model to iteratively filter out chimera read pairs. Finally, 
+ARCS uses a gap-filling method to merge contigs within each scaffold.
+    Experimental results demonstrate that on the real sequencing data of the E. coli genome, 
+ARCS generates scaffolds with an N50 of 132kbp, outperforming the state-of-art assembly tool 
+SOAP-denovo2 with N50 scaffold of 95kbp. On two additional sets up genome sequencing data, 
+from the D9 and D12 genomes, ARCS again assembles scaffolds longer than those assembled by 
+SOAP-denovo. Through case studies we demonstrate that the performance improvement can be 
+explained by the accurate identification of chimeric read pairs and the assembly of inexact 
+repeats.
+    The core algorithms are described in this paper:
+    http://bioinfo.ict.ac.cn/ARCS/
 
 -------------
 Compiling ARCS
@@ -22,13 +34,16 @@ to generate the configure file:
 
 ./autogen.sh
 
-then run make:
+if all the dependencies have been installed in standard locations (like /usr) you
+can run configure without any parameters then run make:
+
+./configure
 make
 
 --------------
 Installing ARCS
 
-The execution of 'make install' will install arcs into /usr/local/bin/ by default. The install location can be specified by using the --prefix option to configureas below:
+The execution of 'make install' will install arcs into /usr/local/bin/ by default. The install location can be specified by using the --prefix option to configure as below:
 
 ./configure --prefix=/home/arcs/ && make && make install
 
@@ -37,25 +52,33 @@ This command will copy arcs to /home/arcs/bin/arcs
 -----------
 Running ARCS
 
-ARCS consists of a number of subprograms, together which form the assembly pipeline. Each program and subprogram will print a brief description and its usage instructions if the -h flag is used.
-
-To get a listing of all subprograms, run arcs -h.
-
-Examples of an ARCS assembly are provided in the benchmark directory. It is suggested to look at
-these examples to become familar with the flow of data through the program.
+ARCS consists of serval subprograms, and a pipeline to run these subprograms. The descriptions of the subprograms can be listed by running "arcs -h". 
+Each program and subprogram will print a brief description and its usage instructions if the -h flag is used.
 
 The major subprograms are:
 
 * arcs preprocess 
-
-Prepare reads for assembly. It can perform optional quality filtering/trimming. By default
-it will discard reads that have uncalled bases ('N' or '.'). If you wish to keep these reads, use the --permuteAmbiguous
-flag which will randomly change any uncalled bases to one of [ACGT]. It is mandatory to run this command 
-on real data. 
+Filter and quality-trim reads
 
 * arcs assemble
-
 Assemble takes the output of the preprocess step and constructs contigs.
+
+* copy_num_estimate
+Estimate copy number of contigs.
+
+* scaffold
+Generate ordered sets of contigs using distance estimates.
+
+* solveLP
+Position the identified nonrepeat contigs through linear programming. 
+
+* remove_repeats
+Revise the results of solveLP.
+
+* gapfill
+Fill intra-scaffold gaps.
+
+An example to run arcs is provided under the directory of 'arcs/benchmarks'. It is recommended to follow this example to know how to run arcs. 
 
 -------
 License
@@ -65,5 +88,4 @@ ARCS is licensed under GPLv3. See the COPYING file in the src directory.
 -------
 Credits
 
-Written by Renyu Zhang and Qing Xu.
-The algorithms were developed by Renyu Zhang, Qing Xu and Dongbo Bu.
+The software was developed by Renyu Zhang, Qing Xu, Chungong Yu, Bing Wang, Guozheng Wei, Yanbo Li, Ting Cheng, and Dongbo Bu.
