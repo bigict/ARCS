@@ -172,17 +172,17 @@ int _Scaffolding_run_(size_t L, const Properties& options, const Arguments& argu
     double percent = options.get< double >("P", 0.0);
 
     GappedFragmentGraph g(L, pair_kmer_cutoff, pair_read_cutoff, percent, components.size(), GENOME_LEN);
+    g.INSERT_SIZE = INSERT_SIZE;
+    g.DELTA = DELTA;
     // build
     {
         KmerMultiTable< K, KmerPosition > hash_tbl;
         BuildKmerTable_pairends< K >(L, options.get< size_t >("L", 180), EDGE_CUTOFF, contigs, components, hash_tbl);
 
         ConnectGraphBuilder< K > builder(L, INSERT_SIZE, pair_reads, hash_tbl, components, options.find("S") == options.not_found());
-        PAIR_KMER_NUM = builder.build(&g);
+        g.PAIR_KMER_NUM = builder.build(&g);
     }
     LOG4CXX_INFO(logger, boost::format("pair_kmer_num=%d") % PAIR_KMER_NUM);
-
-    g.setPairKmerNumAndInsertSizeAndDelta(PAIR_KMER_NUM, INSERT_SIZE, DELTA);
 
     // graph
     {

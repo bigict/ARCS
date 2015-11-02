@@ -86,9 +86,9 @@ int _Preprocess_run_(size_t L, const Properties& options, const Arguments& argum
     size_t buckets = options.get< size_t >("n", 0);
     double avg_quality = 0, min_quality = 0, percent = 1.0;
     std::vector< std::string > filelist;
+    std::copy(arguments.begin(), arguments.end(), std::back_inserter(filelist));
     {
-        std::string file = options.get< std::string >("i", "");
-        boost::algorithm::split(filelist, file, boost::algorithm::is_any_of(":"));
+        std::string file = boost::algorithm::join(filelist, ":");
         LOG4CXX_DEBUG(logger, boost::format("input: %s") % file);
     }
     if (options.find("E") != options.not_found() && !filelist.empty()) {
@@ -169,7 +169,7 @@ Preprocess::Preprocess() : Runner("c:s:K:n:d:i:o:t:ESe:h", boost::assign::map_li
 }
 
 int Preprocess::printHelps() const {
-    std::cout << "arcs preprocess -K [kmer] -i [input] -o [output] -e [read_cutoff] -n [buckets] [<inputs>]" << std::endl;
+    std::cout << "arcs preprocess -K [kmer] -o [output] -e [read_cutoff] -n [buckets] [<inputs>]" << std::endl;
     return 256;
 }
 

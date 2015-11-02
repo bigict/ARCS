@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
     }
 
     Arguments arguments;
-    for (int i = optind; i < argc; ++i) {
+    for (int i = optind + 1; i < argc; ++i) {
         arguments.push_back(argv[i]);
     }
     //std::copy(argv, optind, argc, std::back_inserter(arguments));

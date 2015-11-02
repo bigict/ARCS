@@ -66,12 +66,6 @@ GappedFragmentGraph::GappedFragmentGraph(size_t K, size_t pair_kmer_cutoff, size
 GappedFragmentGraph::~GappedFragmentGraph() {
 }
 
-void GappedFragmentGraph::setPairKmerNumAndInsertSizeAndDelta(size_t pair_kmer_num, size_t insert_size, double delta) {
-    PAIR_KMER_NUM = pair_kmer_num;
-    INSERT_SIZE = insert_size;
-    DELTA = delta;
-}
-
 void GappedFragmentGraph::addEdge(size_t from, size_t to, long distance, size_t kmer_num, size_t read_num) {
 	
     for (EdgeList::iterator it = _nodelist[from].begin(); it != _nodelist[from].end(); ++it) {

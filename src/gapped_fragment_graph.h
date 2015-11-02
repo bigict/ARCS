@@ -24,7 +24,6 @@ public:
     GappedFragmentGraph(size_t K, size_t pair_kmer_cutoff, size_t pair_read_cutoff, double percent, size_t size, size_t genome_len) ;
     virtual ~GappedFragmentGraph() ;
 
-    void setPairKmerNumAndInsertSizeAndDelta(size_t pair_kmer_num, size_t insert_size, double delta) ;
     void addEdge(size_t from, size_t to, long distance, size_t kmer_num = 1, size_t read_num = 1) ;
     void scoreAndRemoveNoise(const ComponentList& components) ;
     void outputLP(std::ostream& os) ;
