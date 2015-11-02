@@ -3,6 +3,7 @@
 #include "condensed_debruijn_graph_reader.h"
 #include "contigs.h"
 
+#include <cmath>
 #include <fstream>
 #include <iostream>
 
@@ -41,7 +42,7 @@ int CopyNumEstimator::run(const Properties& options, const Arguments& arguments)
         CondensedDeBruijnGraphReader reader(*is);
         CondensedDeBruijnGraphEdge edge;
         while (reader.read(edge)) {
-            int copy_num = (int)round(edge.coverage / lambda);
+            int copy_num = (int)std::round(edge.coverage / lambda);
             if (copy_num >= 0) {
                 contigs.push_back(Contig(edge.seq, copy_num));
             }
