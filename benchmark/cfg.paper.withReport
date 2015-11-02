@@ -1,0 +1,4 @@
+E.coli /home/wangbing/result/E.coli.cfg 21 51 /home/zheng/data/E.coli/ecoli_ref.fa
+d12 /home/wangbing/result/d12.cfg 19 51 /home/zheng/data/d12/d12.genome.fa
+d9 /home/wangbing/result/d9.cfg 19 51 /home/zheng/data/d9/d9.genome.fa
+S.aureus /home/wangbing/result/Sta.cfg 19 51 /home/zheng/data/Staphylococcus_aureus/Data/original/genome.fasta

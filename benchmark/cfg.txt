@@ -1,0 +1,17 @@
+3rd_E.coli /home/wangbing/result/3rd_E.coli.cfg
+Bib.t  /home/wangbing/result/Bib.t.cfg
+CuCR3.cfg /home/wangbing/result/CuCR3.cfg
+E.coli /home/wangbing/result/E.coli.cfg
+Fran /home/wangbing/result/Fran.cfg
+Man /home/wangbing/result/Man.cfg
+Rho /home/wangbing/result/Rho.cfg
+Sal.e /home/wangbing/result/Sal.e.cfg
+Sta /home/wangbing/result/Sta.cfg
+Yer /home/wangbing/result/Yer.cfg
+bgi /home/wangbing/result/bgi.cfg
+cassava /home/wangbing/result/cassava.cfg
+cup /home/wangbing/result/cup.cfg
+d12 /home/wangbing/result/d12.cfg
+d9 /home/wangbing/result/d9.cfg
+hr14 /home/wangbing/result/hr14.cfg
+nanhai /home/wangbing/result/nanhai.cfg
