@@ -2,7 +2,7 @@
 
 #include <map>
 #include <numeric>
-#include <tr1/unordered_map>
+#include <unordered_map>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/assign.hpp>
@@ -32,7 +32,7 @@ std::string make_complement_dna(const std::string& sequence) {
 
     std::string complement(N, 'N');
 
-    static std::tr1::unordered_map< char, char > mapping = boost::assign::map_list_of
+    static std::unordered_map< char, char > mapping = boost::assign::map_list_of
         ('A', 'T')
         ('C', 'G')
         ('G', 'C')

@@ -4,6 +4,7 @@
 
 #include <string>
 #include <fstream>
+#include <tuple>
 
 #include <boost/assign.hpp>
 #include <boost/bind.hpp>
@@ -57,15 +58,15 @@ int GapFilling::run(const Properties& options, const Arguments& arguments) {
     // load data
     {
         typedef bool(GapFiller::*LoadDataPtr)(const std::string&);
-        typedef std::tr1::tuple< std::string, LoadDataPtr > File2FuncPtr;
+        typedef std::tuple< std::string, LoadDataPtr > File2FuncPtr;
         std::vector< File2FuncPtr > file2func_list = boost::assign::list_of
-            (std::tr1::make_tuple(condensed_contig_file_name, &GapFiller::input_contigs))
-            (std::tr1::make_tuple(initial_contig_file_name,   &GapFiller::input_debruijn))
-            (std::tr1::make_tuple(scaffold_file_name,         &GapFiller::input_scaffold))
+            (std::make_tuple(condensed_contig_file_name, &GapFiller::input_contigs))
+            (std::make_tuple(initial_contig_file_name,   &GapFiller::input_debruijn))
+            (std::make_tuple(scaffold_file_name,         &GapFiller::input_scaffold))
             ;
         BOOST_FOREACH(const File2FuncPtr& file2func, file2func_list) {
-            std::string file = std::tr1::get< 0 >(file2func);
-            if (!boost::bind(std::tr1::get< 1 >(file2func), &gf, _1)(file)) {
+            std::string file = std::get< 0 >(file2func);
+            if (!boost::bind(std::get< 1 >(file2func), &gf, _1)(file)) {
                 LOG4CXX_ERROR(logger, boost::format("failed to load %s") % file);
                 return 2;
             }

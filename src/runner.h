@@ -6,7 +6,7 @@
 #include <iostream>
 #include <map>
 #include <string>
-#include <tr1/tuple>
+#include <tuple>
 #include <vector>
 
 #include <boost/format.hpp>
@@ -52,7 +52,7 @@ public:
     RunnerPtr create(const std::string& name) const {
         RunnerList::const_iterator i = _runners.find(name);
         if (i != _runners.end()) {
-            return std::tr1::get< 0 >(i->second);
+            return std::get< 0 >(i->second);
         }
         return RunnerPtr();
     }
@@ -60,7 +60,7 @@ public:
         if (_runners.find(name) != _runners.end()) {
             return false;
         }
-        _runners[name] = std::tr1::make_tuple(runner, introduction);
+        _runners[name] = std::make_tuple(runner, introduction);
         return true;
     }
     bool uninstall(const std::string& name) {
@@ -102,7 +102,7 @@ public:
             for (RunnerList::const_iterator i = _runners.begin(); i != _runners.end(); ++i) {
                 std::string cmd(i->first);
                 cmd.resize(max_name_length, ' ');
-                std::cout << boost::format("   %s%s") % cmd % std::tr1::get< 1 >(i->second) << std::endl;
+                std::cout << boost::format("   %s%s") % cmd % std::get< 1 >(i->second) << std::endl;
             }
         }
 
@@ -129,7 +129,7 @@ private:
             return mp.find(a)->second < mp.find(b)->second;
         }
     };
-    typedef std::tr1::tuple< RunnerPtr, std::string > RunnerInfo;
+    typedef std::tuple< RunnerPtr, std::string > RunnerInfo;
     typedef std::map< std::string, RunnerInfo, cmp> RunnerList;
     RunnerList _runners;
 };
