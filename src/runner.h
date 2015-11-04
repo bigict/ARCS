@@ -112,7 +112,7 @@ public:
     }
 private:
     struct cmp{
-        std::map< std::string, int > mp;
+        std::map< std::string, size_t > mp;
         cmp() {
             mp["preprocess"] = 1;
             mp["assemble"] = 2;
@@ -122,11 +122,16 @@ private:
             mp["remove_repeats"] = 6;
             mp["gapfill"] = 7;
         }
-        bool operator()(const std::string& a, const std::string &b) const{
-            if (mp.find(a) == mp.end() || mp.find(b) == mp.end()) {
+        bool operator()(const std::string& l, const std::string& r) const {
+            std::map< std::string, size_t >::const_iterator x = mp.find(l), y = mp.find(r);
+            if (x != mp.end() && y != mp.end()) {
+                return x->second < y->second;
+            } else if (x != mp.end()) {
                 return true;
+            } else if (y != mp.end()) {
+                return false;
             }
-            return mp.find(a)->second < mp.find(b)->second;
+            return l < r;
         }
     };
     typedef std::tuple< RunnerPtr, std::string > RunnerInfo;
