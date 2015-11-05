@@ -1,10 +1,7 @@
 #include "gap_filler.h"
-#include "component.h"
-#include "condensed_debruijn_graph.h"
 #include "condensed_debruijn_graph_reader.h"
 #include "constant.h"
 #include "contigs.h"
-#include "kmer.h"
 #include "utils.h"
 
 #include <deque>
@@ -24,6 +21,7 @@ static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.GapFiller"));
 void GapFiller::fill() {
     LOG4CXX_DEBUG(logger, "Begin Gap Filling ... ");
 
+    size_t num_failed_gaps = 0, num_uniq_gaps = 0, num_multi_gaps = 0, num_overlaps = 0;
 	for (size_t i = 0; i < _scaffolds.size(); ++i) {
 		if (_scaffolds[i].contigs.size() <= 1) { // no gaps
 			continue;
@@ -43,21 +41,35 @@ void GapFiller::fill() {
             int gap = _scaffolds[i].gaps[j - 1];
 			if (overlap >= _OVERLAP) {
                 _gapinfo_tbl[std::make_pair(i, j)] = GapInfo(-1, -overlap);
+                ++num_overlaps;
 			} else if (gap > _INSERT_SIZE + 3*_DELTA) {
                 _gapinfo_tbl[std::make_pair(i, j)] = GapInfo(-1, gap);
+                ++num_failed_gaps;
             } else {
                 try {
                     GapInfo gapinfo(-1, gap);
                     BFS(left_index, right_index, gap, &gapinfo);
                     _gapinfo_tbl[std::make_pair(i, j)] = gapinfo;
+                    if (gapinfo.pathlist.empty()) {
+                        ++num_failed_gaps;
+                    } else if (gapinfo.pathlist.size() == 1) {
+                        ++num_uniq_gaps;
+                    } else {
+                        ++num_multi_gaps;
+                    }
                 } catch(std::bad_alloc) {
                     LOG4CXX_WARN(logger, "BFS is too memory-intensive, ignoring...");
                     _gapinfo_tbl[std::make_pair(i, j)] = GapInfo(-1, -gap);
+                    ++num_failed_gaps;
                 }
             }
 		}
 	}
 	LOG4CXX_DEBUG(logger, boost::format("The number of gaps = %d") % _gapinfo_tbl.size());
+	LOG4CXX_DEBUG(logger, boost::format("The number of failed gaps = %d") % num_failed_gaps);
+	LOG4CXX_DEBUG(logger, boost::format("The number of unique gaps = %d") % num_uniq_gaps);
+	LOG4CXX_DEBUG(logger, boost::format("The number of multiple gaps = %d") % num_multi_gaps);
+	LOG4CXX_DEBUG(logger, boost::format("The number of overlap = %d") % num_overlaps);
 }
 
 //Align two nerghboring contigs
