@@ -4,7 +4,7 @@
 #include <iostream>
 #include <map>
 #include <string>
-#include <tr1/unordered_map>
+#include <unordered_map>
 #include <vector>
 
 //
@@ -36,7 +36,7 @@ public:
     typedef std::vector< CondensedEdge > CondensedEdgeList;
     CondensedEdgeList _indexer;
     typedef std::map< char, size_t > EdgeList;
-    typedef std::tr1::unordered_map< std::string, EdgeList >  NodeList;
+    typedef std::unordered_map< std::string, EdgeList >  NodeList;
     NodeList _parents;
     NodeList _children;
 private:

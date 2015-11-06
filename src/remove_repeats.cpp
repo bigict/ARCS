@@ -2,7 +2,7 @@
 #include "uniq_edge_graph.h"
 
 #include <iostream>
-#include <tr1/tuple>
+#include <tuple>
 
 #include <boost/assign.hpp>
 #include <boost/filesystem.hpp>
@@ -40,18 +40,18 @@ int RepeatRemover::run(const Properties& options, const Arguments& arguments) {
     // load data
     {
         typedef bool(UniqEdgeGraph::*LoadDataPtr)(std::istream&);
-        typedef std::tr1::tuple< std::string, LoadDataPtr> File2FuncPtr;
+        typedef std::tuple< std::string, LoadDataPtr> File2FuncPtr;
         std::vector< File2FuncPtr > file2func_list = boost::assign::list_of
-            (std::tr1::make_tuple("edge_cluster_len_%ld", &UniqEdgeGraph::input_edge_length))
-            (std::tr1::make_tuple("edge_cluster_pos_%ld", &UniqEdgeGraph::input_edge_position))
-            (std::tr1::make_tuple("contig_arc_graph_after_remove_ambigous_arcs_%ld", &UniqEdgeGraph::input_edge_link))
-            (std::tr1::make_tuple("component_%ld", &UniqEdgeGraph::input_component))
+            (std::make_tuple("edge_cluster_len_%ld", &UniqEdgeGraph::input_edge_length))
+            (std::make_tuple("edge_cluster_pos_%ld", &UniqEdgeGraph::input_edge_position))
+            (std::make_tuple("contig_arc_graph_after_remove_ambigous_arcs_%ld", &UniqEdgeGraph::input_edge_link))
+            (std::make_tuple("component_%ld", &UniqEdgeGraph::input_component))
             ;
 
         BOOST_FOREACH(const File2FuncPtr& file2func, file2func_list) {
-            std::string file = boost::str(boost::format(std::tr1::get< 0 >(file2func)) % ITERATION);
+            std::string file = boost::str(boost::format(std::get< 0 >(file2func)) % ITERATION);
             boost::filesystem::ifstream stream(workdir / file);
-            if (!boost::bind(std::tr1::get< 1 >(file2func), &graph, _1)(stream)) {
+            if (!boost::bind(std::get< 1 >(file2func), &graph, _1)(stream)) {
                 LOG4CXX_ERROR(logger, boost::format("failed to load %s") % file);
                 return 2;
             }

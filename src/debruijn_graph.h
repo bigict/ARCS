@@ -8,10 +8,10 @@
 #include <iostream>
 #include <list>
 #include <map>
+#include <numeric>
 #include <set>
 #include <string>
-#include <tr1/memory>
-#include <tr1/unordered_map>
+#include <unordered_map>
 #include <vector>
 
 #include <boost/assert.hpp>
@@ -29,7 +29,7 @@
 template< size_t K >
 class DeBruijnGraph {
 public:
-    typedef std::tr1::unordered_map< char, uint32_t > EdgeList;
+    typedef std::unordered_map< char, uint32_t > EdgeList;
     struct Node {
         Node() : children(Nucleotide::NUM), parents(Nucleotide::NUM) {
         }

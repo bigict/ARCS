@@ -6,7 +6,6 @@
 #include "kmer.h"
 
 #include <iostream>
-#include <tr1/unordered_map>
 
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>

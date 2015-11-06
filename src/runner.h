@@ -6,7 +6,7 @@
 #include <iostream>
 #include <map>
 #include <string>
-#include <tr1/tuple>
+#include <tuple>
 #include <vector>
 
 #include <boost/format.hpp>
@@ -52,7 +52,7 @@ public:
     RunnerPtr create(const std::string& name) const {
         RunnerList::const_iterator i = _runners.find(name);
         if (i != _runners.end()) {
-            return std::tr1::get< 0 >(i->second);
+            return std::get< 0 >(i->second);
         }
         return RunnerPtr();
     }
@@ -60,7 +60,7 @@ public:
         if (_runners.find(name) != _runners.end()) {
             return false;
         }
-        _runners[name] = std::tr1::make_tuple(runner, introduction);
+        _runners[name] = std::make_tuple(runner, introduction);
         return true;
     }
     bool uninstall(const std::string& name) {
@@ -102,7 +102,7 @@ public:
             for (RunnerList::const_iterator i = _runners.begin(); i != _runners.end(); ++i) {
                 std::string cmd(i->first);
                 cmd.resize(max_name_length, ' ');
-                std::cout << boost::format("   %s%s") % cmd % std::tr1::get< 1 >(i->second) << std::endl;
+                std::cout << boost::format("   %s%s") % cmd % std::get< 1 >(i->second) << std::endl;
             }
         }
 
@@ -112,7 +112,7 @@ public:
     }
 private:
     struct cmp{
-        std::map< std::string, int > mp;
+        std::map< std::string, size_t > mp;
         cmp() {
             mp["preprocess"] = 1;
             mp["assemble"] = 2;
@@ -122,14 +122,19 @@ private:
             mp["remove_repeats"] = 6;
             mp["gapfill"] = 7;
         }
-        bool operator()(const std::string& a, const std::string &b) const{
-            if (mp.find(a) == mp.end() || mp.find(b) == mp.end()) {
+        bool operator()(const std::string& l, const std::string& r) const {
+            std::map< std::string, size_t >::const_iterator x = mp.find(l), y = mp.find(r);
+            if (x != mp.end() && y != mp.end()) {
+                return x->second < y->second;
+            } else if (x != mp.end()) {
                 return true;
+            } else if (y != mp.end()) {
+                return false;
             }
-            return mp.find(a)->second < mp.find(b)->second;
+            return l < r;
         }
     };
-    typedef std::tr1::tuple< RunnerPtr, std::string > RunnerInfo;
+    typedef std::tuple< RunnerPtr, std::string > RunnerInfo;
     typedef std::map< std::string, RunnerInfo, cmp> RunnerList;
     RunnerList _runners;
 };

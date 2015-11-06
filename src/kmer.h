@@ -3,10 +3,10 @@
 
 #include "utils.h"
 
+#include <array>
 #include <functional>
 #include <string>
-#include <tr1/array>
-#include <tr1/unordered_map>
+#include <unordered_map>
 
 //
 // Utilities for encodeing Nucleotide
@@ -163,7 +163,7 @@ public:
     }
 
 private:
-    std::tr1::array< size_t,  (2 * K + SIZEOF_BITS(size_t) - 1) / SIZEOF_BITS(size_t) > _data;
+    std::array< size_t,  (2 * K + SIZEOF_BITS(size_t) - 1) / SIZEOF_BITS(size_t) > _data;
 
     static size_t _K;
 };
@@ -185,9 +185,9 @@ std::ostream& operator << (std::ostream& os, const Kmer< K >& kmer) {
 }
 
 template< size_t K, class V >
-using KmerTable = std::tr1::unordered_map< Kmer< K >, V, KmerHasher< K > >;
+using KmerTable = std::unordered_map< Kmer< K >, V, KmerHasher< K > >;
 
 template< size_t K, class V >
-using KmerMultiTable = std::tr1::unordered_multimap< Kmer< K >, V, KmerHasher< K > >;
+using KmerMultiTable = std::unordered_multimap< Kmer< K >, V, KmerHasher< K > >;
 
 #endif // kmer_h_
