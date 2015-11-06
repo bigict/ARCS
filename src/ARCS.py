@@ -94,7 +94,8 @@ config = {
         'runtime': True,  
         'kmer_filter': False, 
         'test': False, 
-        'verbose': False
+        'verbose': False,
+        'cpu_num': 1
         }
 
 if os.environ.has_key('ARCS_CMD'):
@@ -174,7 +175,7 @@ start = datetime.now()
 # arcs preprocess
 #
 ###################################################################
-args = '-K %d -o %s -e -1' % (config['kmer_size'], os.path.join(config['workspace'], 'kmers.arff'))
+args = '-K %d -o %s -e -1 -t 0' % (config['kmer_size'], os.path.join(config['workspace'], 'kmers.arff'))
 if config['kmer_filter'] and config['kmer_size'] < 33:
     args = '%s -E' % (args)
 args = '%s %s %s' % (args, config['library_list'][0]['q1'], config['library_list'][0]['q2'])
@@ -210,7 +211,7 @@ for i, library in enumerate(config['library_list']):
     # arcs scaffold
     #
     ###################################################################
-    args = '-d %s -K %d -C %s -f %s -e %d -1 %s -2 %s -L %d -P %f -i %d -r %d -R %d' % (config['workspace'], config['kmer_size'], os.path.join(config['workspace'], 'cdbg_copy_number.fa'), os.path.join(config['workspace'], 'component_%d' % (i)), library['EDGE_LENGTH_CUTOFF'], library['q1'], library['q2'], library['INSERT_SIZE'], library['LINK_QUALITY_PERCENT'], i, library['PAIR_KMER_CUTOFF'], library['PAIR_READS_CUTOFF'])
+    args = '-d %s -K %d -C %s -f %s -e %d -1 %s -2 %s -L %d -P %f -i %d -r %d -R %d -p %d' % (config['workspace'], config['kmer_size'], os.path.join(config['workspace'], 'cdbg_copy_number.fa'), os.path.join(config['workspace'], 'component_%d' % (i)), library['EDGE_LENGTH_CUTOFF'], library['q1'], library['q2'], library['INSERT_SIZE'], library['LINK_QUALITY_PERCENT'], i, library['PAIR_KMER_CUTOFF'], library['PAIR_READS_CUTOFF'], config['cpu_num'])
     command_run(ARCS_CMD, 'scaffold', args, config)
 
     ###################################################################
