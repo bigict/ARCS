@@ -48,6 +48,8 @@ arcs_LDFLAGS=${LOG4CXX_LIBS} \
             -lboost_filesystem \
             -lboost_regex \
             -lboost_system \
+            -lboost_thread \
+            -lpthread \
             -lglpk
 
 EXTRA_DIST=ARCS.py reverse_filter.py log4cxx.properties

@@ -13,6 +13,10 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/format.hpp>
+#include <boost/thread/locks.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/thread.hpp>
+#include <boost/bind.hpp>
 
 #include <log4cxx/logger.h>
 
@@ -25,7 +29,38 @@ public:
     ConnectGraphBuilder(size_t L, size_t insert_size, const PairReadList& pair_reads, const KmerMultiTable< K, KmerPosition >& hash_tbl, const ComponentList& components, bool do_reverse=true) : _K(L), _insert_size(insert_size), _pair_reads(pair_reads), _hash_tbl(hash_tbl), _components(components), _do_reverse(do_reverse) {
     }
 
-    size_t build(GappedFragmentGraph* graph) const {
+    size_t multiThreadBuild(GappedFragmentGraph* graph, int thread_num = 8) /*const*/ {
+        LOG4CXX_DEBUG(logger, boost::format("multi thread build graph begin"));
+        size_t pair_kmer_num = 0;
+
+        boost::thread_group group;
+        for(int i = 0; i < thread_num; ++i) {
+            group.create_thread(boost::bind((&ConnectGraphBuilder::callBack), this, graph, i, thread_num, &pair_kmer_num));
+        }
+        group.join_all();
+        LOG4CXX_DEBUG(logger, boost::format("multi thread build graph end"));
+        return pair_kmer_num;
+    }
+
+    void callBack(GappedFragmentGraph * graph, int i, int thread_num, size_t *pair_kmer_num) /*const*/ {
+        size_t start = (i) * _pair_reads.size() / thread_num;
+        size_t end = (i + 1) * _pair_reads.size() / thread_num;
+
+        LOG4CXX_DEBUG(logger, boost::format("thread %d start=%d end=%d") % i % start % end);
+        if (i == thread_num - 1) {
+            end = _pair_reads.size();
+        }
+        for(typename PairReadList::const_iterator it = _pair_reads.begin() + start; it != _pair_reads.begin() + end; ++it) {
+            if (it->set1.size() < _K || it->set2.size() < _K) {
+                continue;
+            }
+            addEdge(it->set1, make_complement_dna(it->set2), graph, thread_num, pair_kmer_num);
+            if (_do_reverse) {
+                addEdge(it->set2, make_complement_dna(it->set1), graph, thread_num, pair_kmer_num);
+            }
+        }
+    }
+    size_t build(GappedFragmentGraph* graph) /*const*/ {
         size_t pair_kmer_num = 0;
 
         LOG4CXX_DEBUG(logger, boost::format("build graph begin"));
@@ -52,7 +87,7 @@ private:
         }
     };
 
-    size_t addEdge(const std::string& read1, const std::string& read2, GappedFragmentGraph* graph) const {
+    size_t addEdge(const std::string& read1, const std::string& read2, GappedFragmentGraph* graph, int thread_num = 1, size_t *pair_kmer_num = NULL) /*const*/ {
         size_t num = 0;
 
         std::set< std::pair< size_t, size_t >, PairKmerCmp > find_component;
@@ -63,6 +98,11 @@ private:
             
             if (left != _hash_tbl.end() && right != _hash_tbl.end() && left->second.first != right->second.first) {
                 ++num;
+                if ( pair_kmer_num != NULL) {
+                    _pair_num_mtx.lock();
+                    ++ (*pair_kmer_num);
+                    _pair_num_mtx.unlock();
+                }
 
                 LOG4CXX_TRACE(logger, boost::format("pair kmre1=%s %d %d") % kmer1 % left->second.first % left->second.second);
                 LOG4CXX_TRACE(logger, boost::format("pair kmre2=%s %d %d") % kmer2 % right->second.first % right->second.second);
@@ -93,10 +133,22 @@ private:
                     distance = C1;
                 }
                 if (find_component.find(std::make_pair(left->second.first, right->second.first)) != find_component.end()) {
-                    graph->addEdge(left->second.first, right->second.first, distance, 1, 0);
+                    if (thread_num > 1) {
+                        _mtx.lock();
+                        graph->addEdge(left->second.first, right->second.first, distance, 1, 0);
+                        _mtx.unlock();
+                    } else {
+                        graph->addEdge(left->second.first, right->second.first, distance, 1, 0);
+                    }
                 } else {
                     find_component.insert( std::make_pair(left->second.first, right->second.first));
-                    graph->addEdge(left->second.first, right->second.first, distance, 1, 1);
+                    if (thread_num > 1) {
+                        _mtx.lock();
+                        graph->addEdge(left->second.first, right->second.first, distance, 1, 1);
+                        _mtx.unlock();
+                    } else {
+                        graph->addEdge(left->second.first, right->second.first, distance, 1, 1);
+                    }
                 }
             }
         }
@@ -110,6 +162,8 @@ private:
     const KmerMultiTable< K, KmerPosition >& _hash_tbl;
     const ComponentList& _components;
     bool _do_reverse;
+    boost::mutex _mtx;
+    boost::mutex _pair_num_mtx;
 };
 
 template< size_t K >
@@ -180,9 +234,14 @@ int _Scaffolding_run_(size_t L, const Properties& options, const Arguments& argu
         BuildKmerTable_pairends< K >(L, options.get< size_t >("L", 180), EDGE_CUTOFF, contigs, components, hash_tbl);
 
         ConnectGraphBuilder< K > builder(L, INSERT_SIZE, pair_reads, hash_tbl, components, options.find("S") == options.not_found());
-        g.PAIR_KMER_NUM = builder.build(&g);
+        int thread_num = options.get< int >("p", 1);
+        if ( thread_num <= 1 ) {
+            g.PAIR_KMER_NUM = builder.build(&g);
+        } else {
+            g.PAIR_KMER_NUM = builder.multiThreadBuild(&g, thread_num);
+        }
     }
-    LOG4CXX_INFO(logger, boost::format("pair_kmer_num=%d") % PAIR_KMER_NUM);
+    LOG4CXX_INFO(logger, boost::format("pair_kmer_num=%d") % g.PAIR_KMER_NUM);
 
     // graph
     {
@@ -269,7 +328,7 @@ Scaffolding::Scaffolding() : Runner("d:K:C:f:e:1:2:L:P:p:i:r:R:c:Sh") {
 }
 
 int Scaffolding::printHelps() const {
-    std::cout << "arcs scaffold -K [kmer] -i [input] -d [workdir]" << std::endl;
+    std::cout << "arcs scaffold -K [kmer] -i [input] -d [workdir] -p [cpu_num]" << std::endl;
     return 256;
 }
 
