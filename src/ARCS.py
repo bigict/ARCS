@@ -175,7 +175,7 @@ start = datetime.now()
 # arcs preprocess
 #
 ###################################################################
-args = '-K %d -o %s -e -1 -t 0' % (config['kmer_size'], os.path.join(config['workspace'], 'kmers.arff'))
+args = '-K %d -o %s -e -1' % (config['kmer_size'], os.path.join(config['workspace'], 'kmers.arff'))
 if config['kmer_filter'] and config['kmer_size'] < 33:
     args = '%s -E' % (args)
 args = '%s %s %s' % (args, config['library_list'][0]['q1'], config['library_list'][0]['q2'])

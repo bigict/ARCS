@@ -1,8 +1,11 @@
 #include "gapped_fragment_graph.h"
 
 #include <cmath>
+#include <limits>
 
 #include <boost/format.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
 #include <boost/math/distributions.hpp>
 
 #include <log4cxx/logger.h>
@@ -11,23 +14,13 @@ static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.GappedFragment
 
 class Scorer {
 public:
-    Scorer(size_t K, size_t insert_size, double delta, size_t pair_kmer_num, size_t genome_len) : _K(K), _pair_kmer_num(pair_kmer_num), _genome_len(genome_len) {
-        _gaussian.resize(2 * insert_size);
-
-        boost::math::normal g(insert_size, delta);
-        if (!_gaussian.empty()) {
-            _gaussian[0] = boost::math::pdf(g, 0);
-        }
-        for (size_t i = 1; i < 2 * insert_size; ++i) {
-            _gaussian[i] = _gaussian[i - 1] + boost::math::pdf(g, i);
-        }
+    Scorer(size_t K, size_t insert_size, double delta, size_t pair_kmer_num, size_t genome_len) : _K(K), _pair_kmer_num(pair_kmer_num), _genome_len(genome_len), _gaussian(insert_size, delta) {
     }
     double score(size_t leni, size_t lenj, long gap, size_t c) const {
         BOOST_ASSERT(leni >= _K - 1);
         BOOST_ASSERT(lenj >= _K - 1);
 
         double sum = 0;
-
         for (size_t i = 0; i < leni - _K + 1; ++i) {	
             sum += gaussian(leni + gap + lenj - i - _K + 1) - gaussian(leni + gap - i);
         }
@@ -36,22 +29,20 @@ public:
     }
 private:
     double log_poisson(double lambda, size_t c) const {
-        if (abs(lambda - 0) <= 0.000001) {
-            return -200000;
+        if (lambda <= std::numeric_limits< double >::epsilon()) {
+            return -std::numeric_limits< double >::max();
         }
-        double sum = 0;
+        double sum = c * log(lambda);
         for (size_t index = 1; index <= c; ++index) {
-            sum += log(lambda) - log(index);
+            sum -= log(index);
         }
         return sum - lambda;
     }
     double gaussian(int i) const {
-        if (i < 0) return 0;
-        else if (i >= _gaussian.size()) return 1;
-        return _gaussian[i];
+        return boost::math::cdf(_gaussian, i);
     }
 
-    std::vector< double > _gaussian;
+    boost::math::normal _gaussian;
     size_t _K;
     size_t _pair_kmer_num;
     size_t _genome_len;
@@ -108,9 +99,11 @@ void GappedFragmentGraph::scoreAndRemoveNoise(const ComponentList& components) {
     
         LOG4CXX_DEBUG(logger, boost::format("befor remove nosize graph_size=%d") % graph_size);
     }
+
     std::sort(score_list.begin(), score_list.end());
     double threshold = score_list.empty() ? 0 : score_list[(size_t)(score_list.size() * _percent)];
     LOG4CXX_DEBUG(logger, boost::format("removeNoise threshold=%f") % threshold);
+
     // removeNoise
     {
         size_t graph_size = 0;

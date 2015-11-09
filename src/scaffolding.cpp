@@ -8,20 +8,20 @@
 #include "pair_read.h"
 
 #include <iostream>
+#include <numeric>
 
 #include <boost/assign.hpp>
+#include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/format.hpp>
 #include <boost/thread/locks.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
-#include <boost/bind.hpp>
 
 #include <log4cxx/logger.h>
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.Scaffolding"));
-Scaffolding Scaffolding::_runner;
 
 template< size_t K >
 class ConnectGraphBuilder {
@@ -29,42 +29,47 @@ public:
     ConnectGraphBuilder(size_t L, size_t insert_size, const PairReadList& pair_reads, const KmerMultiTable< K, KmerPosition >& hash_tbl, const ComponentList& components, bool do_reverse=true) : _K(L), _insert_size(insert_size), _pair_reads(pair_reads), _hash_tbl(hash_tbl), _components(components), _do_reverse(do_reverse) {
     }
 
-    size_t multiThreadBuild(GappedFragmentGraph* graph, int thread_num = 8) /*const*/ {
-        LOG4CXX_DEBUG(logger, boost::format("multi thread build graph begin"));
-        size_t pair_kmer_num = 0;
-
-        boost::thread_group group;
-        for(int i = 0; i < thread_num; ++i) {
-            group.create_thread(boost::bind((&ConnectGraphBuilder::callBack), this, graph, i, thread_num, &pair_kmer_num));
-        }
-        group.join_all();
-        LOG4CXX_DEBUG(logger, boost::format("multi thread build graph end"));
-        return pair_kmer_num;
-    }
-
-    void callBack(GappedFragmentGraph * graph, int i, int thread_num, size_t *pair_kmer_num) /*const*/ {
-        size_t start = (i) * _pair_reads.size() / thread_num;
-        size_t end = (i + 1) * _pair_reads.size() / thread_num;
-
-        LOG4CXX_DEBUG(logger, boost::format("thread %d start=%d end=%d") % i % start % end);
-        if (i == thread_num - 1) {
-            end = _pair_reads.size();
-        }
-        for(typename PairReadList::const_iterator it = _pair_reads.begin() + start; it != _pair_reads.begin() + end; ++it) {
-            if (it->set1.size() < _K || it->set2.size() < _K) {
-                continue;
-            }
-            addEdge(it->set1, make_complement_dna(it->set2), graph, thread_num, pair_kmer_num);
-            if (_do_reverse) {
-                addEdge(it->set2, make_complement_dna(it->set1), graph, thread_num, pair_kmer_num);
-            }
-        }
-    }
-    size_t build(GappedFragmentGraph* graph) /*const*/ {
-        size_t pair_kmer_num = 0;
+    size_t build(size_t thread_num, GappedFragmentGraph* graph) {
+        size_t num = 0;
 
         LOG4CXX_DEBUG(logger, boost::format("build graph begin"));
-        BOOST_FOREACH(const PairRead& pair_read, _pair_reads) {
+        if (thread_num <= 1) {
+            num = callback(0, _pair_reads.size(), graph);
+        } else {
+            std::vector< size_t > pair_kmer_num(thread_num, 0);
+
+            size_t block = _pair_reads.size() / thread_num;
+            boost::thread_group group;
+            for (size_t i = 0; i < thread_num; ++i) {
+                size_t start = i * block, end = (i == thread_num ? _pair_reads.size() : (i + 1) * block);
+                group.create_thread(boost::bind((&ConnectGraphBuilder::callback), this, start, end, i, thread_num, graph, &pair_kmer_num[i]));
+            }
+            group.join_all();
+
+            LOG4CXX_DEBUG(logger, boost::format("multi thread build graph end"));
+            num = std::accumulate(pair_kmer_num.begin(), pair_kmer_num.end(), 0);
+        }
+        LOG4CXX_DEBUG(logger, boost::format("build graph end"));
+
+        return num;
+    }
+
+    void callback(size_t start, size_t end, size_t i, size_t thread_num, GappedFragmentGraph * graph, size_t *pair_kmer_num) {
+        LOG4CXX_DEBUG(logger, boost::format("start thread %d/%d start=%d end=%d") % i % thread_num % start % end);
+
+        size_t num = callback(start, end, graph);
+        if (pair_kmer_num != NULL) {
+            *pair_kmer_num = num;
+        }
+
+        LOG4CXX_DEBUG(logger, boost::format("stop thread %d/%d start=%d end=%d") % i % thread_num % start % end);
+    }
+
+    size_t callback(size_t start, size_t end, GappedFragmentGraph * graph) {
+        size_t pair_kmer_num = 0;
+
+        for (size_t i = start; i < end; ++i) {
+            const PairRead& pair_read = _pair_reads[i];
             if (pair_read.set1.size() < _K || pair_read.set2.size() < _K) {
                 continue;
             }
@@ -73,7 +78,6 @@ public:
                 pair_kmer_num += addEdge(pair_read.set2, make_complement_dna(pair_read.set1), graph);
             }
         }
-        LOG4CXX_DEBUG(logger, boost::format("build graph end"));
 
         return pair_kmer_num;
     }
@@ -87,7 +91,7 @@ private:
         }
     };
 
-    size_t addEdge(const std::string& read1, const std::string& read2, GappedFragmentGraph* graph, int thread_num = 1, size_t *pair_kmer_num = NULL) /*const*/ {
+    size_t addEdge(const std::string& read1, const std::string& read2, GappedFragmentGraph* graph) {
         size_t num = 0;
 
         std::set< std::pair< size_t, size_t >, PairKmerCmp > find_component;
@@ -98,11 +102,6 @@ private:
             
             if (left != _hash_tbl.end() && right != _hash_tbl.end() && left->second.first != right->second.first) {
                 ++num;
-                if ( pair_kmer_num != NULL) {
-                    _pair_num_mtx.lock();
-                    ++ (*pair_kmer_num);
-                    _pair_num_mtx.unlock();
-                }
 
                 LOG4CXX_TRACE(logger, boost::format("pair kmre1=%s %d %d") % kmer1 % left->second.first % left->second.second);
                 LOG4CXX_TRACE(logger, boost::format("pair kmre2=%s %d %d") % kmer2 % right->second.first % right->second.second);
@@ -132,23 +131,13 @@ private:
                         continue;
                     distance = C1;
                 }
+
+                boost::unique_lock< boost::mutex > lock(_mtx);
                 if (find_component.find(std::make_pair(left->second.first, right->second.first)) != find_component.end()) {
-                    if (thread_num > 1) {
-                        _mtx.lock();
-                        graph->addEdge(left->second.first, right->second.first, distance, 1, 0);
-                        _mtx.unlock();
-                    } else {
-                        graph->addEdge(left->second.first, right->second.first, distance, 1, 0);
-                    }
+                    graph->addEdge(left->second.first, right->second.first, distance, 1, 0);
                 } else {
                     find_component.insert( std::make_pair(left->second.first, right->second.first));
-                    if (thread_num > 1) {
-                        _mtx.lock();
-                        graph->addEdge(left->second.first, right->second.first, distance, 1, 1);
-                        _mtx.unlock();
-                    } else {
-                        graph->addEdge(left->second.first, right->second.first, distance, 1, 1);
-                    }
+                    graph->addEdge(left->second.first, right->second.first, distance, 1, 1);
                 }
             }
         }
@@ -163,7 +152,6 @@ private:
     const ComponentList& _components;
     bool _do_reverse;
     boost::mutex _mtx;
-    boost::mutex _pair_num_mtx;
 };
 
 template< size_t K >
@@ -234,12 +222,7 @@ int _Scaffolding_run_(size_t L, const Properties& options, const Arguments& argu
         BuildKmerTable_pairends< K >(L, options.get< size_t >("L", 180), EDGE_CUTOFF, contigs, components, hash_tbl);
 
         ConnectGraphBuilder< K > builder(L, INSERT_SIZE, pair_reads, hash_tbl, components, options.find("S") == options.not_found());
-        int thread_num = options.get< int >("p", 1);
-        if ( thread_num <= 1 ) {
-            g.PAIR_KMER_NUM = builder.build(&g);
-        } else {
-            g.PAIR_KMER_NUM = builder.multiThreadBuild(&g, thread_num);
-        }
+        g.PAIR_KMER_NUM = builder.build(options.get< size_t >("p", 1), &g);
     }
     LOG4CXX_INFO(logger, boost::format("pair_kmer_num=%d") % g.PAIR_KMER_NUM);
 
@@ -322,6 +305,8 @@ int Scaffolding::run(const Properties& options, const Arguments& arguments) {
     LOG4CXX_DEBUG(logger, "scaffolding end");
     return r;
 }
+
+Scaffolding Scaffolding::_runner;
 
 Scaffolding::Scaffolding() : Runner("d:K:C:f:e:1:2:L:P:p:i:r:R:c:Sh") {
     RUNNER_INSTALL("scaffold", this, "generate ordered sets of contigs using distance estimates");
