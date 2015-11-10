@@ -12,7 +12,6 @@
 #include <log4cxx/logger.h>
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.Contiging"));
-Contiging Contiging::_runner;
 
 template< size_t K >
 int _Contiging_run_(size_t L, const Properties& options, const Arguments& arguments) {
@@ -114,6 +113,8 @@ int Contiging::run(const Properties& options, const Arguments& arguments) {
     LOG4CXX_DEBUG(logger, "contiging end");
     return r;
 }
+
+Contiging Contiging::_runner;
 
 Contiging::Contiging() : Runner("c:s:K:i:d:l:h") {
     RUNNER_INSTALL("assemble", this, "generate contigs from an assembly graph");

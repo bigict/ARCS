@@ -11,7 +11,6 @@
 #include <log4cxx/logger.h>
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.Preprocess"));
-Preprocess Preprocess::_runner;
 
 class ReadQuality {
 public:
@@ -163,6 +162,8 @@ int Preprocess::run(const Properties& options, const Arguments& arguments) {
     LOG4CXX_DEBUG(logger, "preprocess reads end");
     return r;
 }
+
+Preprocess Preprocess::_runner;
 
 Preprocess::Preprocess() : Runner("c:s:K:n:d:i:o:t:ESe:h", boost::assign::map_list_of('e', "READ_LENGTH_CUTOFF")('t', "THRESHOLD")) {
     RUNNER_INSTALL("preprocess", this, "filter and quality-trim reads");

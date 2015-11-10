@@ -16,7 +16,6 @@
 #include <log4cxx/logger.h>
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.GapFilling"));
-GapFilling GapFilling::_runner;
 
 int GapFilling::run(const Properties& options, const Arguments& arguments) {
     int r = 0;
@@ -90,6 +89,8 @@ int GapFilling::run(const Properties& options, const Arguments& arguments) {
 
     return 0;
 }
+
+GapFilling GapFilling::_runner;
 
 GapFilling::GapFilling() : Runner("c:s:d:K:O:C:I:l:h", boost::assign::map_list_of('O', "MAX_OVERLAP")) {
     RUNNER_INSTALL("gapfill", this, "fill intra-scaffold gaps");

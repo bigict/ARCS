@@ -13,7 +13,6 @@
 #include <log4cxx/logger.h>
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.RepeatRemover"));
-RepeatRemover RepeatRemover::_runner;
 
 int RepeatRemover::run(const Properties& options, const Arguments& arguments) {
     int r = 0;
@@ -71,6 +70,8 @@ int RepeatRemover::run(const Properties& options, const Arguments& arguments) {
     LOG4CXX_DEBUG(logger, "remove_repeats end");
     return 0;
 }
+
+RepeatRemover RepeatRemover::_runner;
 
 RepeatRemover::RepeatRemover() : Runner("c:s:K:d:O:i:h", boost::assign::map_list_of('O', "MAX_OVERLAP")('i', "ITERATION")) {
     RUNNER_INSTALL("remove_repeats", this, "remove_repeats");

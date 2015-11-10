@@ -15,7 +15,6 @@
 #include <log4cxx/logger.h>
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.LPSolver"));
-LPSolver LPSolver::_runner;
 
 typedef std::map< size_t, int > Children;
 typedef std::set< size_t > Parents;
@@ -359,6 +358,8 @@ int LPSolver::run(const Properties& options, const Arguments& arguments) {
     LOG4CXX_INFO(logger, "solveLP end");
     return r;
 }
+
+LPSolver LPSolver::_runner;
 
 LPSolver::LPSolver() : Runner("c:s:i:o:l:h") {
     RUNNER_INSTALL("solveLP", this, "solveLP");
