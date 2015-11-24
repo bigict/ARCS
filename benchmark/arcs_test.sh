@@ -31,7 +31,7 @@ for cfg_file in $@; do
         for K in  `seq $start_k 2 $end_k` 
         do
             mkdir -p $result_path/$K"mer"
-            $arcs -K $K -d $result_path/$K"mer"/  -s $cfg -e $K -O 200 -E 1 | tee $result_path/$K"mer/"$K"mer.log"
+            $pyarcs -K $K -d $result_path/$K"mer"/  -s $cfg -e $K -O 200 -E 1 | tee $result_path/$K"mer/"$K"mer.log"
         done
     done < ${cfg_file}
 done

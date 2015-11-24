@@ -102,7 +102,7 @@ void GappedFragmentGraph::scoreAndRemoveNoise(const ComponentList& components) {
 
     std::sort(score_list.begin(), score_list.end());
     double threshold = score_list.empty() ? 0 : score_list[(size_t)(score_list.size() * _percent)];
-    LOG4CXX_DEBUG(logger, boost::format("removeNoise threshold=%f") % threshold);
+    LOG4CXX_DEBUG(logger, boost::format("removeNoise threshold=%g") % threshold);
 
     // removeNoise
     {
