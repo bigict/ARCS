@@ -219,7 +219,7 @@ for i, library in enumerate(config['library_list']):
     # arcs solveLP
     #
     ###################################################################
-    args = '-s %s -i %s -o %s' % (os.path.join(config['workspace'], 'scaffold_parameter_0'), os.path.join(config['workspace'], 'position_lp_%d.math' % (i)), os.path.join(config['workspace'], 'edge_cluster_pos_%d' % (i)))
+    args = '-s %s -i %s -o %s' % (os.path.join(config['workspace'], 'scaffold_parameter_%d' % (i)), os.path.join(config['workspace'], 'position_lp_%d.math' % (i)), os.path.join(config['workspace'], 'edge_cluster_pos_%d' % (i)))
     command_run(ARCS_CMD, 'solveLP', args, config)
 
     ###################################################################
