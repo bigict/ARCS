@@ -119,8 +119,10 @@ public:
         if (!_data.empty()) {
             size_t k = Kmer< K >::_K - 1;
             size_t m = (2 * k) / SIZEOF_BITS(size_t), n = SIZEOF_BITS(size_t) - ((2 * k) % SIZEOF_BITS(size_t)) - 2;
-            _data[m] >>= n + 2;
-            _data[m] <<= n + 2;
+            _data[m] >>= n;
+            _data[m] >>= 2;
+            _data[m] <<= n;
+            _data[m] <<= 2;
         }
         for (size_t i = _data.size(); i > 1; --i) {
             _data[i - 1] >>= 2;
