@@ -102,6 +102,7 @@ void InsertSizeEstimater< K >::estimate(size_t* insert_size, double* delta) {
         }
     }
 
+    LOG4CXX_DEBUG(logger, boost::format("pair_kmer number for estimate insert size = [%d]") % insert_size_distr.size());
     Accumulator acc;
     std::for_each(insert_size_distr.begin(), insert_size_distr.end(), Statistics(11, acc));
     if (boost::accumulators::count(acc) > 0) {

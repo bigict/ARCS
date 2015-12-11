@@ -42,6 +42,8 @@ arcs_SOURCES=arff.cpp \
             uniq_edge_graph.cpp \
             uniq_edge_graph.h \
             utils.h \
+            gmm.h \
+            gmm.cpp \
             main.cpp
 arcs_CXXFLAGS=${LOG4CXX_CFLAGS}
 arcs_LDFLAGS=${LOG4CXX_LIBS} \

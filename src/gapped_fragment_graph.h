@@ -6,20 +6,24 @@
 #include <iostream>
 #include <list>
 #include <vector>
+#include <set>
 
 class GappedFragmentGraph {
 public:
     struct Edge {
         size_t component_id;
         long distance;
+        std::vector<double> distances;
         size_t kmer_cov; // kmer coverage
         size_t read_cov; // read coverage
         double score;
         Edge(size_t id, long d, size_t k, size_t r, double s=0.0): component_id(id), distance(d), kmer_cov(k), read_cov(r), score(s) {
+            distances.push_back( static_cast<double>(d) );
         }
     };
     typedef std::list< Edge > EdgeList;
     typedef std::vector< EdgeList > NodeList;
+    typedef std::set< size_t > RepeateList;
 
     GappedFragmentGraph(size_t K, size_t pair_kmer_cutoff, size_t pair_read_cutoff, double percent, size_t size, size_t genome_len) ;
     virtual ~GappedFragmentGraph() ;
@@ -36,6 +40,7 @@ private:
     friend std::ostream& operator<<(std::ostream& os, const GappedFragmentGraph& g);
 
     NodeList _nodelist;
+    RepeateList _repeateList;
     size_t _K;
     double _percent;
     size_t _pair_read_cutoff;
