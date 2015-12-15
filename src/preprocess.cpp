@@ -3,11 +3,13 @@
 #include "kmer_dataset.h"
 
 #include <iostream>
+#include <fstream>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/assign.hpp>
 #include <boost/format.hpp>
-
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
 #include <log4cxx/logger.h>
 
 static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.Preprocess"));
@@ -21,8 +23,16 @@ public:
         size_t q = 0, n = 0;
 
         BOOST_FOREACH(const std::string& file, filelist) {
-            std::ifstream stream (file.c_str());
-            q += quality(stream, &n);
+            if(boost::algorithm::ends_with(file, ".gz")) {
+                std::ifstream is(file.c_str(), std::ios_base::in | std::ios_base::binary);
+                boost::iostreams::filtering_istream stream;
+                stream.push(boost::iostreams::gzip_decompressor());
+                stream.push(is);
+                q += quality(stream, &n);
+            } else {
+                std::ifstream stream (file.c_str());
+                q += quality(stream, &n);
+            }
         }
 
         if (count != NULL) {
