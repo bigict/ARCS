@@ -11,6 +11,9 @@
 
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
 #include <boost/assert.hpp>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
@@ -58,8 +61,16 @@ public:
         return true;
     }
     bool read(const std::string& file) {
-        std::ifstream stream(file.c_str());
-        return read(stream);
+        if(boost::algorithm::ends_with(file, ".gz")) {
+            std::ifstream is(file.c_str(), std::ios_base::in | std::ios_base::binary);
+            boost::iostreams::filtering_istream stream;
+            stream.push(boost::iostreams::gzip_decompressor());
+            stream.push(is);
+            return read(stream);
+        } else {
+            std::ifstream stream (file.c_str());
+            return read(stream);
+        }
     }
     bool read(const std::vector< std::string >& filelist) {
         BOOST_FOREACH(const std::string& file, filelist) {
