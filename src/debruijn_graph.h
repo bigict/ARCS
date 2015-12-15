@@ -395,7 +395,7 @@ std::ostream& operator << (std::ostream& os, const DeBruijnGraph< K >& graph) {
             typename DeBruijnGraph< K >::NodeList::const_iterator k = graph._nodelist.find(i->first + j->first);
             while (k != graph._nodelist.end() && k->second.indegree() == 1 && k->second.outdegree() == 1) {
                 length += 1;
-                coverage += k->second;
+                coverage += k->second.children.begin()->second;
                 k = graph._nodelist.find(k->first + k->second.children.begin()->first);
                 if (k != graph._nodelist.end()) {
                     edge += k->first.nucleotide(L - 1);
