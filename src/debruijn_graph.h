@@ -297,7 +297,7 @@ private:
 
 template< size_t K >
 void DeBruijnGraph< K >::removeNoise() {
-    LOG4CXX_DEBUG(logger, boost::format("remove noise begin. nodelist=[%d]") % _nodelist.size());
+    LOG4CXX_DEBUG(logger, boost::format("remove noise begin. nodelist=[%d] _K=[%d]") % _nodelist.size() % Kmer< K >::length());
 
     NodeRemover< K > remover(this);
 
@@ -327,7 +327,7 @@ void DeBruijnGraph< K >::removeNoise() {
 
             // rules
             if ((front->second.indegree() == 0 && front->second.outdegree() == 1) || (back->second.indegree() == 1 && back->second.outdegree() == 0)) { // tips
-                if (K + length < 2 * (K + 1) || coverage < _average / 5.0) {
+                if (Kmer< K >::length() + length < 2 * (Kmer< K >::length() + 1) || coverage < _average / 5.0) {
                     if (front->second.indegree() == 0 && front->second.outdegree() == 1) {
                         remover.add(front->first);
                     }
@@ -339,7 +339,7 @@ void DeBruijnGraph< K >::removeNoise() {
                         remover.add(front->first, back->first);
                     }
                 }
-            } else if ((K + length < 2 * (K + 1) && coverage < _average / 5.0) || (coverage <= 3.0) || (coverage < _average / 10.0)) { // buble or link ?????????
+            } else if ((Kmer< K >::length() + length < 2 * (Kmer< K >::length() + 1) && coverage < _average / 5.0) || (coverage <= 3.0) || (coverage < _average / 10.0)) { // buble or link ?????????
                 std::for_each(group.begin(), group.end(), boost::bind(&NodeRemover< K >::add, &remover, _1));
                 if (group.empty()) {
                     remover.add(front->first, back->first);
