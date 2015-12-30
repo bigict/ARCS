@@ -381,6 +381,7 @@ std::ostream& operator << (std::ostream& os, const DeBruijnGraph< K >& graph) {
     KmerIndexer< K > indexer(graph._nodelist);
 
     size_t L = Kmer< K >::length();
+    std::vector< size_t > contigLength;
     // Merge nodes with indegree == outdegree == 1
     for (typename DeBruijnGraph< K >::NodeList::const_iterator i = graph._nodelist.begin(); i != graph._nodelist.end(); ++i) {
         // edge
@@ -403,9 +404,30 @@ std::ostream& operator << (std::ostream& os, const DeBruijnGraph< K >& graph) {
             }
             os << boost::format("%d\t%d\t%s\n") % indexer[i->first] % indexer[i->first + j->first] % edge;
             os << boost::format("%f\n") % (coverage / length);
+            contigLength.push_back( edge.length() );
         }
     }
-
+    std::sort(contigLength.begin(), contigLength.end(), std::greater<int>());
+    size_t sumLength = std::accumulate(contigLength.begin(), contigLength.end(), 0);
+    size_t N50 = sumLength * 0.5;
+    size_t N90 = sumLength * 0.9;
+    size_t sum = 0, N50_val, N90_val;
+    bool findN50 = false;
+    for(std::vector< size_t >::iterator it = contigLength.begin(); it != contigLength.end(); ++it) {
+        sum += (*it);
+        if(!findN50 && sum >= N50) {
+            N50_val = (*it);
+            findN50 = true;
+        }
+        if(sum >= N90) {
+            N90_val = (*it);
+            break;
+        }
+    }
+	LOG4CXX_INFO(DeBruijnGraph< K >::logger, boost::format("contig N50 : %d") % N50_val);
+    LOG4CXX_INFO(DeBruijnGraph< K >::logger, boost::format("contig N90 : %d") % N90_val);
+    LOG4CXX_INFO(DeBruijnGraph< K >::logger, boost::format("contig number : %d") % contigLength.size());
+    
     return os;
 }
 

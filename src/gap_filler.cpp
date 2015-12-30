@@ -290,8 +290,14 @@ std::ostream& operator<<(std::ostream& os, const GapFiller &obj) {
             BOOST_ASSERT(it != obj._gapinfo_tbl.end());
 
             if (it->second.graph == -1 && it->second.gap < 0) {     // overlap
-                BOOST_ASSERT(seq.length() >= -it->second.gap);
-                seq.resize(seq.length() + it->second.gap);
+            //    BOOST_ASSERT(seq.length() >= -it->second.gap);
+                if( seq.length() >= -it->second.gap ) {
+                    seq.resize(seq.length() + it->second.gap);
+                } else {
+                    LOG4CXX_DEBUG(logger, boost::format("seq.length() < -gap_size => seq.length() - overlap_size < 0"));
+                    LOG4CXX_TRACE(logger, boost::format("left_index=%d right_index=%d left_length=%d right_length=%d gap=%d") % left_index % right_index %  
+                    obj._uniq_graph._indexer[ left_index ].seq.length() % obj._uniq_graph._indexer[ right_index ].seq.length() % it->second.gap);
+                }
             } else if (it->second.graph == -1) {                    // failed gap
                 BOOST_ASSERT(it->second.gap >= 0);
                 //for failed gap , the count of 'N' is determined by the distance estimation
