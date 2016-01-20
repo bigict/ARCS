@@ -226,7 +226,7 @@ void GapFiller::BFS(const CondensedDeBruijnGraph& graph, const size_t from, cons
             }
             const CondensedDeBruijnGraph::CondensedEdge& edge = graph._indexer[node];
             std::string suffix = edge.seq.substr(edge.seq.length() - (_K - 1), _K - 1);
-            CondensedDeBruijnGraph::NodeList::const_iterator i = graph._parents.find(suffix);
+            CondensedDeBruijnGraph::NodeList::const_iterator i = graph._parents.find(suffix); // wangbing _children?
             if (i != graph._parents.end()) {
                 for (CondensedDeBruijnGraph::EdgeList::const_iterator j = i->second.begin(); j != i->second.end(); ++j) {
                     //size_t length = graph._indexer[j->second].seq.length();
@@ -250,17 +250,19 @@ void GapFiller::BFS(size_t left_index, size_t right_index, int gap, GapInfo* gap
 	int dis = gap + (_K-1+3*_DELTA) +30; //gap constraints
 
     PathList pathlist;
+    int graphType = 0;
     BFS(_uniq_graph, left_index, right_index, dis, _STEP, 1000, pathlist);
     if (pathlist.empty()) {
         const std::string& lsequence = _uniq_graph._indexer[left_index].seq;
         const std::string& rsequence = _uniq_graph._indexer[right_index].seq;
         BFS(_all_graph, lsequence, rsequence, dis, _STEP, 2000, pathlist);
+        graphType = 1;
     }
 
     if (!pathlist.empty()) {
         if (pathlist.size() <= MAX_CHOICE) {
             if (gapinfo != NULL) {
-                gapinfo->graph = 0;
+                gapinfo->graph = graphType;
                 gapinfo->pathlist = pathlist;
             }
         } else {
