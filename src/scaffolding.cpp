@@ -41,7 +41,7 @@ public:
             size_t block = _pair_reads.size() / thread_num;
             boost::thread_group group;
             for (size_t i = 0; i < thread_num; ++i) {
-                size_t start = i * block, end = (i == thread_num ? _pair_reads.size() : (i + 1) * block);
+                size_t start = i * block, end = (i+1 == thread_num ? _pair_reads.size() : (i + 1) * block);
                 group.create_thread(boost::bind((&ConnectGraphBuilder::callback), this, start, end, i, thread_num, graph, &pair_kmer_num[i]));
             }
             group.join_all();

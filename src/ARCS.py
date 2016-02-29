@@ -14,6 +14,7 @@ def configfile_parse(f, config):
             'PAIR_KMER_CUTOFF': int, 
             'PAIR_READS_CUTOFF': int, 
             'EDGE_LENGTH_CUTOFF': int, 
+            'READ_LENGTH_CUTOFF': int,
             'q1': str, 
             'q2': str
             }
@@ -27,7 +28,10 @@ def configfile_parse(f, config):
             if options.has_key(key):
                 library_list.append(options);
                 options = {}
-            options[key] = transform[key](val)
+            if key == 'READ_LENGTH_CUTOFF':
+                config[key] = transform[key](val)
+            else:
+                options[key] = transform[key](val)
     if len(options) > 0:
         library_list.append(options)
 
@@ -175,7 +179,7 @@ start = datetime.now()
 # arcs preprocess
 #
 ###################################################################
-args = '-K %d -o %s -e -1' % (config['kmer_size'], os.path.join(config['workspace'], 'kmers.arff'))
+args = '-K %d -o %s -e %d' % (config['kmer_size'], os.path.join(config['workspace'], 'kmers.arff'), config['READ_LENGTH_CUTOFF'])
 if config['kmer_filter'] and config['kmer_size'] < 33:
     args = '%s -E' % (args)
 args = '%s %s %s' % (args, config['library_list'][0]['q1'], config['library_list'][0]['q2'])
