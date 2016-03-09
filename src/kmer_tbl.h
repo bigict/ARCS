@@ -20,7 +20,7 @@ size_t _BuildKmerTable_(size_t L, const ContigList& contigs, size_t component_no
     for (size_t k = 0; k < component.contigs.size(); ++k) {
         const Contig& contig = contigs[component.contigs[k]];
         //for (size_t i = 0,j = L; j <= contig.seq.length(); ++i,++j) {
-        for (size_t i = 1,j = L; j < contig.seq.length(); ++i,++j) {
+        for (size_t i = 0,j = L; j < contig.seq.length(); ++i,++j) {
             Kmer< K > kmer(contig.seq, i, j);
             tbl.insert(std::make_pair(kmer, KmerPosition(component_no, idx)));
             ++idx;

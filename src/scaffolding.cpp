@@ -126,7 +126,6 @@ private:
                 size_t C1 = _components[left->second.first].length();
                 long overlap = C1 - distance;
                 if (overlap > 0 && overlap > _K) {
-                    continue;
                     if (overlap > _insert_size)
                         continue;
                     distance = C1;
@@ -212,6 +211,7 @@ int _Scaffolding_run_(size_t L, const Properties& options, const Arguments& argu
     size_t pair_kmer_cutoff = options.get< size_t >("r", 0);
     size_t pair_read_cutoff = options.get< size_t >("R", 0);;
     double percent = options.get< double >("P", 0.0);
+    LOG4CXX_INFO(logger, boost::format("pair_kmer_cutoff=[%d], pair_read_cutoff=[%d],edge_link_percent=[%f]") % pair_kmer_cutoff % pair_read_cutoff % percent);
 
     GappedFragmentGraph g(L, pair_kmer_cutoff, pair_read_cutoff, percent, components.size(), GENOME_LEN);
     g.INSERT_SIZE = INSERT_SIZE;
@@ -219,7 +219,8 @@ int _Scaffolding_run_(size_t L, const Properties& options, const Arguments& argu
     // build
     {
         KmerMultiTable< K, KmerPosition > hash_tbl;
-        BuildKmerTable_pairends< K >(L, options.get< size_t >("L", 180), EDGE_CUTOFF, contigs, components, hash_tbl);
+        //BuildKmerTable_pairends< K >(L, options.get< size_t >("L", 180), EDGE_CUTOFF, contigs, components, hash_tbl);
+        BuildKmerTable_pairends< K >(L, INSERT_SIZE, EDGE_CUTOFF, contigs, components, hash_tbl);
 
         ConnectGraphBuilder< K > builder(L, INSERT_SIZE, pair_reads, hash_tbl, components, options.find("S") == options.not_found());
         g.PAIR_KMER_NUM = builder.build(options.get< size_t >("p", 1), &g);
@@ -285,7 +286,7 @@ int Scaffolding::run(const Properties& options, const Arguments& arguments) {
     LOG4CXX_DEBUG(logger, "scaffolding begin");
 
     size_t K = options.get< size_t >("K", 31);
-    K = K - 1;
+    //K = K - 1;
 
     // process
     if (0 < K && K <= 32) {
