@@ -26,7 +26,7 @@ class KmerDataSet {
 public:
     KmerDataSet(size_t n, double avg_quality=0, double min_quality=0, double percent=1.0, size_t read_cutoff=-1, bool do_reversed=true) : _hash_tbl(n), _avg_quality(avg_quality), _min_quality(min_quality), _percent(percent), _read_cutoff(read_cutoff), _do_reversed(do_reversed) {
         BOOST_ASSERT(K > 0);
-        BOOST_ASSERT(K <= _read_cutoff);
+        BOOST_ASSERT(Kmer<K>::length() <= _read_cutoff);
         BOOST_ASSERT(0 < _percent && _percent <= 1.0);
         
         LOG4CXX_DEBUG(logger, boost::format("buckets=[%d],avg_quality=[%lf],min_quality=[%lf],percent=[%lf],read_cutoff=[%d],do_reversed=[%d]") % n % avg_quality % min_quality % percent % read_cutoff % do_reversed);
@@ -85,6 +85,7 @@ public:
         statistics(&mean, &var);
 
         stream << boost::format("@attribute mean %f\n") % mean;
+        //stream << boost::format("@attribute mean %f\n") % (238.858); debug for d12
         stream << boost::format("@attribute variance %f\n") % var;
         stream << boost::format("@data\n");
         for (typename KmerList::const_iterator it = _hash_tbl.begin(); it != _hash_tbl.end(); ++it) {
