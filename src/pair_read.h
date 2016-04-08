@@ -31,7 +31,7 @@ public:
     void estimate(size_t* insert_size, double* delta);
 private:
     typedef std::vector< int > InsertSizeDistr;
-    typedef boost::accumulators::accumulator_set< int, boost::accumulators::stats< boost::accumulators::tag::count, boost::accumulators::tag::mean, boost::accumulators::tag::moment< 2 > > > Accumulator;
+    typedef boost::accumulators::accumulator_set< double, boost::accumulators::stats< boost::accumulators::tag::count, boost::accumulators::tag::mean, boost::accumulators::tag::moment< 2 > > > Accumulator;
     struct Statistics {
         Statistics(int min_threshold, Accumulator& acc) : _min_threshold(min_threshold), _acc(acc) {
         }
@@ -58,7 +58,7 @@ private:
                 LOG4CXX_TRACE(logger, boost::format("INSERT SIZE pair kmre2=%s %d %d") % kmer2 % right->second.first % right->second.second);
 
                 if (right->second.second - left->second.second > _insert_size / 4 
-                        && right->second.second - left->second.second < 2 * _insert_size) { // use abs(x) ?????????
+                        && right->second.second - left->second.second < 4 * _insert_size) { // use abs(x) ?????????  wangbing change 2*_inster_size to 4*_insert_size
                     insert_size_distr.push_back(right->second.second - left->second.second);
                 }
             }
@@ -90,7 +90,7 @@ void InsertSizeEstimater< K >::estimate(size_t* insert_size, double* delta) {
 
     InsertSizeDistr insert_size_distr;
     BOOST_FOREACH(const PairRead& pair_read, _pair_reads) {
-        if (insert_size_distr.size() >= 1000) {//trick
+        if (insert_size_distr.size() >= 50000) {//trick wangbing change 1000 to 50000
             break;
         }
         if (pair_read.set1.length() < _K || pair_read.set2.length() < _K) {
