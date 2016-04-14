@@ -107,7 +107,13 @@ bool DNASeqReader::read(DNASeq& sequence) {
                     return true;
                 } else {
                     LOG4CXX_WARN(logger, boost::format("fastq=>length of sequence and quality are not equal: %s") % buf);
-                    return false;
+                    if(buf.length() > sequence.seq.length()) {
+                        sequence.quality = buf.substr(0, sequence.seq.length());
+                        cutoff(sequence);
+                        return true;
+                    } else {
+                        return false;
+                    }
                 }
             }
         }
