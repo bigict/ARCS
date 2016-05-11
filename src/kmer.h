@@ -2,6 +2,7 @@
 #define kmer_h_
 
 #include "utils.h"
+#include <cstdlib>
 
 #include <array>
 #include <functional>
@@ -21,7 +22,7 @@ public:
         NUM      = 0x04
     };
     
-    static int char2code(char chr, int def=Adenine) {
+    static int char2code(char chr, int def=/*Adenine*/Guanine) {
         chr = std::toupper(chr);
         switch (chr) {
         case 'A': return Adenine;
@@ -29,17 +30,18 @@ public:
         case 'G': return Guanine;
         case 'T': return Thymine;
         }
-        return def;
+        return rand() % 4;
     }
     
-    static char code2char(int code, char def='A') {
+    static char code2char(int code, char def=/*'A'*/'G') {
         switch (code) {
         case Adenine:  return 'A';
         case Cytosine: return 'C';
         case Guanine:  return 'G';
         case Thymine:  return 'T';
         }
-        return def;
+        static std::string s = "ACGT";
+        return s[rand()%4];
     }
 };
 

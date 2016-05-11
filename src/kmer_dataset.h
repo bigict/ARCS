@@ -24,7 +24,7 @@
 template< size_t K >
 class KmerDataSet {
 public:
-    KmerDataSet(size_t n, double avg_quality=0, double min_quality=0, double percent=1.0, size_t read_cutoff=-1, bool do_reversed=true) : _hash_tbl(n), _avg_quality(avg_quality), _min_quality(min_quality), _percent(percent), _read_cutoff(read_cutoff), _do_reversed(do_reversed) {
+    KmerDataSet(size_t n, double avg_quality=0, double min_quality=0, double percent=1.0, size_t read_cutoff=-1, bool do_reversed=true, bool filtKmerWithN = false) : _hash_tbl(n), _avg_quality(avg_quality), _min_quality(min_quality), _percent(percent), _read_cutoff(read_cutoff), _do_reversed(do_reversed), _filtKmerWithN(filtKmerWithN) {
         BOOST_ASSERT(K > 0);
         BOOST_ASSERT(Kmer<K>::length() <= _read_cutoff);
         BOOST_ASSERT(0 < _percent && _percent <= 1.0);
@@ -138,6 +138,9 @@ private:
         if (_avg_quality > 0 || _min_quality > 0) {
             size_t avg_quality = 0, min_quality = -1;
             for (size_t k = i; k < j; ++k) {
+                if(_filtKmerWithN && read.seq[k] == 'N') {
+                    return false;
+                }
                 avg_quality += read.quality[k];
                 min_quality = std::min(min_quality, (size_t)read.quality[k]);
             }
@@ -157,6 +160,7 @@ private:
     double _min_quality;
     double _percent;
     size_t _read_cutoff;
+    bool _filtKmerWithN;
     bool _do_reversed;
 
     static log4cxx::LoggerPtr logger;
