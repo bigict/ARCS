@@ -107,11 +107,12 @@ int _Preprocess_run_(size_t L, const Properties& options, const Arguments& argum
     }
     size_t read_cutoff = options.get< size_t >("READ_LENGTH_CUTOFF", -1);
     bool do_reverse = options.find("S") == options.not_found();
+    bool filt_kmer_with_N = options.find("F") == options.not_found();
 
-    LOG4CXX_DEBUG(logger, boost::format("parameters: K=[%d], buckets=[%d], avg_quality=[%lf],min_quality=[%lf],read_cutoff=[%d],do_reverse=[%d]") % L % buckets % avg_quality % min_quality % read_cutoff % do_reverse);
+    LOG4CXX_DEBUG(logger, boost::format("parameters: K=[%d], buckets=[%d], avg_quality=[%lf],min_quality=[%lf],read_cutoff=[%d],do_reverse=[%d],filt_kmer_with_N=[%d]") % L % buckets % avg_quality % min_quality % read_cutoff % do_reverse % filt_kmer_with_N);
 
     // construct dataset
-    KmerDataSet< K > tbl(buckets, avg_quality, min_quality, percent, read_cutoff, do_reverse);
+    KmerDataSet< K > tbl(buckets, avg_quality, min_quality, percent, read_cutoff, do_reverse, filt_kmer_with_N);
 
     // read
     if (r == 0){
@@ -175,7 +176,7 @@ int Preprocess::run(const Properties& options, const Arguments& arguments) {
 
 Preprocess Preprocess::_runner;
 
-Preprocess::Preprocess() : Runner("c:s:K:n:d:i:o:t:ESe:h", boost::assign::map_list_of('e', "READ_LENGTH_CUTOFF")('t', "THRESHOLD")) {
+Preprocess::Preprocess() : Runner("c:s:K:n:d:i:o:t:ESe:Fh", boost::assign::map_list_of('e', "READ_LENGTH_CUTOFF")('t', "THRESHOLD")) {
     RUNNER_INSTALL("preprocess", this, "filter and quality-trim reads");
 }
 
