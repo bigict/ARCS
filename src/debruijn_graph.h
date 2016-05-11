@@ -55,7 +55,7 @@ public:
     DeBruijnGraph() : _average(0) {
     }
 
-    bool read(std::istream& stream) {
+    bool read(std::istream& stream, size_t iter) {
         ARFF arff;
 
         ARFFReader reader(stream, 2); 
@@ -72,21 +72,43 @@ public:
 
         LOG4CXX_DEBUG(logger, "build debruijn graph begin");
         size_t L = Kmer< K >::length();
+        size_t usedKmerNum = 0;
         BOOST_FOREACH(const ARFF::ItemPtr& item, arff.data) {
             Kmer< K > prefix((*item)[0], 0, L), suffix((*item)[0], 1, L + 1);
 
-            addEdge(prefix, suffix, boost::lexical_cast< size_t >((*item)[1]));
+            size_t copyNum = boost::lexical_cast< size_t >((*item)[1]);
+            if(iter == 1) {
+                if(copyNum != 1) {
+                    usedKmerNum += addEdge(prefix, suffix, copyNum); 
+                }
+            } else if(copyNum == 1) {
+                usedKmerNum += addEdge(prefix, suffix, copyNum); 
+            }
         }
+        LOG4CXX_DEBUG(logger, boost::format("used kmer number = %d") % usedKmerNum);
         LOG4CXX_DEBUG(logger, "build debruijn graph end");
 
         return true;
     }
 
-    void addEdge(const Kmer< K >& from, const Kmer< K >& to, size_t weight = 1) {
+    int addEdge(const Kmer< K >& from, const Kmer< K >& to, size_t weight = 1) {
         size_t L = Kmer< K >::length();
 
         //LOG4CXX_TRACE(logger, boost::format("addEdge: from=[%s], to=[%s], weight=%d") % from % to % weight);
-
+        if(weight == 1) {
+            typename NodeList::iterator it = _nodelist.find(from);
+            typename NodeList::iterator jt = _nodelist.find(to);
+            /*
+            if(it != _nodelist.end() && jt != _nodelist.end()
+                && (it->second.children.size() != 0 || jt->second.parents.size() != 0)) {
+                return 0;
+            }
+            */
+            if(it == _nodelist.end() || jt == _nodelist.end() || 
+                    it->second.children.size() != 0 || jt->second.parents.size() != 0) { // only when outdegree of it == 0 and indegree of jt == 0, add edge
+                return 0;
+            }
+        } 
         // children
         {
             typename NodeList::iterator it = _nodelist.find(from);
@@ -110,6 +132,7 @@ public:
                 _nodelist[to] = n;
             }
         }
+        return 1;
     }
     void removeEdge(const Kmer< K >& from, const Kmer< K >& to) {
         size_t L = Kmer< K >::length();

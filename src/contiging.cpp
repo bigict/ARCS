@@ -36,13 +36,17 @@ int _Contiging_run_(size_t L, const Properties& options, const Arguments& argume
             std::string file = options.get< std::string >("i");
             std::ifstream stream(file.c_str());
             LOG4CXX_DEBUG(logger, boost::format("input: %s") % file);
-
-            if (!g.read(stream)) {
+            if (!g.read(stream, 1)) {
+                return 1;
+            }
+            stream.clear();
+            stream.seekg(0, std::ios::beg);
+            if(!g.read(stream, 2)) { // callback kmer with 1 coverage
                 return 1;
             }
         } else {
             std::cin.sync_with_stdio(false);
-            if (!g.read(std::cin)) {
+            if (!g.read(std::cin, 1)) {
                 return 1;
             }
         }
