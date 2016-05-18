@@ -57,6 +57,7 @@ int RepeatRemover::run(const Properties& options, const Arguments& arguments) {
         }
     }
     // resolve conflicts && output
+    size_t drawGraphNode = options.get< size_t >("N", -1);
     {
         boost::filesystem::ofstream stream(workdir / boost::filesystem::path(
                     boost::str(boost::format("component_%ld") % (ITERATION + 1))
@@ -64,7 +65,7 @@ int RepeatRemover::run(const Properties& options, const Arguments& arguments) {
         if (!stream) {
             return 1;
         }
-        graph.linearize(stream);
+        graph.linearize(stream, drawGraphNode);
     }
 
     LOG4CXX_DEBUG(logger, "remove_repeats end");
@@ -73,7 +74,7 @@ int RepeatRemover::run(const Properties& options, const Arguments& arguments) {
 
 RepeatRemover RepeatRemover::_runner;
 
-RepeatRemover::RepeatRemover() : Runner("c:s:K:d:O:i:h", boost::assign::map_list_of('O', "MAX_OVERLAP")('i', "ITERATION")) {
+RepeatRemover::RepeatRemover() : Runner("c:s:K:d:O:i:N:h", boost::assign::map_list_of('O', "MAX_OVERLAP")('i', "ITERATION")) {
     RUNNER_INSTALL("remove_repeats", this, "remove_repeats");
 }
 

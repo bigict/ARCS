@@ -41,7 +41,7 @@ public:
 	bool input_edge_link(std::istream& stream);
 	bool input_component(std::istream& stream);
 
-	void linearize(std::ostream& stream);
+	void linearize(std::ostream& stream, size_t drawGraphNode = -1);
 	
 private:
     friend class ConflictResolver;

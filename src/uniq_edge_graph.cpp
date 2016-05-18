@@ -1,5 +1,7 @@
 #include "uniq_edge_graph.h"
 
+#include <cstdio>
+
 #include <algorithm>
 #include <deque>
 #include <fstream>
@@ -35,7 +37,7 @@ public:
     }
 
     void resolve();
-    void scaffolds(ScaffoldList& scaffoldlist) const;
+    void scaffolds(ScaffoldList& scaffoldlist, size_t drawGraphNode = -1) const;
 private:
     UniqEdgeGraph* _graph;
     size_t _K;
@@ -90,7 +92,7 @@ std::ostream& operator << (std::ostream& out, const ConflictResolver& resovler) 
     return out;
 }
 
-void ConflictResolver::scaffolds(ScaffoldList& scaffolds) const {
+void ConflictResolver::scaffolds(ScaffoldList& scaffolds, size_t drawGraphNode) const {
     LOG4CXX_DEBUG(logger, boost::format("initialize scaffolds"));
 	
 	scaffolds.clear();
@@ -98,6 +100,10 @@ void ConflictResolver::scaffolds(ScaffoldList& scaffolds) const {
     // BFS
     std::map< size_t, size_t > flag;
     //for (NodeList::const_iterator i = _nodelist.begin(); i != _nodelist.end(); ++i) {
+ 
+    size_t findNode = drawGraphNode;
+    bool found = false;
+    bool out = false;
     for (size_t i = 0; i < _graph->_position_tbl.size(); ++i) {
         if (flag.find(i) == flag.end()) {
             Scaffold component;
@@ -108,6 +114,9 @@ void ConflictResolver::scaffolds(ScaffoldList& scaffolds) const {
                 Q.pop_front();
                 flag[node] = 2;
 
+                if(node == findNode) {
+                    found = true;
+                }
                 Node ele(node, _graph->_position_tbl[node], _graph->_length_tbl[node]);
                 component.push_back(ele);
 
@@ -127,9 +136,31 @@ void ConflictResolver::scaffolds(ScaffoldList& scaffolds) const {
                     }
                 }
             }
+            if(drawGraphNode != -1 && found && !out) {
+                std::ofstream os("subgraph.txt");
+                out = true;
+                os << "digraph {" << std::endl;
+                for(const Node& x : component) {
+                    UniqEdgeGraph::NodeList::const_iterator k = _graph->_nodelist.find(x.id);
+                    /*
+                    if(k == _graph->_nodelist.end()) {
+                        continue;
+                    }
+                    */
+                    for (UniqEdgeGraph::Children::const_iterator j = k->second.children.begin(); j != k->second.children.end(); ++j) {
+                        os << boost::format("%d->%d[label=\"%d\"]") % (x.id) % j->first % j->second.distance << std::endl;
+                    }
+                    os << std::endl;
+                }
+                os << "}" << std::endl;
+            }
 
             scaffolds.push_back(component);
         }
+    }
+    if(drawGraphNode != -1) {
+        std::cout << "draw graph test intput: c" << std::endl;
+        getchar();
     }
     
     LOG4CXX_DEBUG(logger, boost::format("#### postion=[%d] scaffolds=[%d] flag[%d],_nodelist[%d]") % _graph->_position_tbl.size() % scaffolds.size() % flag.size() % _graph->_nodelist.size());
@@ -164,11 +195,13 @@ void ConflictResolver::resolve() {
                             if (scaffolds[k][i].position + scaffolds[k][i].length < scaffolds[k][j].position + scaffolds[k][j].length) { // overlap
                                 if (_graph->_max_overlap <= scaffolds[k][i].position + scaffolds[k][i].length  - scaffolds[k][j].position) {
                                     overlaplist.push_back(boost::make_tuple(k, scaffolds[k][i].id, scaffolds[k][j].id));
+                                    LOG4CXX_TRACE(logger, boost::format("find conflict %d %d") % scaffolds[k][i].id % scaffolds[k][j].id);
                                     find_cft = true;
                                 }
 
                             } else if (_graph->_max_overlap <= scaffolds[k][j].length) {
                                 overlaplist.push_back(boost::make_tuple(k, scaffolds[k][i].id, scaffolds[k][j].id));
+                                LOG4CXX_TRACE(logger, boost::format("find conflict %d %d") % scaffolds[k][i].id % scaffolds[k][j].id);
                                 find_cft = true;
                             }
                         } else {
@@ -202,6 +235,7 @@ void ConflictResolver::resolve() {
 			if (edgeinfo.from >= 0) {
 				_graph->removeEdge(edgeinfo.from, edgeinfo.to);
                 LOG4CXX_TRACE(logger, boost::format("backward chimeric link %d,%d") % edgeinfo.from % edgeinfo.to); 
+                LOG4CXX_DEBUG(logger, boost::format("DELETE %d %d") % edgeinfo.from % edgeinfo.to); 
 			} else {
 				break;
 			}
@@ -212,6 +246,7 @@ void ConflictResolver::resolve() {
 		while (temp1 >= 0) {
 			//LOG4CXX_DEBUG(logger, boost::format("%d\tancestor of\t(%d,%d)") % temp1 % overlap.get< 1 >() % overlap.get< 2 >()); 
 			_graph->removeNode(temp1);
+            LOG4CXX_DEBUG(logger, boost::format("DELETE %d") % temp1); 
 
 			temp1 = _graph->getAncestor(overlap.get< 1 >(), overlap.get< 2 >());
             LOG4CXX_TRACE(logger, boost::format("getAncestor2\t%d\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >() % temp1);
@@ -224,6 +259,7 @@ void ConflictResolver::resolve() {
 			if (edgeinfo.from >= 0) {
 				_graph->removeEdge(edgeinfo.from, edgeinfo.to);
 				LOG4CXX_TRACE(logger, boost::format("forward chimeric link %d,%d") % edgeinfo.from % edgeinfo.to); 
+                LOG4CXX_DEBUG(logger, boost::format("DELETE %d %d") % edgeinfo.from % edgeinfo.to); 
 			} else {
 				break;
 			}
@@ -234,6 +270,7 @@ void ConflictResolver::resolve() {
 		while (temp2 >= 0) {
 			//LOG4CXX_DEBUG(logger, boost::format("%d\tdescendant of\t(%d,%d)") % temp2 % overlap.get< 1 >() % overlap.get< 2 >()); 
 			_graph->removeNode(temp2);
+            LOG4CXX_DEBUG(logger, boost::format("DELETE %d") % temp2); 
 
 			temp2 = _graph->getDescendant(overlap.get< 1 >(), overlap.get< 2 >());
             LOG4CXX_TRACE(logger, boost::format("getDescendant2\t%d\t%d\t%d\t%d") % overlap.get< 0 >() % overlap.get< 1 >() % overlap.get< 2 >() % temp2);
@@ -298,13 +335,13 @@ bool UniqEdgeGraph::input_edge_link(std::istream& stream) {
     return true;
 }
 
-void UniqEdgeGraph::linearize(std::ostream& out) {
+void UniqEdgeGraph::linearize(std::ostream& out, size_t drawGraphNode) {
     ConflictResolver resovler(this);
 
     resovler.resolve();
 
     ConflictResolver::ScaffoldList scaffolds;
-    resovler.scaffolds(scaffolds);
+    resovler.scaffolds(scaffolds, drawGraphNode);
 
     /*
     std::string file = boost::str(boost::format("component_%ld") % (_iteration + 1));
@@ -332,9 +369,11 @@ void UniqEdgeGraph::linearize(std::ostream& out) {
 			if (distance >= 0) {
 				//out << (int)(distance - scaffolds[i][j-1].length + _K)  << " " ;
 				out << (int)(distance - scaffolds[i][j-1].length)  << " " ;
+		//		out << "[" << distance << "-" << scaffolds[i][j-1].length  << "] " ;
 			} else {
 				//out << (int)(_position_tbl[scaffolds[i][j].id] - _position_tbl[scaffolds[i][j-1].id] - _length_tbl[scaffolds[i][j-1].id] + _K) << " " ;
 				out << (int)(_position_tbl[scaffolds[i][j].id] - _position_tbl[scaffolds[i][j-1].id] - _length_tbl[scaffolds[i][j-1].id]) << " " ;
+		//		out << "[" << _position_tbl[scaffolds[i][j].id] << "-" << _position_tbl[scaffolds[i][j-1].id] << "-" << _length_tbl[scaffolds[i][j-1].id] << "] " ;
 			}
 
 			for (size_t k = 1; k < _component_tbl[scaffolds[i][j].id].gaps.size(); ++k) {

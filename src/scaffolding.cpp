@@ -9,6 +9,8 @@
 
 #include <iostream>
 #include <numeric>
+#include <algorithm>
+#include <tuple>
 
 #include <boost/assign.hpp>
 #include <boost/bind.hpp>
@@ -26,7 +28,7 @@ static log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("arcs.Scaffolding"))
 template< size_t K >
 class ConnectGraphBuilder {
 public:
-    ConnectGraphBuilder(size_t L, size_t insert_size, const PairReadList& pair_reads, const KmerMultiTable< K, KmerPosition >& hash_tbl, const ComponentList& components, bool do_reverse=true) : _K(L), _insert_size(insert_size), _pair_reads(pair_reads), _hash_tbl(hash_tbl), _components(components), _do_reverse(do_reverse) {
+    ConnectGraphBuilder(size_t L, size_t insert_size, const PairReadList& pair_reads, const KmerMultiTable< K, KmerPosition >& hash_tbl, const ComponentList& components, bool do_reverse=true) : _K(L), _insert_size(insert_size), _pair_reads(pair_reads), _hash_tbl(hash_tbl), _components(components), _do_reverse(do_reverse), _read_len(-1) {
     }
 
     size_t build(size_t thread_num, GappedFragmentGraph* graph) {
@@ -81,25 +83,38 @@ public:
 
         return pair_kmer_num;
     }
+
+    size_t getReadLen() const {
+        BOOST_ASSERT(_read_len != -1);
+        return _read_len;
+    }
 private:
-    struct PairKmerCmp {
-        bool operator()(const std::pair<size_t, size_t>& l, const std::pair<size_t, size_t>& r) {
-            if (l.first != r.first) {
-                return l.first < r.first;
-            }
-            return l.second < r.second;
-        }
-    };
 
     size_t addEdge(const std::string& read1, const std::string& read2, GappedFragmentGraph* graph) {
+        if(_read_len == -1) {
+            _read_len = read1.length();
+        }
         size_t num = 0;
 
-        std::set< std::pair< size_t, size_t >, PairKmerCmp > find_component;
-        for (size_t i = 0, j = _K; j <= read1.size() && j <= read2.size(); ++i,++j) {
+        std::map< std::pair< size_t, size_t >, std::tuple<long, long, int> > find_component;
+        int kmer_num = 0;
+        bool first = false;
+        std::set<size_t> find_contigs;
+        for (size_t i = 0, j = _K; j <= read1.size() && j <= read2.size(); ++i,++j,++kmer_num) {
             Kmer< K > kmer1 = read1.substr(i, _K), kmer2 = read2.substr(i, _K);
+            BOOST_ASSERT(_hash_tbl.count(kmer1) <= 1);
+            BOOST_ASSERT(_hash_tbl.count(kmer2) <= 1);
 
             typename KmerMultiTable< K, KmerPosition >::const_iterator left = _hash_tbl.find(kmer1), right = _hash_tbl.find(kmer2);
             
+            if(left != _hash_tbl.end() && right != _hash_tbl.end() && left->second.first == right->second.first) {
+                if(find_contigs.find(left->second.first) == find_contigs.end()
+                        && left->second.second <= 200 
+                        && right->second.second <= 400) {
+                    find_contigs.insert(left->second.first);
+                    graph->node2PairReads[ left->second.first ] += 1;
+                }
+            }
             if (left != _hash_tbl.end() && right != _hash_tbl.end() && left->second.first != right->second.first) {
                 ++num;
 
@@ -132,13 +147,31 @@ private:
                 }
 
                 boost::unique_lock< boost::mutex > lock(_mtx);
-                if (find_component.find(std::make_pair(left->second.first, right->second.first)) != find_component.end()) {
-                    graph->addEdge(left->second.first, right->second.first, distance, 1, 0);
+                graph->addEdge(left->second.first, right->second.first, distance, 1, 0);
+                std::pair<size_t, size_t> p = std::make_pair(left->second.first, right->second.first);
+                if(find_component.find(p) == find_component.end()) {
+                    find_component[p] = std::make_tuple(left->second.second, left->second.second, 1);
                 } else {
-                    find_component.insert( std::make_pair(left->second.first, right->second.first));
-                    graph->addEdge(left->second.first, right->second.first, distance, 1, 1);
+                    std::get<0>(find_component[p]) = std::min(left->second.second, std::get<0>(find_component[p]));
+                    std::get<1>(find_component[p]) = std::max(left->second.second, std::get<1>(find_component[p]));
+                    std::get<2>(find_component[p]) += 1;
                 }
             }
+        }
+        std::pair<size_t, size_t> pos(-1, -1);
+        int mx = -1;
+        for(auto it = find_component.begin(); it != find_component.end(); ++it) {
+            if(std::get<2>(it->second) > mx && 
+                    ( std::get<2>(it->second) > read1.length() - _K || 
+                      std::get<2>(it->second) >= std::max(2.0, 0.8 * (std::get<1>(it->second) - std::get<0>(it->second))))
+            ) {
+                mx = std::get<2>(it->second);
+                pos = it->first;
+            }
+        }
+        if(mx != -1) {
+            boost::unique_lock< boost::mutex > lock(_mtx);
+            graph->addEdge(pos.first, pos.second, 0, 0, 1);
         }
 
         return num;
@@ -150,6 +183,7 @@ private:
     const KmerMultiTable< K, KmerPosition >& _hash_tbl;
     const ComponentList& _components;
     bool _do_reverse;
+    size_t _read_len;
     boost::mutex _mtx;
 };
 
@@ -203,7 +237,14 @@ int _Scaffolding_run_(size_t L, const Properties& options, const Arguments& argu
 
         InsertSizeEstimater< K > estimater(L, INSERT_SIZE, pair_reads, hash_tbl, options.find("S") == options.not_found());
         estimater.estimate(&INSERT_SIZE, &DELTA);
-
+        if(INSERT_SIZE == 0) {
+            if(options.find("L") == options.not_found()) {
+                LOG4CXX_ERROR(logger, boost::format("specify INSERT_SIZE using -L or in the config file"));
+                return 1;
+            } else {
+                INSERT_SIZE = options.get< size_t >("L");
+            }
+        }
         DELTA = std::max(DELTA, 1.0E-5);
     }
     LOG4CXX_INFO(logger, boost::format("INSERT_SIZE=[%d], DELTA=[%f],EDGE_CUTOFF=[%d]") % INSERT_SIZE % DELTA % EDGE_CUTOFF);
@@ -216,6 +257,7 @@ int _Scaffolding_run_(size_t L, const Properties& options, const Arguments& argu
     GappedFragmentGraph g(L, pair_kmer_cutoff, pair_read_cutoff, percent, components.size(), GENOME_LEN);
     g.INSERT_SIZE = INSERT_SIZE;
     g.DELTA = DELTA;
+    size_t read_len = -1;
     // build
     {
         KmerMultiTable< K, KmerPosition > hash_tbl;
@@ -224,7 +266,9 @@ int _Scaffolding_run_(size_t L, const Properties& options, const Arguments& argu
 
         ConnectGraphBuilder< K > builder(L, INSERT_SIZE, pair_reads, hash_tbl, components, options.find("S") == options.not_found());
         g.PAIR_KMER_NUM = builder.build(options.get< size_t >("p", 1), &g);
+        read_len = builder.getReadLen();
     }
+    //for_each(g.node2PairReads.begin(), g.node2PairReads.end(), [](const std::pair<size_t, int>& x){std::cout << x.second << std::endl;});
     LOG4CXX_INFO(logger, boost::format("pair_kmer_num=%d") % g.PAIR_KMER_NUM);
 
     // graph
@@ -235,7 +279,7 @@ int _Scaffolding_run_(size_t L, const Properties& options, const Arguments& argu
         stream << g;
     }
 
-    g.scoreAndRemoveNoise(components);
+    g.scoreAndRemoveNoise(components, read_len);
 
     // graph
     {
@@ -261,7 +305,7 @@ int _Scaffolding_run_(size_t L, const Properties& options, const Arguments& argu
         boost::filesystem::ofstream stream(workdir / boost::filesystem::path(
                     boost::str(boost::format("position_lp_%d.math") % ITERATION)
             ));
-        g.outputLP(stream);
+        g.outputLP(stream, components);
     }
     // components
     {
