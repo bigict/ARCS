@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iterator>
 #include <numeric>
+#include <algorithm>
 
 #include <boost/assign.hpp>
 #include <boost/foreach.hpp>
@@ -40,9 +41,13 @@ void GapFiller::fill() {
 			int overlap = alignment(suffix, prefix);
             int gap = _scaffolds[i].gaps[j - 1];
 			if (overlap >= _OVERLAP) {
+                LOG4CXX_DEBUG(logger, boost::format("for alignment change overlap = %d") % -overlap);
                 _gapinfo_tbl[std::make_pair(i, j)] = GapInfo(-1, -overlap);
                 ++num_overlaps;
-			} else if (gap > _INSERT_SIZE + 3*_DELTA) {
+			}else if(gap <= 0) {
+                _gapinfo_tbl[std::make_pair(i, j)] = GapInfo(-1, gap);
+                ++num_overlaps;
+            } else if (gap > _INSERT_SIZE + 3*_DELTA) {
                 _gapinfo_tbl[std::make_pair(i, j)] = GapInfo(-1, gap);
                 ++num_failed_gaps;
             } else {
@@ -184,7 +189,7 @@ void GapFiller::BFS(const CondensedDeBruijnGraph& graph, const std::string& lseq
             if (m->first == lseq[lseq.length() - _K]) {
                 for (CondensedDeBruijnGraph::EdgeList::const_iterator n = j->second.begin(); n != j->second.end(); ++n) {
                     if (n->first == rseq[_K - 1]) {
-                        BFS(graph, m->second, n->second, gap, _STEP, 2000, pathlist);
+                        BFS(graph, m->second, n->second, gap, _STEP, 20000, pathlist);
                     }
                 }
             }
@@ -194,6 +199,8 @@ void GapFiller::BFS(const CondensedDeBruijnGraph& graph, const std::string& lseq
 
 void GapFiller::BFS(const CondensedDeBruijnGraph& graph, const size_t from, const size_t to, int gap, size_t max_depth, size_t max_queue, PathList& pathlist) {
 	size_t step = 0;
+	int dis = gap + (_K-1+3*_DELTA) +30; //gap constraints
+    int min_error = INT_MAX;
 
     Path path = boost::assign::list_of(from);
     typedef std::pair< Path, int > Choice;
@@ -203,12 +210,12 @@ void GapFiller::BFS(const CondensedDeBruijnGraph& graph, const size_t from, cons
     while (!Q.empty()) {
         ++step;
 		if (step > max_depth) {
-			LOG4CXX_DEBUG(logger, boost::format("BFS step is bigger than %d...") % max_depth);
+			LOG4CXX_DEBUG(logger, boost::format("BFS step is bigger than %d, gap = %d...") % max_depth % gap);
 			break;
 		}
 
         if (Q.size() > max_queue) {
-			LOG4CXX_DEBUG(logger, boost::format("BFS Q size=%d is greater than %d...") % Q.size() % max_queue);
+			LOG4CXX_DEBUG(logger, boost::format("BFS Q size=%d is greater than %d, gap = %d...") % Q.size() % max_queue % gap);
             break;
         }
 
@@ -218,10 +225,15 @@ void GapFiller::BFS(const CondensedDeBruijnGraph& graph, const size_t from, cons
             Q.pop_front();
 
             size_t node = choice.first.back();
-            if (node == to) {
-                pathlist.push_back(choice.first);
+            if (node == to && abs(choice.second - (_K-1)*(choice.first.size()-1) - gap) < min_error) { // choose the closest path  wangbing
+                min_error = abs(choice.second - (_K-1)*(choice.first.size()-1) - gap);
+                if(pathlist.empty()) {
+                    pathlist.push_back(choice.first);
+                } else {
+                    pathlist[0] = choice.first;
+                }
             }
-            if (choice.second > gap - (_K - 1)) {
+            if (choice.second > dis - (_K - 1)) {
                 continue;
             }
             const CondensedDeBruijnGraph::CondensedEdge& edge = graph._indexer[node];
@@ -243,19 +255,19 @@ void GapFiller::BFS(const CondensedDeBruijnGraph& graph, const size_t from, cons
 
         Q = nextQ;
     }
+	LOG4CXX_DEBUG(logger, boost::format("pathlist.size = %d gap = %d") % pathlist.size() % gap);
 }
 
 // Run BFS to fill current gap 
 void GapFiller::BFS(size_t left_index, size_t right_index, int gap, GapInfo* gapinfo) {
-	int dis = gap + (_K-1+3*_DELTA) +30; //gap constraints
 
     PathList pathlist;
     int graphType = 0;
-    BFS(_uniq_graph, left_index, right_index, dis, _STEP, 1000, pathlist);
+    BFS(_uniq_graph, left_index, right_index, gap, _STEP, 10000, pathlist);
     if (pathlist.empty()) {
         const std::string& lsequence = _uniq_graph._indexer[left_index].seq;
         const std::string& rsequence = _uniq_graph._indexer[right_index].seq;
-        BFS(_all_graph, lsequence, rsequence, dis, _STEP, 2000, pathlist);
+        BFS(_all_graph, lsequence, rsequence, gap, _STEP, 20000, pathlist);
         graphType = 1;
     }
 
@@ -279,33 +291,66 @@ std::ostream& operator<<(std::ostream& os, const GapFiller &obj) {
     size_t num_failed_gaps = 0;
     std::vector< size_t > scaffold_length_list;
 
+    int scf_count = 0;
     for (size_t i = 0; i < obj._scaffolds.size(); ++i) {
         const Component::ContigIdList& contigs = obj._scaffolds[i].contigs;
         BOOST_ASSERT(!contigs.empty());
 
         std::string seq = obj._uniq_graph._indexer[contigs[0]].seq;
+        //deal with big negative big followed by a big positive gap
+        //
+        //      contig_i
+        //    -------------------------------
+        //          | contig_j              |
+        //          --------                |           contig_k
+        //          |                       |           ----------
+        //          |-------- -gap ---------|           |
+        //                 |--------- +gap -------------|
+        //                                  |- new_gap -|
+        //
+        //remove contig_j and get new_gap = (-gap + +gap + len(contig_j))
+        int gap_offset = 0, new_gap;
         for (size_t j = 1; j < contigs.size(); ++j) {
             size_t left_index = contigs[j - 1];
             size_t right_index = contigs[j];
 
             GapFiller::GapInfoTable::const_iterator it = obj._gapinfo_tbl.find(std::make_pair(i, j));
             BOOST_ASSERT(it != obj._gapinfo_tbl.end());
-
-            if (it->second.graph == -1 && it->second.gap < 0) {     // overlap
-            //    BOOST_ASSERT(seq.length() >= -it->second.gap);
-                if( seq.length() >= -it->second.gap ) {
-                    seq.resize(seq.length() + it->second.gap);
+            
+            new_gap = it->second.gap + gap_offset;
+            gap_offset = 0;
+            if (it->second.graph == -1 && new_gap <= 0) {     // overlap
+            //  BOOST_ASSERT(seq.length() >= -new_gap);
+                //if the contig is contained in pre-contig ignore
+                if(-new_gap > obj._INSERT_SIZE + 3 * obj._DELTA) {
+                    gap_offset = new_gap + obj._uniq_graph._indexer[ contigs[j] ].seq.length();
+                    LOG4CXX_DEBUG(logger, boost::format("for gap = [%d] new_gap = [%d], remove contig ID = [%d] length = [%d]") %
+                            it->second.gap % new_gap % contigs[j] % obj._uniq_graph._indexer[ contigs[j] ].seq.length());
+                    continue;
+                } else /*if(obj._uniq_graph._indexer[contigs[j]].seq.length() < -new_gap) {
+                    continue;
+                } else*/ if( seq.length() >= -new_gap ) {
+                    seq.resize(seq.length() + new_gap);
                 } else {
                     LOG4CXX_DEBUG(logger, boost::format("seq.length() < -gap_size => seq.length() - overlap_size < 0"));
                     LOG4CXX_TRACE(logger, boost::format("left_index=%d right_index=%d left_length=%d right_length=%d gap=%d") % left_index % right_index %  
-                    obj._uniq_graph._indexer[ left_index ].seq.length() % obj._uniq_graph._indexer[ right_index ].seq.length() % it->second.gap);
+                    obj._uniq_graph._indexer[ left_index ].seq.length() % obj._uniq_graph._indexer[ right_index ].seq.length() % new_gap);
                 }
             } else if (it->second.graph == -1) {                    // failed gap
-                BOOST_ASSERT(it->second.gap >= 0);
+                BOOST_ASSERT(new_gap >= 0);
                 //for failed gap , the count of 'N' is determined by the distance estimation
-                seq += std::string(it->second.gap, 'N');
+                if(new_gap > obj._INSERT_SIZE + 3 * obj._DELTA) {
+                    os << boost::format(">scaf_%d_%d\n") % scf_count++ %  seq.size();
+                    os << seq << '\n';
+                    scaffold_length_list.push_back(seq.length());
+                    seq = "";
+                    LOG4CXX_DEBUG(logger, boost::format("too many N(%d), break to two scaffold") % new_gap);
+                } else {
+                    LOG4CXX_TRACE(logger, boost::format("fill N 1 length = [%d]") % std::min(int(obj._INSERT_SIZE + 3 * obj._DELTA), new_gap));
+                    seq += std::string(std::min(int(obj._INSERT_SIZE + 3 * obj._DELTA), new_gap), 'N');
+                }
                 ++num_failed_gaps;
-            } else if (it->second.graph != -1 && it->second.pathlist.size() == 1) { // unique
+            } else if (it->second.graph != -1 && it->second.pathlist.size() >= 1) { // unique or multi(the first path) wangbing
                 const GapFiller::Path& path = it->second.pathlist[0];
                 BOOST_ASSERT(path.size() >= 2);
                 std::string gap = obj.path2seq(it->second.graph == 0 ? obj._uniq_graph : obj._all_graph, path, 1, path.size() - 1);
@@ -315,18 +360,19 @@ std::ostream& operator<<(std::ostream& os, const GapFiller &obj) {
                 BOOST_ASSERT(seq.length() >= obj._K - 1);
                 seq.resize(seq.length() - (obj._K - 1));
             } else {                                                // multi_gap
-                if (it->second.gap > 0) {
-                    seq += std::string(it->second.gap, 'N');
+                if (new_gap > 0) {
+                    LOG4CXX_TRACE(logger, boost::format("fill N 1 length = [%d]") % new_gap);
+                    seq += std::string(new_gap, 'N');
                 }
             }
 
             seq += obj._uniq_graph._indexer[contigs[j]].seq;
         }
-        os << boost::format(">scaf_%d_%d\n") % i %  seq.size();
+        os << boost::format(">scaf_%d_%d\n") % scf_count++ % seq.size();
         os << seq << '\n';
         scaffold_length_list.push_back(seq.length());
     }
-    BOOST_ASSERT(obj._scaffolds.size() ==  scaffold_length_list.size());
+    //BOOST_ASSERT(obj._scaffolds.size() ==  scaffold_length_list.size());
 
     std::sort(scaffold_length_list.begin(), scaffold_length_list.end(), std::greater< size_t >());
     size_t GENOME = std::accumulate(scaffold_length_list.begin(), scaffold_length_list.end(), 0);
