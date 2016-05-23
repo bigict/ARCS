@@ -35,6 +35,8 @@ public:
     void scoreAndRemoveNoise(const ComponentList& components, size_t read_len) ;
     bool deepMoreThan2(size_t startComp) ;
     bool reverseDeepMoreThan2(size_t startComp, ReverseMap &reverseMap) ;
+    void removeBackwardEdges() ;
+    size_t removeTips( ReverseMap &reverseMap) ;
     void outputLP(std::ostream& os, const ComponentList& components) ;
 
     size_t PAIR_KMER_NUM;

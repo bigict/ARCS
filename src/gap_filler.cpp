@@ -225,8 +225,8 @@ void GapFiller::BFS(const CondensedDeBruijnGraph& graph, const size_t from, cons
             Q.pop_front();
 
             size_t node = choice.first.back();
-            if (node == to && abs(choice.second - (_K-1)*(choice.first.size()-1) - gap) < min_error) { // choose the closest path  wangbing
-                min_error = abs(choice.second - (_K-1)*(choice.first.size()-1) - gap);
+            if (node == to && abs(choice.second - gap) < min_error) { // choose the closest path  wangbing
+                min_error = abs(choice.second - gap);
                 if(pathlist.empty()) {
                     pathlist.push_back(choice.first);
                 } else {
@@ -238,7 +238,7 @@ void GapFiller::BFS(const CondensedDeBruijnGraph& graph, const size_t from, cons
             }
             const CondensedDeBruijnGraph::CondensedEdge& edge = graph._indexer[node];
             std::string suffix = edge.seq.substr(edge.seq.length() - (_K - 1), _K - 1);
-            CondensedDeBruijnGraph::NodeList::const_iterator i = graph._parents.find(suffix); // wangbing _children?
+            CondensedDeBruijnGraph::NodeList::const_iterator i = graph._parents.find(suffix); 
             if (i != graph._parents.end()) {
                 for (CondensedDeBruijnGraph::EdgeList::const_iterator j = i->second.begin(); j != i->second.end(); ++j) {
                     //size_t length = graph._indexer[j->second].seq.length();
