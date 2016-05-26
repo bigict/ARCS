@@ -125,7 +125,16 @@ Contiging::Contiging() : Runner("c:s:K:i:d:l:h") {
 }
 
 int Contiging::printHelps() const {
-    std::cout << "arcs assemble -K [kmer] -i [input] -d [workdir]" << std::endl;
+    std::cout << "usage: arcs assembly [arguments]" << std::endl;
+    std::cout << std::endl;
+    std::cout << "\t-c[=<file>]    log config file, default ./log4cxx.properties" << std::endl;
+    std::cout << "\t-s[=<file>]    assembly config file" << std::endl;
+    std::cout << "\t-K[=<number>]  kmer size, default 31" << std::endl;
+    std::cout << "\t-i[=<file>]    kmer file, default stdin" << std::endl;
+    std::cout << "\t-d[=<workdir>] word dir, default ." << std::endl;
+    std::cout << "\t-l[=<number>]  remove tips and bubbles loop time, default 2" << std::endl;
+    std::cout << "\t-h             help" << std::endl;
+    std::cout << std::endl;
     return 256;
 }
 

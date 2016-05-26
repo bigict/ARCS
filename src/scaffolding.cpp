@@ -249,9 +249,9 @@ int _Scaffolding_run_(size_t L, const Properties& options, const Arguments& argu
     }
     LOG4CXX_INFO(logger, boost::format("INSERT_SIZE=[%d], DELTA=[%f],EDGE_CUTOFF=[%d]") % INSERT_SIZE % DELTA % EDGE_CUTOFF);
     //build graph
-    size_t pair_kmer_cutoff = options.get< size_t >("r", 0);
+    size_t pair_kmer_cutoff = options.get< size_t >("r", 0); //no use "wangbing"
     size_t pair_read_cutoff = options.get< size_t >("R", 0);;
-    double percent = options.get< double >("P", 0.0);
+    double percent = options.get< double >("P", 0.0); // no use "wangbing"
     LOG4CXX_INFO(logger, boost::format("pair_kmer_cutoff=[%d], pair_read_cutoff=[%d],edge_link_percent=[%f]") % pair_kmer_cutoff % pair_read_cutoff % percent);
 
     GappedFragmentGraph g(L, pair_kmer_cutoff, pair_read_cutoff, percent, components.size(), GENOME_LEN);
@@ -358,7 +358,25 @@ Scaffolding::Scaffolding() : Runner("d:K:C:f:e:1:2:L:P:p:i:r:R:c:Sh") {
 }
 
 int Scaffolding::printHelps() const {
-    std::cout << "arcs scaffold -K [kmer] -i [input] -d [workdir] -p [cpu_num]" << std::endl;
+    std::cout << "usage: arcs scaffold [arguments]" << std::endl;
+    std::cout << std::endl;
+    std::cout << "\t-d[=<workdir>] word dir, default ." << std::endl;
+    std::cout << "\t-K[=<number>]  kmer size, default 31" << std::endl;
+    std::cout << "\t-C[=<file>]    contig file <cdbg_copy_number.fa>" << std::endl;
+    std::cout << "\t-f[=<file>]    component file <component_\%d>" << std::endl;
+    std::cout << "\t-e[=<number>]  edge length cutoff, ignore component whose length < edge length cutoff, default number of -L" << std::endl;
+    std::cout << "\t-1[=<file>]    pair reads file 1" << std::endl;
+    std::cout << "\t-2[=<file>]    pair reads file 2" << std::endl;
+    std::cout << "\t-L[=<number>]  insert size, default 180 <arcs estimates a new insert size based on -L>" << std::endl;
+    //std::cout << "\t-P" << std::endl;
+    std::cout << "\t-p[=<number>]  thread number, default 1" << std::endl;
+    std::cout << "\t-i[=<number>]  number of iterate time of scaffolding" << std::endl;
+    //std::cout << "\t-r" << std::endl;
+    std::cout << "\t-R[=<number>]  pair read number threshold to build edges between components, default 0" << std::endl;
+    std::cout << "\t-c[=<file>]    log config file, default ./log4cxx.properties" << std::endl;
+    std::cout << "\t-S             do not reverse original reads" << std::endl;
+    std::cout << "\t-h             help" << std::endl;
+    std::cout << std::endl;
     return 256;
 }
 

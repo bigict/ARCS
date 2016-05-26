@@ -22,6 +22,9 @@ int main(int argc, char* argv[]) {
     if (!runner) {
         return RunnerManager::get()->help(argc, argv);
     }
+    if(argc == 2) {
+        return runner->printHelps();
+    }
 
     Properties options;
     {

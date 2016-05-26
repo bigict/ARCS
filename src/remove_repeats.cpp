@@ -79,7 +79,17 @@ RepeatRemover::RepeatRemover() : Runner("c:s:K:d:O:i:N:h", boost::assign::map_li
 }
 
 int RepeatRemover::printHelps() const {
-    std::cout << "arcs remove_repeats -K [kmer] -O [max overlap] -i [iteration] -d [workdir]" << std::endl;
+    std::cout << "usage: arcs remove_repeats [arguments]" << std::endl;
+    std::cout << std::endl;
+    std::cout << "\t-c[=<file>]    log config file, default ./log4cxx.properties" << std::endl;
+    std::cout << "\t-s[=<file>]    " << std::endl;
+    std::cout << "\t-K[=<number>]  kmer size, default 31" << std::endl;
+    std::cout << "\t-d[=<workdir>] word dir, default ." << std::endl;
+    std::cout << "\t-O[=<number>]  allow max overlap" << std::endl;
+    std::cout << "\t-i[=<number>]  number of iterate time of scaffolding" << std::endl;
+    std::cout << "\t-N[=<number>]  output subgraph.txt of component -N in graphviz format" << std::endl;
+    std::cout << "\t-h             help" << std::endl;
+    std::cout << std::endl;
     return 256;
 }
 

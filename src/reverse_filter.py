@@ -71,8 +71,8 @@ if __name__ == '__main__':
 
     with file(cdbg_file, 'r') as f:
         for idx, contig, copy_num in cdbg_read(f):
-            if copy_num > 1:
-                continue
+            #if copy_num > 1:
+                #continue
             cdbg_tbl[contig] = idx
             length_tbl[idx] = len(contig)
 

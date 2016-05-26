@@ -181,7 +181,22 @@ Preprocess::Preprocess() : Runner("c:s:K:n:d:i:o:t:ESe:Fh", boost::assign::map_l
 }
 
 int Preprocess::printHelps() const {
-    std::cout << "arcs preprocess -K [kmer] -o [output] -e [read_cutoff] -n [buckets] [<inputs>]" << std::endl;
+    std::cout << "usage: arcs preprocess [arguments] [<inputs>]" << std::endl;
+    std::cout << std::endl;
+    std::cout << "\t-c[=<file>]    log config file, default ./log4cxx.properties" << std::endl;
+    std::cout << "\t-s[=<file>]    assembly config file" << std::endl;
+    std::cout << "\t-K[=<number>]  kmer size, default 31" << std::endl;
+    std::cout << "\t-n[=<number>]  initial hash bucket size, default 0" << std::endl;
+    //std::cout << "\t-d" << endl;
+    //std::cout << "\t-i" << endl;
+    std::cout << "\t-o[=<file>]    kmer output file, default stdout" << std::endl;
+    std::cout << "\t-t[=<number>]  filter out kmers whose coverage <= number, default 1" << std::endl;
+    std::cout << "\t-E             filter out low quality kmers" << std::endl;
+    std::cout << "\t-S             do not reverse original reads" << std::endl;
+    std::cout << "\t-e[=<number>]  read length cutoff, default -1" << std::endl;
+    std::cout << "\t-F             filter out kmers with N, default random" << std::endl;
+    std::cout << "\t-h             help" << std::endl;
+    std::cout << std::endl;
     return 256;
 }
 

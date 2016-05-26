@@ -41,7 +41,7 @@ void GapFiller::fill() {
 			int overlap = alignment(suffix, prefix);
             int gap = _scaffolds[i].gaps[j - 1];
 			if (overlap >= _OVERLAP) {
-                LOG4CXX_DEBUG(logger, boost::format("for alignment change overlap = %d") % -overlap);
+                LOG4CXX_TRACE(logger, boost::format("for alignment change overlap = %d") % -overlap);
                 _gapinfo_tbl[std::make_pair(i, j)] = GapInfo(-1, -overlap);
                 ++num_overlaps;
 			}else if(gap <= 0) {
@@ -255,7 +255,7 @@ void GapFiller::BFS(const CondensedDeBruijnGraph& graph, const size_t from, cons
 
         Q = nextQ;
     }
-	LOG4CXX_DEBUG(logger, boost::format("pathlist.size = %d gap = %d") % pathlist.size() % gap);
+	LOG4CXX_TRACE(logger, boost::format("pathlist.size = %d gap = %d") % pathlist.size() % gap);
 }
 
 // Run BFS to fill current gap 
@@ -322,7 +322,7 @@ std::ostream& operator<<(std::ostream& os, const GapFiller &obj) {
             if (it->second.graph == -1 && new_gap <= 0) {     // overlap
             //  BOOST_ASSERT(seq.length() >= -new_gap);
                 //if the contig is contained in pre-contig ignore
-                if(-new_gap > obj._INSERT_SIZE + 3 * obj._DELTA) {
+                if(-new_gap > obj._INSERT_SIZE + 3 * obj._DELTA) { 
                     gap_offset = new_gap + obj._uniq_graph._indexer[ contigs[j] ].seq.length();
                     LOG4CXX_DEBUG(logger, boost::format("for gap = [%d] new_gap = [%d], remove contig ID = [%d] length = [%d]") %
                             it->second.gap % new_gap % contigs[j] % obj._uniq_graph._indexer[ contigs[j] ].seq.length());

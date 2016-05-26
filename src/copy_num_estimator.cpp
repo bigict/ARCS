@@ -94,7 +94,13 @@ CopyNumEstimator::CopyNumEstimator() : Runner("c:s:i:G:C:h") {
 }
 
 int CopyNumEstimator::printHelps() const {
-    std::cout << "arcs copy_num_estimate -i [input] -G [cdbg] -C [component]" << std::endl;
+    std::cout << "usage: arcs copy_num_estimate [arguments]" << std::endl;
+    std::cout << "\t-c[=<file>]    log config file" << std::endl;
+    std::cout << "\t-s[=<file>]    config patameter file <contig_parameter>" << std::endl;
+    std::cout << "\t-i[=<file>]    condensed de bruijn graph file <condensed_de_bruijn_graph_after_trimming.data>, default stdin" << std::endl;
+    std::cout << "\t-G[=<file>]    out contig file <cdbg_copy_number.fa>" << std::endl;
+    std::cout << "\t-C[=<file>]    out component file <component_0>" << std::endl;
+    std::cout << "\t-h             help" << std::endl;
     return 256;
 }
 

@@ -176,7 +176,7 @@ void GappedFragmentGraph::scoreAndRemoveNoise(const ComponentList& components, s
         for (NodeList::iterator i = _nodelist.begin(); i != _nodelist.end(); ++i, ++count) {
             typename ReverseMap::iterator it = reverseMap.find(count);
             int degree = i->size() + (it==reverseMap.end() ? 0 : it->second.size());
-            if(degree < 8) {
+            if(degree < 10) {
                 continue;
             }
             LOG4CXX_DEBUG(logger, boost::format("remove all edges of node=[%d] for degree >= 8") % count);

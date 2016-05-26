@@ -366,7 +366,15 @@ LPSolver::LPSolver() : Runner("c:s:i:o:l:h") {
 }
 
 int LPSolver::printHelps() const {
-    std::cout << "arcs solveLP -i [input] -o [output]" << std::endl;
+    std::cout << "usage: arcs solveLP [arguments]" << std::endl;
+    std::cout << std::endl;
+    std::cout << "\t-c[=<file>]    log config file, default ./log4cxx.properties" << std::endl;
+    std::cout << "\t-s[=<file>]    <scaffold_parameter_\%d>" << std::endl;
+    std::cout << "\t-i[=<file>]    lp problem file <position_lp_\%d.math>" << std::endl;
+    std::cout << "\t-o[=<file>]    output file <edge_cluster_pos_\%d>" << std::endl;
+    std::cout << "\t-l[=<number>]  lp prarameter, default INT_MAX(recommend)" << std::endl;
+    std::cout << "\t-h             help" << std::endl;
+    std::cout << std::endl;
     return 256;
 }
 

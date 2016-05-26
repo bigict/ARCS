@@ -27,6 +27,7 @@ public:
         }
         return std::string(1, key);
     }
+    virtual int printHelps() const = 0;
     virtual int run(const Properties& options, const Arguments& arguments) = 0;
 protected:
     Runner(const std::string& options = "", const std::map< char, std::string >& table=std::map< char, std::string >()) : _options(options), _transform(table) {
@@ -102,7 +103,7 @@ public:
             for (RunnerList::const_iterator i = _runners.begin(); i != _runners.end(); ++i) {
                 std::string cmd(i->first);
                 cmd.resize(max_name_length, ' ');
-                std::cout << boost::format("   %s%s") % cmd % std::get< 1 >(i->second) << std::endl;
+                std::cout << boost::format("\t%s%s") % cmd % std::get< 1 >(i->second) << std::endl;
             }
         }
 

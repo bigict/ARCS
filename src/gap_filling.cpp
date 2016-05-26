@@ -36,7 +36,7 @@ int GapFilling::run(const Properties& options, const Arguments& arguments) {
     std::string condensed_contig_file_name;
     std::string work_dir;
     size_t K = options.get< size_t >("K", kKmerSize);
-    size_t OVERLAP = -1;
+    size_t OVERLAP = 10;
     if (options.find("MAX_OVERLAP") != options.not_found()) {
         OVERLAP = options.get< size_t >("MAX_OVERLAP");
     }
@@ -97,7 +97,18 @@ GapFilling::GapFilling() : Runner("c:s:d:K:O:C:I:l:h", boost::assign::map_list_o
 }
 
 int GapFilling::printHelps() const {
-    std::cout << "arcs gapfill -K [kmer] -O [overlpa_for_me] -C [condensed_contig_file_name] -I [initial_contig_file_name] -l [line_component_file]" << std::endl;
+    std::cout << "usage: arcs gapfill [arguments]" << std::endl;
+    std::cout << std::endl;
+    std::cout << "\t-c[=<file>]    log config file, default ./log4cxx.properties" << std::endl;
+    std::cout << "\t-s[=<file>]    scaffold_parameter_0" << std::endl;
+    std::cout << "\t-d[=<workdir>] word dir, default ." << std::endl;
+    std::cout << "\t-K[=<number>]  kmer size, default 31" << std::endl;
+    std::cout << "\t-O[=<number>]  minimum same bases number to judge overlap, default 10" << std::endl;
+    std::cout << "\t-C[=<file>]    contig file <cdbg_copy_number.fa>" << std::endl;
+    std::cout << "\t-l[=<file>]    <component_last>" << std::endl;
+    std::cout << "\t-I[=<file>]    <condensed_de_bruijn_graph_before_trimming.data>" << std::endl;
+    std::cout << "\t-h             help" << std::endl;
+    std::cout << std::endl;
     return 256;
 }
 
