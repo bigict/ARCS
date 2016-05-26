@@ -369,7 +369,9 @@ std::ostream& operator<<(std::ostream& os, const GapFiller &obj) {
             seq += obj._uniq_graph._indexer[contigs[j]].seq;
         }
         os << boost::format(">scaf_%d_%d\n") % scf_count++ % seq.size();
-        os << seq << '\n';
+        for(size_t start = 0; start < seq.length(); start+=60) {
+            os << seq.substr(start, 60) << "\n";
+        }
         scaffold_length_list.push_back(seq.length());
     }
     //BOOST_ASSERT(obj._scaffolds.size() ==  scaffold_length_list.size());
