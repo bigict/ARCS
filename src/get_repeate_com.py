@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     with open(sys.argv[3], "a") as f:
         for i in range( len(com_len) ):
-            if i not in uniq and com_len[i] > 100 and com_cov[i] <= int(sys.argv[4]):
+            if i not in uniq and ((com_len[i] > 100 and com_cov[i] <= int(sys.argv[4])) or com_len[i] > 200):
                 f.write(">component %d\n" % start)
                 f.write("%d\n" % i)
                 f.write("\n")

@@ -160,6 +160,11 @@ private:
         }
         std::pair<size_t, size_t> pos(-1, -1);
         int mx = -1;
+        //judge which pair contig dose this pair read belong to
+        //std::get<0>(it->sceong): left most pos of the left contig
+        //std::get<1>(it->sceong): right most pos of the left contig
+        //std::get<2>(it->sceong): pair kmer number
+        //all the pair kmers fall into this pair contig or pair kmer number >= 0.8 * (length of mapped left contig) 
         for(auto it = find_component.begin(); it != find_component.end(); ++it) {
             if(std::get<2>(it->second) > mx && 
                     ( std::get<2>(it->second) > read1.length() - _K || 

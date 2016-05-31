@@ -341,7 +341,9 @@ std::ostream& operator<<(std::ostream& os, const GapFiller &obj) {
                 //for failed gap , the count of 'N' is determined by the distance estimation
                 if(new_gap > obj._INSERT_SIZE + 3 * obj._DELTA) {
                     os << boost::format(">scaf_%d_%d\n") % scf_count++ %  seq.size();
-                    os << seq << '\n';
+                    for(size_t start = 0; start < seq.length(); start+=60) {
+                        os << seq.substr(start, 60) << "\n";
+                    }
                     scaffold_length_list.push_back(seq.length());
                     seq = "";
                     LOG4CXX_DEBUG(logger, boost::format("too many N(%d), break to two scaffold") % new_gap);

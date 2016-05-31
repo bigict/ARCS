@@ -239,7 +239,7 @@ for i, library in enumerate(config['library_list']):
 # call back repeate 
 #
 ###################################################################
-args = '%s %s %s %d' % (os.path.join(config['workspace'], 'component_0'), os.path.join(config['workspace'], 'cdbg_copy_number.fa'), os.path.join(config['workspace'], ('component_%d' % (i+1))), 4)
+args = '%s %s %s %d' % (os.path.join(config['workspace'], 'component_0'), os.path.join(config['workspace'], 'cdbg_copy_number.fa'), os.path.join(config['workspace'], ('component_%d' % (i+1))), 10)
 command_run('python3', os.path.join(os.path.abspath(os.path.dirname(__file__)), 'get_repeate_com.py'), args, config)
 #python3 /home/wangbing/12_15_result/script/get_repeate_com.py component_0 cdbg_copy_number.fa component_2 6
 ###################################################################
