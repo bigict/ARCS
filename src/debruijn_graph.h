@@ -425,7 +425,7 @@ std::ostream& operator << (std::ostream& os, const DeBruijnGraph< K >& graph) {
                     edge += k->first.nucleotide(L - 1);
                 }
             }
-            os << boost::format("%d\t%d\t%s\n") % indexer[i->first] % indexer[i->first + j->first] % edge;
+            os << boost::format("%d\t%d\t%s\n") % indexer[i->first] % indexer[k->first] % edge;
             os << boost::format("%f\n") % (coverage / length);
             contigLength.push_back( edge.length() );
         }
