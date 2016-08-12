@@ -7,6 +7,8 @@
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
 
 #include <log4cxx/logger.h>
 
@@ -41,8 +43,19 @@ bool ReadPairReads(std::istream& stream1, std::istream& stream2, PairReadList& p
 }
 
 bool ReadSinglePairReadsFile(const std::string& file1, const std::string& file2, PairReadList& pair_reads) {
-    std::ifstream stream1(file1.c_str()), stream2(file2.c_str());
-    return ReadPairReads(stream1, stream2, pair_reads);
+    BOOST_ASSERT(boost::algorithm::ends_with(file1, ".gz") == boost::algorithm::ends_with(file2, ".gz"));
+    if(boost::algorithm::ends_with(file1, ".gz")) {
+        std::ifstream is1(file1.c_str(), std::ios_base::in | std::ios_base::binary), is2(file2.c_str(), std::ios_base::in | std::ios_base::binary);
+        boost::iostreams::filtering_istream stream1, stream2;
+        stream1.push(boost::iostreams::gzip_decompressor());
+        stream2.push(boost::iostreams::gzip_decompressor());
+        stream1.push(is1);
+        stream2.push(is2);
+        return ReadPairReads(stream1, stream2, pair_reads);
+    } else {
+        std::ifstream stream1(file1.c_str()), stream2(file2.c_str());
+        return ReadPairReads(stream1, stream2, pair_reads);
+    }
 }
 
 bool ReadPairReads(const std::string& files1, const std::string& files2, PairReadList& pair_reads) {
