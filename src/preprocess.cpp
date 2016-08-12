@@ -95,7 +95,11 @@ int _Preprocess_run_(size_t L, const Properties& options, const Arguments& argum
     size_t buckets = options.get< size_t >("n", 0);
     double avg_quality = 0, min_quality = 0, percent = 1.0;
     std::vector< std::string > filelist;
-    std::copy(arguments.begin(), arguments.end(), std::back_inserter(filelist));
+    for(std::string files : arguments) {
+        std::vector< std::string > res;
+        boost::split(res, files, boost::is_any_of(":"));
+        std::copy(res.begin(), res.end(), std::back_inserter(filelist));
+    }
     {
         std::string file = boost::algorithm::join(filelist, ":");
         LOG4CXX_DEBUG(logger, boost::format("input: %s") % file);

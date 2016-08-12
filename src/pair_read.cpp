@@ -47,9 +47,9 @@ bool ReadSinglePairReadsFile(const std::string& file1, const std::string& file2,
 
 bool ReadPairReads(const std::string& files1, const std::string& files2, PairReadList& pair_reads) {
     std::vector<std::string> r1;
-    boost::split(r1, files1, boost::is_any_of(";:"));
+    boost::split(r1, files1, boost::is_any_of(":"));
     std::vector<std::string> r2;
-    boost::split(r2, files2, boost::is_any_of(";:"));
+    boost::split(r2, files2, boost::is_any_of(":"));
     BOOST_ASSERT(r1.size() != 0 && r1.size() == r2.size());
     for(size_t i = 0; i < r1.size(); ++i) {
         LOG4CXX_DEBUG(logger, boost::format("read file1: %s read file2: %s") % r1[i] % r2[i]);
