@@ -472,6 +472,7 @@ int UniqEdgeGraph::getAncestor(size_t x, size_t y) const {
             }
             if (--count == 0) {
                 count = width;
+                width = 0;
                 ++depth;
             }
         }
@@ -512,6 +513,7 @@ int UniqEdgeGraph::getAncestor(size_t x, size_t y) const {
                     return id;
                 }
                 count = width;
+                width = 0;
                 --depth;
             }
         }
